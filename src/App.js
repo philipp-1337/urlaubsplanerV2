@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { db } from './firebase'; // Import Firestore instance
+import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 
 // Hauptanwendung
 export default function App() {
@@ -9,6 +11,7 @@ export default function App() {
   const [ansichtModus, setAnsichtModus] = useState('liste'); // 'liste', 'kalender' oder 'jahresuebersicht'
   const [ausgewaehltePersonId, setAusgewaehltePersonId] = useState(null);
   
+  const [isLoadingData, setIsLoadingData] = useState(false);
   // Mock Benutzer für die Anmeldung
   const validUser = { username: 'admin', password: '12345' };
   
@@ -27,16 +30,82 @@ export default function App() {
   const [currentMonth, setCurrentMonth] = useState(currentDate.getMonth());
   const [currentYear, setCurrentYear] = useState(currentDate.getFullYear());
   
+  // Statischer Urlaubsanspruch pro Jahr
+  const URLAUBSANSPRUCH_PRO_JAHR = 30;
+
   // Resturlaub vom Vorjahr
-  const [resturlaub, setResturlaub] = useState({});
-  
+  const [resturlaub, setResturlaub] = useState({
+    // Example: 1: 5 (personId: resturlaubstage) - will be loaded from Firestore
+  });
+
   // Urlaubs- und Durchführungsdaten
   // Format: { 'personId-jahr-monat-tag': 'urlaub'|'durchfuehrung'|null }
   const [tagDaten, setTagDaten] = useState({});
   
+  // Fetch data from Firestore
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setTagDaten({});
+      setResturlaub({});
+      return;
+    }
+
+    const fetchData = async () => {
+      setIsLoadingData(true);
+      setLoginError(''); // Clear previous errors
+      try {
+        // Fetch Resturlaub for the currentYear
+        const resturlaubQuery = query(collection(db, 'resturlaubData'), 
+                                  where('forYear', '==', currentYear));
+        const resturlaubSnapshot = await getDocs(resturlaubQuery);
+        const newResturlaub = {};
+        personen.forEach(p => newResturlaub[String(p.id)] = 0); // Initialize with 0 for all persons
+        resturlaubSnapshot.forEach((doc) => {
+          const data = doc.data();
+          newResturlaub[data.personId] = data.tage;
+        });
+        setResturlaub(newResturlaub);
+
+        // Fetch TagDaten based on ansichtModus and current view context
+        let dayStatusQuery;
+        if (ansichtModus === 'liste' || (ansichtModus === 'kalender' && ausgewaehltePersonId)) {
+          // For list view or specific person's calendar: fetch data for the currentMonth of currentYear
+          dayStatusQuery = query(collection(db, 'dayStatusEntries'), 
+                             where('year', '==', currentYear), 
+                             where('month', '==', currentMonth));
+        } else if (ansichtModus === 'jahresuebersicht' || (ansichtModus === 'jahresdetail' && ausgewaehltePersonId)) {
+          // For yearly overview or specific person's year detail: fetch all data for the currentYear
+          dayStatusQuery = query(collection(db, 'dayStatusEntries'), 
+                             where('year', '==', currentYear));
+        } else {
+          // Fallback or initial state before any specific view is fully determined
+          setTagDaten({});
+          setIsLoadingData(false);
+          return;
+        }
+        
+        const dayStatusSnapshot = await getDocs(dayStatusQuery);
+        const newTagDaten = {};
+        dayStatusSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const key = `${data.personId}-${data.year}-${data.month}-${data.day}`;
+          newTagDaten[key] = data.status;
+        });
+        setTagDaten(newTagDaten);
+      } catch (error) {
+        console.error("Error fetching data from Firestore: ", error);
+        setLoginError("Fehler beim Laden der Daten von Firestore.");
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [isLoggedIn, currentMonth, currentYear, ansichtModus, ausgewaehltePersonId, personen]); // personen added for completeness
+
   // Generiert alle Tage für den aktuellen Monat
   const getTageImMonat = (monat = currentMonth, jahr = currentYear) => {
-    const ersterTag = new Date(jahr, monat, 1);
+    // const ersterTag = new Date(jahr, monat, 1); // Not used
     const letzterTag = new Date(jahr, monat + 1, 0);
     
     const tage = [];
@@ -59,28 +128,58 @@ export default function App() {
   };
   
   // Ändert den Status eines bestimmten Tages für eine Person
-  const setTagStatus = (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
-    const key = `${personId}-${jahr}-${monat}-${tag}`;
-    const neueTagDaten = { ...tagDaten };
-    
-    if (status === null || status === getTagStatus(personId, tag, monat, jahr)) {
-      // Wenn derselbe Status erneut geklickt wird oder null, dann Status entfernen
-      delete neueTagDaten[key];
+  const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
+    const personIdStr = String(personId);
+    const docId = `${personIdStr}-${jahr}-${monat}-${tag}`;
+    const entryRef = doc(db, 'dayStatusEntries', docId);
+
+    const localKey = `${personIdStr}-${jahr}-${monat}-${tag}`;
+    const currentLocalStatus = tagDaten[localKey] || null;
+
+    // Optimistic update of local state
+    const neueTagDatenState = { ...tagDaten };
+    if (status === null) {
+      delete neueTagDatenState[localKey];
     } else {
-      // Ansonsten Status setzen
-      neueTagDaten[key] = status;
+      neueTagDatenState[localKey] = status;
     }
-    
-    setTagDaten(neueTagDaten);
+    setTagDaten(neueTagDatenState);
+    setLoginError(''); // Clear previous errors
+
+    // Firestore update
+    try {
+      if (status === null) {
+        await deleteDoc(entryRef);
+      } else {
+        await setDoc(entryRef, { 
+          personId: personIdStr,
+          year: jahr,
+          month: monat,
+          day: tag,
+          status: status 
+        });
+      }
+    } catch (error) {
+      console.error("Error updating tag status in Firestore: ", error);
+      // Rollback optimistic update
+      const revertedTagDaten = { ...tagDaten };
+      if (currentLocalStatus === null) {
+        delete revertedTagDaten[localKey];
+      } else {
+        revertedTagDaten[localKey] = currentLocalStatus;
+      }
+      setTagDaten(revertedTagDaten);
+      setLoginError(`Fehler beim Speichern: ${error.message}. Bitte erneut versuchen.`);
+    }
   };
   
   // Berechnet Anzahl der Urlaubstage pro Person im aktuellen Monat
-  const getPersonGesamtUrlaub = (personId, monat = currentMonth, jahr = currentYear) => {
+  const getPersonGesamtUrlaub = (personIdInput, monat = currentMonth, jahr = currentYear) => {
     let count = 0;
     const tage = getTageImMonat(monat, jahr);
     
     tage.forEach(tag => {
-      if (getTagStatus(personId, tag.tag, monat, jahr) === 'urlaub') {
+      if (getTagStatus(personIdInput, tag.tag, monat, jahr) === 'urlaub') {
         count++;
       }
     });
@@ -89,12 +188,12 @@ export default function App() {
   };
   
   // Berechnet Anzahl der Durchführungstage pro Person im aktuellen Monat
-  const getPersonGesamtDurchfuehrung = (personId, monat = currentMonth, jahr = currentYear) => {
+  const getPersonGesamtDurchfuehrung = (personIdInput, monat = currentMonth, jahr = currentYear) => {
     let count = 0;
     const tage = getTageImMonat(monat, jahr);
     
     tage.forEach(tag => {
-      if (getTagStatus(personId, tag.tag, monat, jahr) === 'durchfuehrung') {
+      if (getTagStatus(personIdInput, tag.tag, monat, jahr) === 'durchfuehrung') {
         count++;
       }
     });
@@ -112,7 +211,7 @@ export default function App() {
   };
   
   // Berechnet die Gesamtzahl aller Durchführungstage im aktuellen Monat
-  const getGesamtDurchfuehrung = (monat = currentMonth, jahr = currentYear) => {
+  const getGesamtDurchfuehrung = (monat = currentMonth, jahr = currentYear) => { // TODO: Check if this is used or can be removed if totals are from footer
     let summe = 0;
     personen.forEach(person => {
       summe += getPersonGesamtDurchfuehrung(person.id, monat, jahr);
@@ -121,35 +220,68 @@ export default function App() {
   };
   
   // Berechnet Urlaubstage pro Person im gesamten Jahr
-  const getPersonJahresUrlaub = (personId, jahr = currentYear) => {
+  const getPersonJahresUrlaub = (personIdInput, jahr = currentYear) => {
     let summe = 0;
     for (let monat = 0; monat < 12; monat++) {
-      summe += getPersonGesamtUrlaub(personId, monat, jahr);
+      summe += getPersonGesamtUrlaub(personIdInput, monat, jahr);
     }
     return summe;
   };
   
   // Berechnet Durchführungstage pro Person im gesamten Jahr
-  const getPersonJahresDurchfuehrung = (personId, jahr = currentYear) => {
+  const getPersonJahresDurchfuehrung = (personIdInput, jahr = currentYear) => {
     let summe = 0;
     for (let monat = 0; monat < 12; monat++) {
-      summe += getPersonGesamtDurchfuehrung(personId, monat, jahr);
+      summe += getPersonGesamtDurchfuehrung(personIdInput, monat, jahr);
     }
     return summe;
   };
   
   // Holt den Resturlaub für eine Person
-  const getPersonResturlaub = (personId) => {
-    return resturlaub[personId] || 0;
+  const getPersonResturlaub = (personIdInput) => {
+    return resturlaub[String(personIdInput)] || 0;
   };
   
   // Setzt den Resturlaub für eine Person
-  const setPersonResturlaub = (personId, tage) => {
-    setResturlaub({
-      ...resturlaub,
-      [personId]: parseInt(tage) || 0
+  // Kann für zukünftige Admin-Funktionen oder Datenimport nützlich sein
+  // This function is not currently wired to any UI input for setting resturlaub directly.
+  // It's kept for potential future use or if manual adjustment is needed via console/dev tools. 
+  // const setPersonResturlaub = async (personIdInput, tage, forYearToSet = currentYear) => {
+  //   const personIdStr = String(personIdInput);
+  //   const parsedTage = parseInt(tage) || 0;
+  //   const currentResturlaubStateForPerson = resturlaub[personIdStr] || 0;
+
+  //   // Optimistic update
+  //   setResturlaub(prev => ({ ...prev, [personIdStr]: parsedTage }));
+  //   setLoginError(''); // Clear previous errors
+
+  //   try {
+  //     const docId = `${personIdStr}-${forYearToSet}`;
+  //     const resturlaubDocRef = doc(db, 'resturlaubData', docId);
+  //     await setDoc(resturlaubDocRef, {
+  //       personId: personIdStr,
+  //       forYear: forYearToSet,
+  //       tage: parsedTage
+  //     });
+  //   } catch (error) {
+  //     console.error("Error updating resturlaub in Firestore: ", error);
+  //     // Rollback
+  //     setResturlaub(prev => ({ ...prev, [personIdStr]: currentResturlaubStateForPerson }));
+  //     setLoginError(`Fehler beim Speichern des Resturlaubs: ${error.message}.`);
+  //   }
+  // };
+  // Berechnet die Gesamtzahl der Urlaubs- und Durchführungstage für einen bestimmten Tag im Monat
+  const getTagesGesamtStatus = (tagNumber, monat = currentMonth, jahr = currentYear) => {
+    let urlaubCount = 0;
+    let durchfuehrungCount = 0;
+    personen.forEach(person => {
+      const status = getTagStatus(person.id, tagNumber, monat, jahr);
+      if (status === 'urlaub') urlaubCount++;
+      if (status === 'durchfuehrung') durchfuehrungCount++;
     });
+    return { urlaubCount, durchfuehrungCount };
   };
+
 
   // Login Handler
   const handleLogin = () => {
@@ -321,6 +453,12 @@ export default function App() {
         <Header />
         
         <main className="container px-4 py-8 mx-auto">
+          {isLoadingData && <div className="p-4 text-center text-blue-600">Lade Jahresübersicht...</div>}
+          {loginError && ( /* Display general errors here too */
+            <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+              {loginError}
+            </div>
+          )}
           <div className="p-6 bg-white rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-6">
               <button
@@ -348,32 +486,33 @@ export default function App() {
                   <tr className="bg-gray-100">
                     <th className="p-3 text-left border">Person</th>
                     <th className="p-3 text-center border">Resturlaub<br />(aus {currentYear - 1})</th>
-                    <th className="p-3 text-center border">Urlaubstage {currentYear}</th>
+                    <th className="p-3 text-center border">Urlaubsanspruch<br />{currentYear}</th>
                     <th className="p-3 text-center border">Gesamt verfügbarer<br />Urlaub</th>
+                    <th className="p-3 text-center border">Urlaubstage {currentYear}</th>
+                    <th className="p-3 text-center border">Verbleibender<br />Urlaub</th>
                     <th className="p-3 text-center border">Durchführungstage {currentYear}</th>
                     <th className="p-3 text-center border">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {personen.map((person) => {
-                    const jahresUrlaub = getPersonJahresUrlaub(person.id);
-                    const jahresDurchfuehrung = getPersonJahresDurchfuehrung(person.id);
+                    const urlaubstageDiesesJahr = getPersonJahresUrlaub(person.id, currentYear);
+                    const jahresDurchfuehrung = getPersonJahresDurchfuehrung(person.id, currentYear);
                     const personResturlaub = getPersonResturlaub(person.id);
+                    const urlaubsanspruchAktuell = URLAUBSANSPRUCH_PRO_JAHR;
+                    const gesamtVerfuegbarerUrlaub = urlaubsanspruchAktuell + personResturlaub;
+                    const verbleibenderUrlaub = gesamtVerfuegbarerUrlaub - urlaubstageDiesesJahr;
                     
                     return (
                       <tr key={person.id}>
                         <td className="p-3 border">{person.name}</td>
-                        <td className="p-3 border">
-                          <input
-                            type="number"
-                            min="0"
-                            value={personResturlaub}
-                            onChange={(e) => setPersonResturlaub(person.id, e.target.value)}
-                            className="w-full px-2 py-1 text-center border border-gray-300 rounded"
-                          />
+                        <td className="p-3 text-center border">
+                          {personResturlaub}
                         </td>
-                        <td className="p-3 text-center border">{jahresUrlaub}</td>
-                        <td className="p-3 text-center border">{personResturlaub + jahresUrlaub}</td>
+                        <td className="p-3 text-center border">{urlaubsanspruchAktuell}</td>
+                        <td className="p-3 text-center border">{gesamtVerfuegbarerUrlaub}</td>
+                        <td className="p-3 text-center border">{urlaubstageDiesesJahr}</td>
+                        <td className="p-3 text-center border">{verbleibenderUrlaub}</td>
                         <td className="p-3 text-center border">{jahresDurchfuehrung}</td>
                         <td className="p-3 text-center border">
                           <button
@@ -407,6 +546,12 @@ export default function App() {
         <Header />
         
         <main className="container px-4 py-8 mx-auto">
+          {isLoadingData && <div className="p-4 text-center text-blue-600">Lade Monatsdetails...</div>}
+          {loginError && (
+            <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+              {loginError}
+            </div>
+          )}
           <div className="p-6 bg-white rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-6">
               <button
@@ -461,17 +606,17 @@ export default function App() {
                   <tr className="bg-gray-100 font-bold">
                     <td className="p-3 border">Gesamt</td>
                     <td className="p-3 text-center border">
-                      {getPersonJahresUrlaub(ausgewaehltePersonId)}
+                      {getPersonJahresUrlaub(ausgewaehltePersonId, currentYear)}
                     </td>
                     <td className="p-3 text-center border">
-                      {getPersonJahresDurchfuehrung(ausgewaehltePersonId)}
+                      {getPersonJahresDurchfuehrung(ausgewaehltePersonId, currentYear)}
                     </td>
                     <td className="p-3 text-center border"></td>
                   </tr>
                   <tr className="bg-gray-200 font-bold">
                     <td className="p-3 border">Mit Resturlaub</td>
                     <td className="p-3 text-center border">
-                      {getPersonJahresUrlaub(ausgewaehltePersonId) + getPersonResturlaub(ausgewaehltePersonId)}
+                      {getPersonJahresUrlaub(ausgewaehltePersonId, currentYear) + getPersonResturlaub(ausgewaehltePersonId)}
                     </td>
                     <td className="p-3 text-center border">-</td>
                     <td className="p-3 text-center border"></td>
@@ -495,6 +640,12 @@ export default function App() {
         <Header />
         
         <main className="container px-4 py-8 mx-auto">
+          {isLoadingData && <div className="p-4 text-center text-blue-600">Lade Kalender...</div>}
+          {loginError && (
+            <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+              {loginError}
+            </div>
+          )}
           <div className="p-6 mb-6 bg-white rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-6">
               <button
@@ -549,7 +700,7 @@ export default function App() {
               
               {/* Tage des Monats */}
               {tageImMonat.map((tag) => {
-                const status = getTagStatus(ausgewaehltePersonId, tag.tag);
+                const status = getTagStatus(String(ausgewaehltePersonId), tag.tag);
                 let tagClass = "p-2 rounded cursor-pointer";
                 
                 if (tag.istWochenende) {
@@ -572,7 +723,7 @@ export default function App() {
                         let neuerStatus = null;
                         if (status === null) neuerStatus = 'urlaub';
                         else if (status === 'urlaub') neuerStatus = 'durchfuehrung';
-                        setTagStatus(ausgewaehltePersonId, tag.tag, neuerStatus);
+                        setTagStatus(String(ausgewaehltePersonId), tag.tag, neuerStatus);
                       }
                     }}
                   >
@@ -584,10 +735,10 @@ export default function App() {
             
             <div className="flex justify-between mt-6">
               <div className="text-lg">
-                <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(ausgewaehltePersonId)}
+                <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(String(ausgewaehltePersonId))}
               </div>
               <div className="text-lg">
-                <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(ausgewaehltePersonId)}
+                <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(String(ausgewaehltePersonId))}
               </div>
             </div>
             
@@ -610,12 +761,31 @@ export default function App() {
     );
   }
   
+  // Helper function for handling clicks on day cells in the main list view
+  const handleDayCellClick = (personId, tagObject) => {
+    if (!tagObject.istWochenende) {
+      const currentStatus = getTagStatus(String(personId), tagObject.tag);
+      let neuerStatus = null;
+      if (currentStatus === null) {
+        neuerStatus = 'urlaub';
+      } else if (currentStatus === 'urlaub') {
+        neuerStatus = 'durchfuehrung';
+      } // if currentStatus is 'durchfuehrung', neuerStatus remains null, deleting the entry.
+      setTagStatus(String(personId), tagObject.tag, neuerStatus);
+    }
+  };
   // Hauptansicht (nach Login) - Listenansicht
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
       
       <main className="container px-4 py-8 mx-auto">
+        {isLoadingData && <div className="p-4 text-center text-blue-600">Lade Monatsübersicht...</div>}
+        {loginError && ( /* Display general errors here too */
+            <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+              {loginError}
+            </div>
+          )}
         <div className="p-6 bg-white rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-6">
             <button
@@ -637,42 +807,101 @@ export default function App() {
             </button>
           </div>
           
+          <div className="mb-6">
+            <div className="flex flex-wrap mb-2 space-x-2">
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-blue-500 rounded"></div>
+                <span>Urlaub (U)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-green-500 rounded"></div>
+                <span>Durchführung (D)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-gray-200 border border-gray-300 rounded"></div>
+                <span>Wochenende</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag (außer Wochenende) in der Tabelle, um zwischen Urlaub, Durchführung und keinem Status zu wechseln.</p>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="p-3 text-left border">Person</th>
-                  <th className="p-3 text-center border">Urlaubstage</th>
-                  <th className="p-3 text-center border">Durchführungstage</th>
-                  <th className="p-3 text-center border">Aktionen</th>
+                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border min-w-[150px]">Person</th>
+                  {getTageImMonat().map(tag => (
+                    <th key={`header-${tag.tag}`} className={`p-1 text-center border min-w-[50px] ${tag.istWochenende ? 'bg-gray-200' : 'bg-gray-100'}`}>
+                      <div>{tag.tag}</div>
+                      <div className="text-xs font-normal">{getWochentagName(tag.wochentag)}</div>
+                    </th>
+                  ))}
+                  <th className="p-2 text-center border min-w-[100px]">Gesamt Urlaub</th>
+                  <th className="p-2 text-center border min-w-[100px]">Gesamt Durchf.</th>
+                  <th className="p-2 text-center border min-w-[150px]">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
-                {personen.map((person) => (
-                  <tr key={person.id}>
-                    <td className="p-3 border">{person.name}</td>
-                    <td className="p-3 text-center border">{getPersonGesamtUrlaub(person.id)}</td>
-                    <td className="p-3 text-center border">{getPersonGesamtDurchfuehrung(person.id)}</td>
-                    <td className="p-3 text-center border">
-                      <button
-                        onClick={() => {
-                          setAusgewaehltePersonId(person.id);
-                          setAnsichtModus('kalender');
-                        }}
-                        className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                      >
-                        Kalender anzeigen
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {personen.map((person) => {
+                  return (
+                    <tr key={person.id}>
+                      <td className="sticky left-0 z-0 p-2 text-left bg-white border min-w-[150px]">{person.name}</td>
+                      {getTageImMonat().map(tag => {
+                        const status = getTagStatus(String(person.id), tag.tag);
+                        let cellClass = "p-2 text-center border min-w-[50px]";
+                        let cellContent = "";
+
+                        if (tag.istWochenende) {
+                          cellClass += " bg-gray-200";
+                        } else {
+                          cellClass += " cursor-pointer hover:bg-black-50";
+                          if (status === 'urlaub') {
+                            cellClass += " bg-blue-500 text-white hover:bg-blue-600";
+                            cellContent = "U";
+                          } else if (status === 'durchfuehrung') {
+                            cellClass += " bg-green-500 text-white hover:bg-green-600";
+                            cellContent = "D";
+                          }
+                        }
+                        return (
+                          <td key={`${person.id}-${tag.tag}`} className={cellClass} onClick={() => handleDayCellClick(person.id, tag)}>
+                            {cellContent}
+                          </td>
+                        );
+                      })}
+                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtUrlaub(String(person.id))}</td>
+                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtDurchfuehrung(String(person.id))}</td>
+                      <td className="p-2 text-center border min-w-[150px]">
+                        <button
+                          onClick={() => {
+                            setAusgewaehltePersonId(person.id);
+                            setAnsichtModus('kalender');
+                          }}
+                          className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                        >
+                          Kalender
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-gray-100 font-bold">
-                  <td className="p-3 border">Gesamtsumme</td>
-                  <td className="p-3 text-center border">{getGesamtUrlaub()}</td>
-                  <td className="p-3 text-center border">{getGesamtDurchfuehrung()}</td>
-                  <td className="p-3 text-center border"></td>
+                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border">Gesamtsumme</td>
+                  {getTageImMonat().map(tag => {
+                    const dailyTotals = getTagesGesamtStatus(tag.tag);
+                    return (
+                      <td key={`footer-total-${tag.tag}`} className={`p-1 text-xs text-center border min-w-[50px] ${tag.istWochenende ? 'bg-gray-200' : 'bg-gray-100'}`}>
+                        {dailyTotals.urlaubCount > 0 && <span className="text-blue-600">U:{dailyTotals.urlaubCount}</span>}
+                        {dailyTotals.urlaubCount > 0 && dailyTotals.durchfuehrungCount > 0 && <br/>}
+                        {dailyTotals.durchfuehrungCount > 0 && <span className="text-green-600">D:{dailyTotals.durchfuehrungCount}</span>}
+                      </td>
+                    );
+                  })}
+                  <td className="p-2 text-center border">{getGesamtUrlaub()}</td>
+                  <td className="p-2 text-center border">{getGesamtDurchfuehrung()}</td>
+                  <td className="p-2 border"></td>
                 </tr>
               </tfoot>
             </table>

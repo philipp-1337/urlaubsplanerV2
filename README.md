@@ -1,70 +1,153 @@
-# Getting Started with Create React App
+# Urlaubsplaner
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Ein webbasierter Urlaubsplaner zur Verwaltung von Abwesenheiten (Urlaub, Durchführung) für ein Team von Mitarbeitern. Die Anwendung ermöglicht eine übersichtliche Darstellung und einfache Bearbeitung von Einträgen.
 
-## Available Scripts
+## Inhaltsverzeichnis
 
-In the project directory, you can run:
+- [Funktionen](#funktionen)
+- [Technologie-Stack](#technologie-stack)
+- [Projektstruktur (src-Verzeichnis)](#projektstruktur-src-verzeichnis)
+- [Setup und Start](#setup-und-start)
+- [Datenmodell (Firestore)](#datenmodell-firestore)
+- [Screenshots (Optional)](#screenshots-optional)
+- [Zukünftige Erweiterungen](#zukünftige-erweiterungen)
 
-### `npm start`
+## Funktionen
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Benutzerauthentifizierung**: Einfaches Login-System (aktuell mit festen Demo-Zugangsdaten).
+- **Monatsübersicht (Listenansicht)**:
+  - Anzeige aller Mitarbeiter und ihrer markierten Tage (Urlaub/Durchführung) für den ausgewählten Monat.
+  - Direktes Ändern des Status (Urlaub/Durchführung/Frei) per Klick.
+  - Navigation zwischen Monaten und Jahren.
+  - Summenanzeige pro Mitarbeiter und pro Tag.
+- **Jahresübersicht**:
+  - Tabellarische Übersicht aller Mitarbeiter für das ausgewählte Jahr.
+  - Anzeige von Resturlaub (Vorjahr), Urlaubsanspruch, genommenen Urlaubstagen, verbleibenden Urlaubstagen und Durchführungstagen.
+  - Navigation zu Jahresdetails pro Mitarbeiter.
+- **Jahresdetailansicht**:
+  - Monatliche Aufschlüsselung der Urlaubs- und Durchführungstage für eine ausgewählte Person.
+  - Navigation zum persönlichen Kalender für einen Monat.
+- **Persönliche Kalenderansicht**:
+  - Detaillierte Monatsansicht für eine ausgewählte Person.
+  - Markieren von Tagen als Urlaub oder Durchführung.
+  - Navigation zwischen Monaten.
+- **Datenpersistenz**: Urlaubs-, Durchführungs- und Resturlaubsdaten werden in Firebase Firestore gespeichert.
+- **Optimistische Updates**: Für eine flüssige Benutzererfahrung beim Ändern von Tagesstatus.
+- **Responsive Design-Ansätze**: Durch Tailwind CSS für verschiedene Bildschirmgrößen geeignet.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Technologie-Stack
 
-### `npm test`
+- **Frontend**:
+  - [React](https://reactjs.org/) (JavaScript-Bibliothek zur Erstellung von Benutzeroberflächen)
+  - [Tailwind CSS](https://tailwindcss.com/) (Utility-First CSS Framework)
+- **Backend/Datenbank**:
+  - [Firebase Firestore](https://firebase.google.com/docs/firestore) (NoSQL Cloud-Datenbank)
+- **Entwicklungsumgebung**:
+  - Node.js
+  - npm/yarn
+  - Erstellt mit [Create React App](https://create-react-app.dev/)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Projektstruktur (src-Verzeichnis)
 
-### `npm run build`
+Das `src`-Verzeichnis enthält den gesamten Quellcode der React-Anwendung:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **/Users/philippkanter/Developer/urlaubsplaner/src/App.js**: Die Hauptkomponente der Anwendung. Sie enthält die gesamte Logik für die Zustandsverwaltung, Datenabrufe, Authentifizierung und das Rendering der verschiedenen Ansichten.
+- **/Users/philippkanter/Developer/urlaubsplaner/src/firebase.js**: Konfiguration und Initialisierung der Firebase-Verbindung (insbesondere Firestore).
+- **/Users/philippkanter/Developer/urlaubsplaner/src/index.js**: Der Einstiegspunkt der React-Anwendung, der die `App`-Komponente in das DOM rendert.
+- **/Users/philippkanter/Developer/urlaubsplaner/src/index.css**: Globale Stile und Einbindung von Tailwind CSS.
+- **/Users/philippkanter/Developer/urlaubsplaner/src/App.css**: (Möglicherweise) zusätzliche, spezifischere CSS-Regeln für die `App`-Komponente oder globale Stile, die nicht von Tailwind abgedeckt werden.
+- **/Users/philippkanter/Developer/urlaubsplaner/src/logo.svg**: Das React-Logo (Standard von Create React App).
+- **/Users/philippkanter/Developer/urlaubsplaner/src/reportWebVitals.js**: Funktion zum Messen der Performance (Standard von Create React App).
+- **/Users/philippkanter/Developer/urlaubsplaner/src/setupTests.js**: Konfigurationsdatei für Jest-Tests (Standard von Create React App).
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Setup und Start
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. **Voraussetzungen**:
+    - Node.js und npm (oder yarn) müssen installiert sein.
+    - Ein Firebase-Projekt muss eingerichtet sein.
 
-### `npm run eject`
+2. **Firebase Konfiguration**:
+    - Erstelle ein Firebase-Projekt in der Firebase Console.
+    - Aktiviere Firestore als Datenbank.
+    - Füge eine Web-App zu deinem Firebase-Projekt hinzu.
+    - Kopiere die Firebase-Konfigurationsdaten (`firebaseConfig`) in die Datei `/Users/philippkanter/Developer/urlaubsplaner/src/firebase.js`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+        ```javascript
+        // /Users/philippkanter/Developer/urlaubsplaner/src/firebase.js
+        const firebaseConfig = {
+          apiKey: "DEIN_API_KEY",
+          authDomain: "DEIN_AUTH_DOMAIN",
+          projectId: "DEIN_PROJECT_ID",
+          storageBucket: "DEIN_STORAGE_BUCKET",
+          messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
+          appId: "DEIN_APP_ID"
+        };
+        ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    - **Sicherheitsregeln für Firestore**: Stelle sicher, dass deine Firestore-Sicherheitsregeln so konfiguriert sind, dass authentifizierte Benutzer Lese- und Schreibzugriff auf die benötigten Collections haben.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+3. **Abhängigkeiten installieren**:
+    Navigiere in das Projektverzeichnis (`/Users/philippkanter/Developer/urlaubsplaner/`) und führe aus:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+    ```bash
+    npm install
+    # oder
+    yarn install
+    ```
 
-## Learn More
+4. **Anwendung starten**:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+    ```bash
+    npm start
+    # oder
+    yarn start
+    ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+    Die Anwendung sollte unter `http://localhost:3000` im Browser verfügbar sein.
 
-### Code Splitting
+5. **Demo-Login**:
+    - Benutzername: `admin`
+    - Passwort: `12345`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Datenmodell (Firestore)
 
-### Analyzing the Bundle Size
+Die Anwendung verwendet zwei Haupt-Collections in Firestore:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- **`dayStatusEntries`**: Speichert den Status (Urlaub/Durchführung) für jeden Tag, jede Person, Monat und Jahr.
+  - Dokument-ID-Format: `${personId}-${year}-${month}-${day}`
+  - Felder:
+    - `personId`: (String) ID der Person
+    - `year`: (Number) Jahr
+    - `month`: (Number) Monat (0-basiert, d.h. Januar = 0)
+    - `day`: (Number) Tag des Monats
+    - `status`: (String) 'urlaub' oder 'durchfuehrung'
 
-### Making a Progressive Web App
+- **`resturlaubData`**: Speichert den Resturlaub vom Vorjahr für jede Person.
+  - Dokument-ID-Format: `${personId}-${forYear}`
+  - Felder:
+    - `personId`: (String) ID der Person
+    - `forYear`: (Number) Das Jahr, für das dieser Resturlaub gilt
+    - `tage`: (Number) Anzahl der Resturlaubstage
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Screenshots (Optional)
 
-### Advanced Configuration
+Hier könnten Screenshots der verschiedenen Ansichten der Anwendung eingefügt werden, um einen visuellen Eindruck zu vermitteln.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- Login-Seite
+- Monatsübersicht (Listenansicht)
+- Jahresübersicht
+- Persönliche Kalenderansicht
 
-### Deployment
+## Zukünftige Erweiterungen
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- Implementierung einer robusten Benutzerauthentifizierung (z.B. mit Firebase Authentication).
+- Rollenbasiertes System (z.B. Admin, Mitarbeiter).
+- Admin-Funktionen zum Verwalten von Benutzern und globalen Einstellungen (z.B. Feiertage, Urlaubsanspruch).
+- Exportfunktionen (z.B. als PDF oder CSV).
+- Benachrichtigungen.
+- Verbesserte UI/UX und mehr Anpassungsmöglichkeiten.
+- Umfassendere Testabdeckung.
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Diese `README.md` ist ein guter Startpunkt. Du kannst sie natürlich nach Bedarf anpassen und erweitern!
