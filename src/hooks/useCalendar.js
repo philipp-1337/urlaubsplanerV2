@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import CalendarContext from '../context/CalendarContext';
 import { useFirestore } from './useFirestore';
+import { getMonatsName as getMonatsNameUtil, getWochentagName as getWochentagNameUtil, getTageImMonat as getDaysInMonthUtil } from '../services/dateUtils';
 
 export const useCalendar = () => {
   const { 
@@ -11,6 +12,7 @@ export const useCalendar = () => {
     setCurrentYear,
     ansichtModus,
     setAnsichtModus,
+    handleMonatWechsel, // Destructure from context
     ausgewaehltePersonId,
     setAusgewaehltePersonId,
     tagDaten,
@@ -23,36 +25,19 @@ export const useCalendar = () => {
   // Konstanten
   const URLAUBSANSPRUCH_PRO_JAHR = 30;
   
-  // Monatsnamen berechnen
+  // Use utils for date names and days in month, but keep them as part of the hook's API
   const getMonatsName = (monat) => {
-    const monate = [
-      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 
-      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-    ];
-    return monate[monat];
+    return getMonatsNameUtil(monat);
   };
   
-  // Wochentagsnamen berechnen
   const getWochentagName = (wochentag) => {
-    const wochentage = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-    return wochentage[wochentag];
+    return getWochentagNameUtil(wochentag);
   };
   
-  // Generiert alle Tage für den aktuellen Monat
   const getTageImMonat = (monat = currentMonth, jahr = currentYear) => {
-    const letzterTag = new Date(jahr, monat + 1, 0);
-    
-    const tage = [];
-    for (let i = 1; i <= letzterTag.getDate(); i++) {
-      const tag = new Date(jahr, monat, i);
-      tage.push({
-        datum: tag,
-        tag: i,
-        wochentag: tag.getDay(),
-        istWochenende: tag.getDay() === 0 || tag.getDay() === 6, // 0 = Sonntag, 6 = Samstag
-      });
-    }
-    return tage;
+    // Ensure default values are handled if the util doesn't assume them
+    // The getDaysInMonthUtil from dateUtils.js takes (monat, jahr)
+    return getDaysInMonthUtil(monat, jahr);
   };
   
   // Prüft den Status eines bestimmten Tages für eine Person
@@ -142,34 +127,7 @@ export const useCalendar = () => {
     return { urlaubCount, durchfuehrungCount };
   };
   
-  // Monat wechseln
-  const handleMonatWechsel = (richtung) => {
-    let neuerMonat = currentMonth;
-    let neuesJahr = currentYear;
-    
-    if (richtung === 'vor') {
-      if (currentMonth === 11) {
-        neuerMonat = 0;
-        neuesJahr = currentYear + 1;
-      } else {
-        neuerMonat = currentMonth + 1;
-      }
-    } else if (richtung === 'zurueck') {
-      if (currentMonth === 0) {
-        neuerMonat = 11;
-        neuesJahr = currentYear - 1;
-      } else {
-        neuerMonat = currentMonth - 1;
-      }
-    } else if (richtung === 'aktuell') {
-      const aktuellesDatum = new Date();
-      neuerMonat = aktuellesDatum.getMonth();
-      neuesJahr = aktuellesDatum.getFullYear();
-    }
-    
-    setCurrentMonth(neuerMonat);
-    setCurrentYear(neuesJahr);
-  };
+  // handleMonatWechsel is now taken from context
 
   // Helper function for handling clicks on day cells
   const handleDayCellClick = (personId, tagObject) => {

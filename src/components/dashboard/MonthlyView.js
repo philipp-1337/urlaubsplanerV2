@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorMessage from '../common/ErrorMessage';
 
-const MonthlyView = ({ navigateToView }) => {
+const MonthlyView = () => { // navigateToView prop removed
+  const navigate = useNavigate();
   const {
     isLoadingData,
     loginError,
@@ -139,7 +141,7 @@ const MonthlyView = ({ navigateToView }) => {
                           onClick={() => {
                             setAusgewaehltePersonId(person.id);
                             setAnsichtModus('kalender');
-                            navigateToView('kalender');
+                            navigate(`/calendar/${person.id}`);
                           }}
                           className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
                         >

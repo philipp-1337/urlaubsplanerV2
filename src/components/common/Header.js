@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCalendar } from '../../context/CalendarContext';
 
 function Header() {
   const { logout } = useAuth();
   const { setAnsichtModus, handleMonatWechsel } = useCalendar();
+  const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const toggleDrawer = () => {
@@ -19,6 +21,11 @@ function Header() {
     setAnsichtModus(mode);
     if (direction) {
       handleMonatWechsel(direction);
+    }
+    if (mode === 'liste') {
+      navigate('/');
+    } else if (mode === 'jahresuebersicht') {
+      navigate('/yearly-overview');
     }
     closeDrawer(); // Close drawer after navigation
   };
@@ -45,13 +52,15 @@ function Header() {
             onClick={() => {
               setAnsichtModus('liste');
               handleMonatWechsel('aktuell');
-            }} className="px- py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
+              navigate('/');
+            }} className="px-4 py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
           >
             Aktueller Monat
           </button>
           <button
             onClick={() => {
-              setAnsichtModus('jahresuebersicht'); // Assuming this navigates to the yearly overview
+              setAnsichtModus('jahresuebersicht');
+              navigate('/yearly-overview');
             }}
             className="px-4 py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
           >

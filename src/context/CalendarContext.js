@@ -34,6 +34,7 @@ export function CalendarProvider({ children }) {
   const [resturlaub, setResturlaub] = useState({});
 
   // Urlaubs- und Durchführungsdaten
+  // This state is managed and updated by useFirestore, but held here.
   // Format: { 'personId-jahr-monat-tag': 'urlaub'|'durchfuehrung'|null }
   const [tagDaten, setTagDaten] = useState({});
 
@@ -66,101 +67,17 @@ export function CalendarProvider({ children }) {
     setCurrentYear(neuesJahr);
   };
 
-  // Prüft den Status eines bestimmten Tages für eine Person
-  const getTagStatus = (personId, tag, monat = currentMonth, jahr = currentYear) => {
-    const key = `${personId}-${jahr}-${monat}-${tag}`;
-    return tagDaten[key] || null;
-  };
-
-  // Berechnet Anzahl der Urlaubstage pro Person im Monat
-  const getPersonGesamtUrlaub = (personIdInput, monat = currentMonth, jahr = currentYear) => {
-    let count = 0;
-    const tage = getTageImMonat(monat, jahr);
-    
-    tage.forEach(tag => {
-      if (getTagStatus(personIdInput, tag.tag, monat, jahr) === 'urlaub') {
-        count++;
-      }
-    });
-    
-    return count;
-  };
-
-  // Berechnet Anzahl der Durchführungstage pro Person im Monat
-  const getPersonGesamtDurchfuehrung = (personIdInput, monat = currentMonth, jahr = currentYear) => {
-    let count = 0;
-    const tage = getTageImMonat(monat, jahr);
-    
-    tage.forEach(tag => {
-      if (getTagStatus(personIdInput, tag.tag, monat, jahr) === 'durchfuehrung') {
-        count++;
-      }
-    });
-    
-    return count;
-  };
-
-  // Berechnet Gesamtzahl aller Urlaubstage im aktuellen Monat
-  const getGesamtUrlaub = (monat = currentMonth, jahr = currentYear) => {
-    let summe = 0;
-    personen.forEach(person => {
-      summe += getPersonGesamtUrlaub(person.id, monat, jahr);
-    });
-    return summe;
-  };
-
-  // Berechnet Gesamtzahl aller Durchführungstage im aktuellen Monat
-  const getGesamtDurchfuehrung = (monat = currentMonth, jahr = currentYear) => {
-    let summe = 0;
-    personen.forEach(person => {
-      summe += getPersonGesamtDurchfuehrung(person.id, monat, jahr);
-    });
-    return summe;
-  };
-
-  // Berechnet Urlaubstage pro Person im gesamten Jahr
-  const getPersonJahresUrlaub = (personIdInput, jahr = currentYear) => {
-    let summe = 0;
-    for (let monat = 0; monat < 12; monat++) {
-      summe += getPersonGesamtUrlaub(personIdInput, monat, jahr);
-    }
-    return summe;
-  };
-
-  // Berechnet Durchführungstage pro Person im gesamten Jahr
-  const getPersonJahresDurchfuehrung = (personIdInput, jahr = currentYear) => {
-    let summe = 0;
-    for (let monat = 0; monat < 12; monat++) {
-      summe += getPersonGesamtDurchfuehrung(personIdInput, monat, jahr);
-    }
-    return summe;
-  };
-
-  // Holt den Resturlaub für eine Person
-  const getPersonResturlaub = (personIdInput) => {
-    return resturlaub[String(personIdInput)] || 0;
-  };
-
-  // Berechnet die Gesamtzahl der Urlaubs- und Durchführungstage für einen bestimmten Tag im Monat
-  const getTagesGesamtStatus = (tagNumber, monat = currentMonth, jahr = currentYear) => {
-    let urlaubCount = 0;
-    let durchfuehrungCount = 0;
-    personen.forEach(person => {
-      const status = getTagStatus(person.id, tagNumber, monat, jahr);
-      if (status === 'urlaub') urlaubCount++;
-      if (status === 'durchfuehrung') durchfuehrungCount++;
-    });
-    return { urlaubCount, durchfuehrungCount };
-  };
-
   // Context value to be provided
   const value = {
     ansichtModus,
     setAnsichtModus,
     ausgewaehltePersonId,
     setAusgewaehltePersonId,
+    // State setters for month/year are provided here
     currentMonth,
     currentYear,
+    setCurrentMonth,
+    setCurrentYear,
     handleMonatWechsel,
     personen,
     // isLoadingData, // Wird von useFirestore gehandhabt
@@ -169,16 +86,8 @@ export function CalendarProvider({ children }) {
     tagDaten,
     setTagDaten,
     resturlaub,
-    setResturlaub, // Hier hinzufügen!
-    getTagStatus,
-    getPersonGesamtUrlaub,
-    getPersonGesamtDurchfuehrung,
-    getGesamtUrlaub,
-    getGesamtDurchfuehrung,
-    getPersonJahresUrlaub,
-    getPersonJahresDurchfuehrung,
-    getPersonResturlaub,
-    getTagesGesamtStatus,
+    setResturlaub,
+    // Helper functions that depend on state will be in the hook
     URLAUBSANSPRUCH_PRO_JAHR
   };
 

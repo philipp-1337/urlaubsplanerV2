@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorMessage from '../common/ErrorMessage';
 
-const YearlyOverview = ({ navigateToView }) => {
+const YearlyOverview = () => { // navigateToView prop removed
+  const navigate = useNavigate();
   const {
     isLoadingData,
     loginError,
@@ -85,7 +87,7 @@ const YearlyOverview = ({ navigateToView }) => {
                           onClick={() => {
                             setAusgewaehltePersonId(person.id);
                             setAnsichtModus('jahresdetail');
-                            navigateToView('jahresdetail');
+                            navigate(`/monthly-detail/${person.id}`);
                           }}
                           className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                         >

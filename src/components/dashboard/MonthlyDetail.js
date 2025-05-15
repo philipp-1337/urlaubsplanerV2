@@ -1,11 +1,11 @@
 import React from 'react';
-// import { useNavigate } from 'react-router-dom'; // Entfernt, da nicht verwendet
+import { useNavigate } from 'react-router-dom';
 import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorMessage from '../common/ErrorMessage';
 import { useCalendar } from '../../hooks/useCalendar';
 
 const MonthlyDetail = () => {
-  // const navigate = useNavigate(); // Entfernt, da nicht verwendet
+  const navigate = useNavigate();
   const { 
     currentYear, 
     setCurrentMonth, 
@@ -36,7 +36,10 @@ const MonthlyDetail = () => {
       <div className="p-6 bg-white rounded-lg shadow-md">
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => setAnsichtModus('jahresuebersicht')}
+            onClick={() => {
+              setAnsichtModus('jahresuebersicht');
+              navigate('/yearly-overview');
+            }}
             className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
           >
             &larr; Zurück zur Jahresübersicht
@@ -74,6 +77,7 @@ const MonthlyDetail = () => {
                       onClick={() => {
                         setCurrentMonth(monat);
                         setAnsichtModus('kalender');
+                        navigate(`/calendar/${ausgewaehltePersonId}`);
                       }}
                       className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                     >

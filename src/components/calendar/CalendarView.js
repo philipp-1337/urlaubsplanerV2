@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCalendar } from '../../hooks/useCalendar';
+import { useNavigate } from 'react-router-dom';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import DayCell from './DayCell';
 import LoadingIndicator from '../common/LoadingIndicator';
@@ -7,6 +8,7 @@ import ErrorMessage from '../common/ErrorMessage';
 
 const CalendarView = ({ navigateToView }) => {
   const {
+    // navigateToView prop is removed, will use useNavigate
     isLoadingData,
     loginError,
     currentMonth,
@@ -21,6 +23,7 @@ const CalendarView = ({ navigateToView }) => {
     getPersonGesamtDurchfuehrung,
     setAnsichtModus
   } = useCalendar(); // Destructure directly from the hook's return value
+  const navigate = useNavigate();
 
   const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
   const tageImMonat = getTageImMonat();
@@ -125,7 +128,7 @@ const CalendarView = ({ navigateToView }) => {
             <button
               onClick={() => {
                 setAnsichtModus('liste');
-                navigateToView('liste');
+                navigate('/');
               }}
               className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
             >
