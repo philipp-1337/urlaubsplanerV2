@@ -1,5 +1,4 @@
 import { createContext, useState, useContext } from 'react';
-import { getTageImMonat } from '../services/dateUtils';
 
 // Statischer Urlaubsanspruch pro Jahr
 export const URLAUBSANSPRUCH_PRO_JAHR = 30;
