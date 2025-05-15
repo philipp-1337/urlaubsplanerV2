@@ -8,7 +8,8 @@ import {
   setDoc,
   deleteDoc,
   query,
-  where
+  where,
+  addDoc // Import addDoc from firebase/firestore
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -35,6 +36,7 @@ export {
   getDocs,
   setDoc,
   deleteDoc,
+  addDoc, // Export addDoc
   query,
   where
 };

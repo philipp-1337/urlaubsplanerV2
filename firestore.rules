@@ -3,80 +3,117 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Hilfsfunktion, um zu prüfen, ob ein Benutzer authentifiziert ist
     function isAuthenticated() {
-      // return request.auth != null;
-      return true; // TEMPORÄR FÜR ENTWICKLUNG: Erlaube Zugriff ohne echte Authentifizierung
+      return request.auth != null;
+    }
 
+    // Regeln für die 'persons' Collection
+    // Dokument-ID ist die automatisch von Firestore generierte ID
+    match /persons/{personDocId} {
+      // Hilfsfunktion um zu prüfen, ob der authentifizierte Benutzer der Eigentümer des Dokuments ist
+      function isPersonOwner() {
+        return resource.data.userId == request.auth.uid;
+      }
+
+      allow read, delete: if isAuthenticated() && isPersonOwner();
+
+      allow create: if isAuthenticated() 
+                    && request.resource.data.userId == request.auth.uid
+                    // Datenvalidierung für Person
+                    && request.resource.data.name is string && request.resource.data.name.size() > 0;
+      
+      allow update: if isAuthenticated() && isPersonOwner()
+                    // userId darf nicht geändert werden
+                    && request.resource.data.userId == resource.data.userId
+                    // Datenvalidierung für Person
+                    && request.resource.data.name is string && request.resource.data.name.size() > 0;
     }
 
     // Regeln für die 'dayStatusEntries' Collection
-    // Dokument-ID-Format: personId-jahr-monat-tag (z.B. "1-2024-0-15")
-    match /dayStatusEntries/{entryId} {
-      // alow read: if isAuthenticated();
-      allow read, write: if isAuthenticated(); // Vereinfacht für Entwicklung
-
+    // Dokument-ID-Format: userId_personId-jahr-monat-tag
+    match /dayStatusEntries/{entryDocId} {
+      // Hilfsfunktion um zu prüfen, ob der authentifizierte Benutzer der Eigentümer des Dokuments ist
+      // und ob die Dokument-ID mit dem Benutzer übereinstimmt.
+      // Für 'read' (insbesondere list-Queries) verlassen wir uns auf resource.data.userId.
+      // Für 'delete' können wir die entryDocId-Prüfung beibehalten.
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid && entryDocId.startsWith(request.auth.uid + "_");
+      
       // Erstellen erlauben, wenn authentifiziert und Daten valide sind
       allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    // Sicherstellen, dass die Dokument-ID mit den Daten und dem auth. Benutzer übereinstimmt
+                    && entryDocId == request.auth.uid + "_" +
+                                  request.resource.data.personId + '-' +
+                                  string(request.resource.data.year) + '-' +
+                                  string(request.resource.data.month) + '-' +
+                                  string(request.resource.data.day)
                     // Validierung der Datentypen und Werte
                     && request.resource.data.personId is string
                     && request.resource.data.year is number
                     && request.resource.data.month is number && request.resource.data.month >= 0 && request.resource.data.month <= 11
                     && request.resource.data.day is number && request.resource.data.day >= 1 && request.resource.data.day <= 31
                     && request.resource.data.status is string
-                    && (request.resource.data.status == 'urlaub' || request.resource.data.status == 'durchfuehrung')
-                    // Sicherstellen, dass die Dokument-ID mit den Daten übereinstimmt
-                    && entryId == request.resource.data.personId + '-' +
-                                  string(request.resource.data.year) + '-' +
-                                  string(request.resource.data.month) + '-' +
-                                  string(request.resource.data.day);
-                    // ZUKÜNFTIG: Verknüpfung mit dem angemeldeten Benutzer, z.B.:
-                    // && request.resource.data.userId == request.auth.uid; // Wenn jede Person einen eigenen Firebase-Account hat
-                    // ODER wenn es eine Admin-Rolle gibt, die alles bearbeiten darf.
+                    && (request.resource.data.status == 'urlaub' || request.resource.data.status == 'durchfuehrung');
 
       // Aktualisieren erlauben, wenn authentifiziert und Daten valide sind
-      // personId, year, month, day dürfen nicht geändert werden, da sie Teil der Dokument-ID sind
-      allow update: if isAuthenticated()
+      // userId, personId, year, month, day dürfen nicht geändert werden, da sie Teil der Dokument-ID sind
+      // Die Bedingung entryDocId.startsWith(...) ist hier implizit, da wir auf ein existierendes Dokument via ID zugreifen.
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid 
+                    && request.resource.data.userId == resource.data.userId
                     && request.resource.data.personId == resource.data.personId
                     && request.resource.data.year == resource.data.year
                     && request.resource.data.month == resource.data.month
                     && request.resource.data.day == resource.data.day
                     && request.resource.data.status is string
                     && (request.resource.data.status == 'urlaub' || request.resource.data.status == 'durchfuehrung');
-                    // ZUKÜNFTIG: Verknüpfung mit dem angemeldeten Benutzer (siehe 'create')
-
-      // Löschen erlauben, wenn authentifiziert
-      allow delete: if isAuthenticated();
-                    // ZUKÜNFTIG: Verknüpfung mit dem angemeldeten Benutzer (siehe 'create')
     }
 
     // Regeln für die 'resturlaubData' Collection
-    // Dokument-ID-Format: personId-forYear (z.B. "1-2024")
-    match /resturlaubData/{resturlaubId} {
-      // allow read: if isAuthenticated();
-      allow read, write: if isAuthenticated(); // Vereinfacht für Entwicklung
-
+    // Dokument-ID-Format: userId_personId_forYear
+    match /resturlaubData/{resturlaubDocId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid && resturlaubDocId.startsWith(request.auth.uid + "_");
+      
       // Erstellen erlauben, wenn authentifiziert und Daten valide sind
       allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && resturlaubDocId == request.auth.uid + "_" +
+                                      request.resource.data.personId + '_' +
+                                      string(request.resource.data.forYear)
                     && request.resource.data.personId is string
                     && request.resource.data.forYear is number
-                    && request.resource.data.tage is number && request.resource.data.tage >= 0
-                    // Sicherstellen, dass die Dokument-ID mit den Daten übereinstimmt
-                    && resturlaubId == request.resource.data.personId + '-' +
-                                      string(request.resource.data.forYear);
-                    // ZUKÜNFTIG: Stärkere Rechteprüfung, z.B. nur Admins dürfen Resturlaub anlegen/ändern.
+                    && request.resource.data.tage is number && request.resource.data.tage >= 0;
 
       // Aktualisieren erlauben, wenn authentifiziert und Daten valide sind
-      // personId und forYear dürfen nicht geändert werden
-      allow update: if isAuthenticated()
+      // userId, personId und forYear dürfen nicht geändert werden
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == resource.data.userId
                     && request.resource.data.personId == resource.data.personId
                     && request.resource.data.forYear == resource.data.forYear
                     && request.resource.data.tage is number && request.resource.data.tage >= 0;
-                    // ZUKÜNFTIG: Stärkere Rechteprüfung (siehe 'create')
+    }
 
-      // Löschen erlauben, wenn authentifiziert (obwohl in der App aktuell nicht genutzt)
-      allow delete: if isAuthenticated();
-                    // ZUKÜNFTIG: Stärkere Rechteprüfung (siehe 'create')
+    // Regeln für die 'employmentData' Collection
+    // Dokument-ID-Format: userId_personId
+    match /employmentData/{employmentDocId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid && employmentDocId.startsWith(request.auth.uid + "_");
+      
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && employmentDocId == request.auth.uid + "_" + request.resource.data.personId
+                    && request.resource.data.personId is string
+                    && request.resource.data.type is string
+                    && (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time')
+                    && request.resource.data.percentage is number && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100;
+
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.personId == resource.data.personId // personId ist Teil der ID, darf nicht ändern
+                    && request.resource.data.type is string
+                    && (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time')
+                    && request.resource.data.percentage is number && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100;
     }
   }
 }

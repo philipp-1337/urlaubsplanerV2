@@ -26,6 +26,8 @@ function Header() {
       navigate('/');
     } else if (mode === 'jahresuebersicht') {
       navigate('/yearly-overview');
+    } else if (mode === 'einstellungen') {
+      navigate('/settings');
     }
     closeDrawer(); // Close drawer after navigation
   };
@@ -37,7 +39,7 @@ function Header() {
 
         {/* Hamburger Icon for mobile */}
         <button
-          className="block sm:hidden text-white focus:outline-none"
+          className="block lg:hidden text-white focus:outline-none"
           onClick={toggleDrawer}
           aria-label="Open menu"
         >
@@ -47,7 +49,7 @@ function Header() {
         </button>
 
         {/* Desktop Navigation Buttons */}
-        <div className="hidden sm:flex items-center space-x-4">
+        <div className="hidden lg:flex items-center space-x-4">
           <button
             onClick={() => {
               setAnsichtModus('liste');
@@ -67,6 +69,14 @@ function Header() {
             Jahresübersicht
           </button>
           <button
+            onClick={() => {
+              // setAnsichtModus might not be relevant for settings, or define a new mode
+              navigate('/settings');
+            }} className="px-4 py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
+          >
+            Einstellungen
+          </button>
+          <button
             onClick={logout}
             className="px-4 py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
           >
@@ -78,7 +88,7 @@ function Header() {
         <div
           className={`fixed inset-y-0 right-0 w-64 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-40 ${
             isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
-          } sm:hidden`}
+          } lg:hidden`}
         >
           <div className="flex justify-end p-4">
             <button onClick={closeDrawer} aria-label="Close menu">
@@ -101,6 +111,12 @@ function Header() {
               Jahresübersicht
             </button>
             <button
+              onClick={() => handleNavClick('einstellungen')} // Assuming 'einstellungen' could be a mode or just navigate
+              className="px-4 py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
+            >
+              Einstellungen
+            </button>
+            <button
             onClick={logout}
             className="px-4 py-2 text-blue-600 bg-white rounded-md hover:bg-gray-100"
           >
@@ -113,7 +129,7 @@ function Header() {
       {/* Overlay */}
       {isDrawerOpen && (
         <div
-          className="fixed inset-0 bg-black opacity-50 z-30 sm:hidden"
+          className="fixed inset-0 bg-black opacity-50 z-30 lg:hidden"
           onClick={closeDrawer}
           aria-hidden="true"
         ></div>

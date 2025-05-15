@@ -19,15 +19,8 @@ export function CalendarProvider({ children }) {
   
   // Daten
   // const [isLoadingData, setIsLoadingData] = useState(false); // Wird von useFirestore gehandhabt
-  const [loginError, setLoginError] = useState('');
-  const [personen] = useState([
-    { id: 1, name: 'Max Mustermann' },
-    { id: 2, name: 'Anna Schmidt' },
-    { id: 3, name: 'Erika Meyer' },
-    { id: 4, name: 'Thomas Müller' },
-    { id: 5, name: 'Lisa Weber' },
-    { id: 6, name: 'Michael Becker' },
-  ]);
+  const [loginError, setLoginError] = useState(''); // Error messages, potentially from Firestore
+  const [personen, setPersonen] = useState([]); // Wird dynamisch aus Firestore geladen
   
   // Resturlaub vom Vorjahr
   const [resturlaub, setResturlaub] = useState({});
@@ -36,6 +29,10 @@ export function CalendarProvider({ children }) {
   // This state is managed and updated by useFirestore, but held here.
   // Format: { 'personId-jahr-monat-tag': 'urlaub'|'durchfuehrung'|null }
   const [tagDaten, setTagDaten] = useState({});
+
+  // Beschäftigungsdaten
+  // Format: { personId: { type: 'full-time' | 'part-time', percentage: 100, id: 'personId' } }
+  const [employmentData, setEmploymentData] = useState({});
 
   // Monat wechseln
   const handleMonatWechsel = (richtung) => {
@@ -79,6 +76,7 @@ export function CalendarProvider({ children }) {
     setCurrentYear,
     handleMonatWechsel,
     personen,
+    setPersonen, // Setter für Personen bereitstellen
     // isLoadingData, // Wird von useFirestore gehandhabt
     loginError,
     setLoginError,
@@ -86,6 +84,8 @@ export function CalendarProvider({ children }) {
     setTagDaten,
     resturlaub,
     setResturlaub,
+    employmentData, // Beschäftigungsdaten bereitstellen
+    setEmploymentData, // Setter für Beschäftigungsdaten
     // Helper functions that depend on state will be in the hook
     URLAUBSANSPRUCH_PRO_JAHR
   };

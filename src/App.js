@@ -10,6 +10,7 @@ import MonthlyView from './components/dashboard/MonthlyView';
 import CalendarView from './components/calendar/CalendarView';
 import YearlyOverview from './components/dashboard/YearlyOverview';
 import MonthlyDetail from './components/dashboard/MonthlyDetail';
+import SettingsPage from './components/settings/SettingsPage'; // Import SettingsPage
 
 const ProtectedRoute = ({ children }) => {
   const { isLoggedIn, loadingAuth } = useAuth();
@@ -24,29 +25,6 @@ const ProtectedRoute = ({ children }) => {
   
   return children;
 };
-
-function MainApp() {
-   const { isLoggedIn, loadingAuth } = useAuth();
-  
-  if (loadingAuth) { // Optional: Show loading state for the whole app
-    return <div className="flex items-center justify-center min-h-screen">Lade Anwendung...</div>;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
-      <Routes>
-        <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <LoginForm />} />
-        {/* LoginForm now handles its own errors via useAuth */}
-        <Route path="/" element={<ProtectedRoute><MonthlyView /></ProtectedRoute>} />
-        <Route path="/calendar/:personId" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
-        <Route path="/yearly-overview" element={<ProtectedRoute><YearlyOverview /></ProtectedRoute>} />
-        <Route path="/monthly-detail/:personId" element={<ProtectedRoute><MonthlyDetail /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
-  );
-}
 
 function AppRoutes() {
   const { isLoggedIn, loadingAuth } = useAuth();
@@ -67,6 +45,7 @@ function AppRoutes() {
               <Route path="/calendar/:personId" element={<CalendarView />} />
               <Route path="/yearly-overview" element={<YearlyOverview />} />
               <Route path="/monthly-detail/:personId" element={<MonthlyDetail />} />
+              <Route path="/settings" element={<SettingsPage />} /> {/* Add Settings Route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
