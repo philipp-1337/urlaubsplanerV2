@@ -35,7 +35,16 @@ function Header() {
   return (
     <header className="bg-blue-600 text-white shadow-md">
       <div className="container flex items-center justify-between px-4 py-4 mx-auto">
-        <h1 className="text-2xl font-bold">Urlaubsplaner</h1>
+        <h1 className="text-2xl font-bold">
+          <button
+            onClick={() => {
+              setAnsichtModus('liste');
+              navigate('/');
+            }}
+          >
+            Urlaubsplaner
+          </button>
+        </h1>
 
         {/* Hamburger Icon for mobile */}
         <button
