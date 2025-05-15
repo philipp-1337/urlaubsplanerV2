@@ -3,8 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 
 function LoginForm() {
   const { 
-    username, 
-    setUsername, 
+    email,         // Changed from username
+    setEmail,      // Changed from setUsername
     password, 
     setPassword, 
     login, 
@@ -31,14 +31,14 @@ function LoginForm() {
         
         <div className="space-y-6">
           <div>
-            <label htmlFor="username" className="block mb-2 text-sm font-medium text-gray-700">
-              Benutzername
+            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
+              E-Mail
             </label>
             <input
               type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -67,8 +67,8 @@ function LoginForm() {
           
           <div className="mt-4 text-sm text-center text-gray-600">
             <p>Demo Zugangsdaten:</p>
-            <p>Benutzername: admin</p>
-            <p>Passwort: 12345</p>
+            <p>E-Mail: admin@example.com (oder dein Test-User)</p>
+            <p>Passwort: denkmodell! (oder dein Test-Passwort)</p>
           </div>
         </div>
       </div>

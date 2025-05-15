@@ -10,7 +10,7 @@ import {
   query,
   where
 } from "firebase/firestore";
-// import { getAuth } from "firebase/auth"; // Uncomment if you add Firebase Authentication
+import { getAuth } from "firebase/auth";
 
 // IMPORTANT: Replace with your web app's Firebase configuration
 const firebaseConfig = {
@@ -25,11 +25,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-// const auth = getAuth(app); // Uncomment if you add Firebase Authentication
+const auth = getAuth(app);
 
 export { 
   db, 
-  // auth, // Export auth if you use it
+  auth,
   collection,
   doc,
   getDocs,
