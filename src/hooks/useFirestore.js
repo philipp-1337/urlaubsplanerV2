@@ -8,13 +8,15 @@ import {
   deleteDoc,
   addDoc, // Import addDoc for creating new documents
   query,
-  where
+  where,
+  writeBatch // Import writeBatch for saving order
 } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import CalendarContext from '../context/CalendarContext';
 export const useFirestore = () => {
   const { isLoggedIn, currentUser } = useAuth(); // Get currentUser from useAuth
   const {
+    personen, // Get current personen list from context for addPerson
     currentYear,
     currentMonth, // Wird für setTagStatus Defaults benötigt
     tagDaten, // Wird für setTagStatus Rollback und batchSetGlobalDayStatus benötigt
@@ -29,6 +31,16 @@ export const useFirestore = () => {
 
   const [isLoadingData, setIsLoadingData] = useState(false);
   const debounceTimers = useRef({}); // Für die Debounce-Timer
+
+  // Define sorting function centrally for persons
+  const personSortFn = useCallback((a, b) => {
+    const orderA = a.orderIndex === undefined ? Infinity : a.orderIndex;
+    const orderB = b.orderIndex === undefined ? Infinity : b.orderIndex;
+    if (orderA === orderB) {
+      return a.name.localeCompare(b.name); // Secondary sort by name
+    }
+    return orderA - orderB;
+  }, []);
 
   // Fetch data from Firestore
   useEffect(() => {
@@ -58,8 +70,8 @@ export const useFirestore = () => {
         // 1. Fetch Persons
         const personsQuery = query(collection(db, 'persons'), where('userId', '==', currentUser.uid));
         const personsSnapshot = await getDocs(personsQuery);
-        const fetchedPersons = personsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setPersonen(fetchedPersons);
+        const fetchedPersonsData = personsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPersonen(fetchedPersonsData.sort(personSortFn));
 
         // 2. Fetch Resturlaub for the currentYear (dependent on fetchedPersons)
         const resturlaubQuery = query(collection(db, 'resturlaubData'), 
@@ -67,7 +79,7 @@ export const useFirestore = () => {
                                   where('forYear', '==', currentYear));
         const resturlaubSnapshot = await getDocs(resturlaubQuery);
         const newResturlaub = {};
-        fetchedPersons.forEach(p => newResturlaub[String(p.id)] = 0); // Initialize with 0 for all fetched persons
+        fetchedPersonsData.forEach(p => newResturlaub[String(p.id)] = 0); // Initialize with 0 for all fetched persons
         resturlaubSnapshot.forEach((doc) => {
           const data = doc.data();
           newResturlaub[data.personId] = data.tage;
@@ -138,8 +150,8 @@ export const useFirestore = () => {
   // currentMonth, ansichtModus, ausgewaehltePersonId wurden entfernt, da tagDaten jetzt jahresweise geladen werden
   // und diese Änderungen kein Neuladen der Jahresdaten aus Firestore auslösen sollen.
   // Die Setter-Funktionen (setPersonen, setTagDaten etc.) sind hier enthalten, da sie im Effekt verwendet werden und stabil sind.
-  // Sie sind durch useState und useContext stabil. // Added setGlobalTagDaten
-  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]);
+  // Sie sind durch useState und useContext stabil.
+  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError, personSortFn]);
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
@@ -213,12 +225,18 @@ export const useFirestore = () => {
 
   // CRUD for Persons
   const addPerson = async (name) => {
+    if (!currentUser) return { success: false, error: "User not authenticated" };
     try {
+      // Determine the next orderIndex using the 'personen' from context
+      const newOrderIndex = personen.length > 0 ? Math.max(...personen.map(p => p.orderIndex ?? -1)) + 1 : 0;
+
       const newPersonRef = await addDoc(collection(db, 'persons'), {
         name,
-        userId: currentUser.uid // Associate person with the current user
+        userId: currentUser.uid, // Associate person with the current user
+        orderIndex: newOrderIndex // Add orderIndex
       });
-      setPersonen(prev => [...prev, { id: newPersonRef.id, name, userId: currentUser.uid }]);
+      const newPerson = { id: newPersonRef.id, name, userId: currentUser.uid, orderIndex: newOrderIndex };
+      setPersonen(prev => [...prev, newPerson].sort(personSortFn)); // Keep sorted
       return { success: true, id: newPersonRef.id };
     } catch (error) {
       console.error("Error adding person: ", error);
@@ -226,12 +244,13 @@ export const useFirestore = () => {
       return { success: false, error };
     }
   };
+  const memoizedAddPerson = useCallback(addPerson, [currentUser, setLoginError, setPersonen, personen, personSortFn]);
 
   const updatePersonName = async (personId, newName) => {
     const personRef = doc(db, 'persons', personId);
     try {
       await setDoc(personRef, { name: newName }, { merge: true });
-      setPersonen(prev => prev.map(p => p.id === personId ? { ...p, name: newName } : p));
+      setPersonen(prev => prev.map(p => p.id === personId ? { ...p, name: newName } : p).sort(personSortFn));
       return { success: true };
     } catch (error) {
       console.error("Error updating person name: ", error);
@@ -247,7 +266,7 @@ export const useFirestore = () => {
     const personRef = doc(db, 'persons', personId);
     try {
       await deleteDoc(personRef);
-      setPersonen(prev => prev.filter(p => p.id !== personId));
+      setPersonen(prev => prev.filter(p => p.id !== personId)); // Filter preserves order, re-sort not strictly needed if prev was sorted
       // Also clear related data from local context state if necessary
       setTagDaten(prev => {
         const newState = {...prev};
@@ -267,6 +286,30 @@ export const useFirestore = () => {
       return { success: false, error };
     }
   };
+
+  // Save Person Order
+  const savePersonOrder = async (orderedPersonsList) => { // orderedPersonsList is the full person objects, sorted
+    if (!currentUser) return { success: false, error: "User not authenticated" };
+
+    const batch = writeBatch(db);
+    orderedPersonsList.forEach((person, index) => {
+      const personRef = doc(db, 'persons', person.id);
+      batch.update(personRef, { orderIndex: index });
+    });
+
+    try {
+      await batch.commit();
+      // Update local context state to reflect the new order
+      // The list passed in is already correctly ordered and contains all necessary data
+      setPersonen(orderedPersonsList.map((p, index) => ({ ...p, orderIndex: index }))); // Ensure orderIndex is updated in context objects
+      return { success: true };
+    } catch (error) {
+      console.error("Error saving person order: ", error);
+      setLoginError("Fehler beim Speichern der Personenreihenfolge.");
+      return { success: false, error };
+    }
+  };
+  const memoizedSavePersonOrder = useCallback(savePersonOrder, [currentUser, setLoginError, setPersonen]);
 
   // Save Resturlaub
   const saveResturlaub = async (personId, forYear, tage) => {
@@ -453,7 +496,7 @@ export const useFirestore = () => {
   return {
     isLoadingData,
     setTagStatus,
-    addPerson,
+    addPerson: memoizedAddPerson,
     updatePersonName,
     deletePersonFirebase,
     saveResturlaub,
@@ -466,5 +509,6 @@ export const useFirestore = () => {
     fetchPersonSpecificDataForYear, // Expose placeholder
     setGlobalDaySetting,    // Neue Funktion zum Setzen globaler Tage
     deleteGlobalDaySetting, // Neue Funktion zum Löschen globaler Tage
+    savePersonOrder: memoizedSavePersonOrder, // Expose new function
   };
 };

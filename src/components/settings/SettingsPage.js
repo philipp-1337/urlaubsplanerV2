@@ -3,7 +3,7 @@ import { useCalendar } from '../../hooks/useCalendar';
 import { useFirestore } from '../../hooks/useFirestore';
 import { db, doc, getDoc } from '../../firebase'; // For direct doc fetching
 import { useAuth } from '../../context/AuthContext'; // To get currentUser for doc IDs
-import { Plus, Save, Trash2, Loader2 } from 'lucide-react'; // Import Lucide icons, added Loader2
+import { Plus, Save, Trash2, Loader2, ArrowUp, ArrowDown } from 'lucide-react'; // Import Lucide icons, added Loader2, ArrowUp, ArrowDown
 import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndicator
 
 const SettingsPage = () => {
@@ -15,7 +15,7 @@ const SettingsPage = () => {
   } = useCalendar(); // Renamed to avoid conflict, consolidated useCalendar call
   const { currentUser } = useAuth();
   const {
-    addPerson, updatePersonName, deletePersonFirebase, 
+    addPerson, updatePersonName, deletePersonFirebase, savePersonOrder,
     saveResturlaub, saveEmploymentData,
     fetchYearConfigurations, addYearConfiguration, deleteYearConfiguration,
     setGlobalDaySetting,    // Neue Funktion
@@ -59,6 +59,11 @@ const SettingsPage = () => {
   // State for editing persons
   const [editingPersons, setEditingPersons] = useState({}); // { personId: { name } }
   
+  // State for person order
+  const [orderedPersons, setOrderedPersons] = useState([]);
+  const [isOrderChanged, setIsOrderChanged] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
   const [personSavingStates, setPersonSavingStates] = useState({}); // Tracks saving state for person names { [personId]: boolean }
   const [yearlyDataSavingStates, setYearlyDataSavingStates] = useState({}); // Tracks saving state for yearly data { [personId]: boolean }
 
@@ -169,6 +174,12 @@ const SettingsPage = () => {
     }
   }, [personen]);
 
+  // Initialize orderedPersons when personen from context changes
+  useEffect(() => {
+    setOrderedPersons([...personen]); // Create a mutable copy
+    setIsOrderChanged(false); // Reset change flag when context updates
+  }, [personen]);
+
   const handleEditPersonChange = (personId, value) => {
     setEditingPersons(prev => ({
       ...prev,
@@ -264,10 +275,44 @@ const SettingsPage = () => {
     if (newPersonName.trim() === '') return;
     const result = await addPerson(newPersonName.trim());
     if (result.success) {
-    setNewPersonName(''); // Clear input
+      setNewPersonName(''); // Clear input
     }
   };
 
+  // Handlers for moving persons
+  const handleMovePerson = (personId, direction) => {
+    const currentIndex = orderedPersons.findIndex(p => p.id === personId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (newIndex < 0 || newIndex >= orderedPersons.length) return;
+
+    const newOrderedPersons = [...orderedPersons];
+    const [movedPerson] = newOrderedPersons.splice(currentIndex, 1);
+    newOrderedPersons.splice(newIndex, 0, movedPerson);
+
+    setOrderedPersons(newOrderedPersons);
+    setIsOrderChanged(true);
+  };
+
+  const handleSavePersonOrder = async () => {
+    setIsSavingOrder(true);
+    // Pass the full person objects, as savePersonOrder in useFirestore expects it
+    // to update context with full objects.
+    const result = await savePersonOrder(orderedPersons.map((p, index) => ({ ...p, orderIndex: index })));
+    if (result.success) {
+      setIsOrderChanged(false);
+      // Success feedback is handled by button state change
+    } else {
+      // Error feedback can be added here if needed
+      // If save fails, orderedPersons state is still the attempted new order.
+      // It will reset if `personen` context changes or user tries again.
+      alert("Fehler beim Speichern der Reihenfolge. Bitte versuchen Sie es erneut.");
+    }
+    setIsSavingOrder(false);
+  };
+  
   const handleDeletePerson = async (personId) => {
     if (window.confirm("Sind Sie sicher, dass Sie diese Person löschen möchten? Alle zugehörigen Daten gehen verloren.")) {
       await deletePersonFirebase(personId);
@@ -447,30 +492,63 @@ const SettingsPage = () => {
             <Plus size={20} />
           </button>
         </div>
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={handleSavePersonOrder}
+            disabled={!isOrderChanged || isSavingOrder || isSavingOrder}
+            className={`px-4 py-2 text-sm text-white rounded-md flex items-center justify-center
+                        ${isSavingOrder ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' :
+                          (isOrderChanged ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed')}`}
+            aria-label={isSavingOrder ? "Reihenfolge wird gespeichert..." : (isOrderChanged ? "Reihenfolge speichern" : "Keine Änderungen an der Reihenfolge")}
+          >
+            {isSavingOrder ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+            Reihenfolge speichern
+          </button>
+        </div>
         <div className="space-y-4">
-          {personen.map(person => (
+          {orderedPersons.map((person, index) => ( // Use orderedPersons here
             (() => { // IIFE to use const for isSavingName
-              const originalPerson = personen.find(p => p.id === person.id);
-              const nameHasChanged = editingPersons[person.id]?.name !== originalPerson?.name;
+              const originalPersonData = personen.find(p => p.id === person.id); // For name comparison
+              const nameHasChanged = editingPersons[person.id]?.name !== originalPersonData?.name;
               const isSavingName = personSavingStates[person.id];
               return (
                 <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
-                  <div className="flex-grow mb-2 md:mb-0">
-                    <input 
-                      type="text"
-                      value={editingPersons[person.id]?.name ?? person.name}
-                      onChange={(e) => handleEditPersonChange(person.id, e.target.value)}
-                      className="w-full px-2 py-1 border rounded-md md:w-auto"
-                      placeholder="Name"
-                      disabled={isSavingName}
-                    />
+                  <div className="flex items-center flex-grow mb-2 md:mb-0"> {/* Container for buttons and name */}
+                    <div className="flex flex-col mr-3">
+                      <button
+                        onClick={() => handleMovePerson(person.id, 'up')}
+                        disabled={index === 0 || isSavingOrder || isSavingName}
+                        className="p-1 text-gray-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Nach oben verschieben"
+                      >
+                        <ArrowUp size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleMovePerson(person.id, 'down')}
+                        disabled={index === orderedPersons.length - 1 || isSavingOrder || isSavingName}
+                        className="p-1 text-gray-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Nach unten verschieben"
+                      >
+                        <ArrowDown size={18} />
+                      </button>
+                    </div>
+                    <div className="flex-grow">
+                      <input 
+                        type="text"
+                        value={editingPersons[person.id]?.name ?? person.name}
+                        onChange={(e) => handleEditPersonChange(person.id, e.target.value)}
+                        className="w-full px-2 py-1 border rounded-md md:max-w-md"
+                        placeholder="Name"
+                        disabled={isSavingName || isSavingOrder}
+                      />
+                    </div>
                   </div>
                   <div className="flex-shrink-0 md:ml-4 flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-2">
                     <button 
                       onClick={() => handleSavePerson(person.id)} 
-                      disabled={isSavingName || !nameHasChanged}
+                      disabled={isSavingName || !nameHasChanged || isSavingOrder}
                       className={`w-full p-2 text-sm text-white rounded md:w-auto flex items-center justify-center
-                                  ${isSavingName ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (nameHasChanged ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
+                                  ${isSavingOrder ? 'bg-gray-400 cursor-not-allowed' : (isSavingName ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (nameHasChanged ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'))}`}
                       aria-label={isSavingName ? "Namen speichern..." : (nameHasChanged ? "Namen speichern" : "Keine Änderungen am Namen")}
                     >
                       {/* Die Erfolgsmeldung wird hier angezeigt, wenn personSaveSuccess die ID der aktuellen Person ist UND nicht gerade gespeichert wird */}
@@ -480,7 +558,7 @@ const SettingsPage = () => {
                       onClick={() => handleDeletePerson(person.id)} 
                       className="w-full p-2 text-sm text-white bg-red-500 rounded md:w-auto hover:bg-red-600 flex items-center justify-center"
                       aria-label="Person löschen"
-                      disabled={isSavingName}
+                      disabled={isSavingName || isSavingOrder}
                     ><Trash2 size={16} />
                     </button>                    
                   </div>
@@ -488,7 +566,7 @@ const SettingsPage = () => {
               );
             })()
           ))}
-          {personen.length === 0 && <p>Noch keine Personen angelegt. Fügen Sie eine Person hinzu, um zu starten.</p>}
+          {orderedPersons.length === 0 && <p>Noch keine Personen angelegt. Fügen Sie eine Person hinzu, um zu starten.</p>}
         </div>
       </section>
 

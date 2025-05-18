@@ -23,8 +23,7 @@ const MonthlyDetail = () => {
     getPersonJahresDurchfuehrung,
     getPersonJahresFortbildung,
     getPersonJahresInterneTeamtage,
-    getPersonJahresFeiertage,
-    getPersonResturlaub
+    getPersonJahresFeiertage
   } = useCalendar();
 
   const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
@@ -51,7 +50,9 @@ const MonthlyDetail = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="p-3 text-left border">Monat</th>
+                <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
+                  Monat
+                </th>
                 <th className="p-3 text-center border">Urlaubstage</th>
                 <th className="p-3 text-center border">Durchführungstage</th>
                 <th className="p-3 text-center border">Fortbildungstage</th>
@@ -63,7 +64,9 @@ const MonthlyDetail = () => {
             <tbody>
               {Array.from({ length: 12 }, (_, i) => i).map((monat) => (
                 <tr key={monat}>
-                  <td className="p-3 border">{getMonatsName(monat)}</td>
+                  <td className="sticky left-0 z-0 p-3 bg-white border"> {/* z-0 ist hier ok, da kein Header drüber scrollt */}
+                    {getMonatsName(monat)}
+                  </td>
                   <td className="p-3 text-center border">
                     {getPersonGesamtUrlaub(ausgewaehltePersonId, monat, currentYear)}
                   </td>
@@ -96,7 +99,9 @@ const MonthlyDetail = () => {
             </tbody>
             <tfoot>
               <tr className="bg-gray-100 font-bold">
-                <td className="p-3 border">Gesamt</td>
+                <td className="sticky left-0 z-10 p-3 bg-gray-100 border"> {/* z-10 wie Header für Konsistenz */}
+                  Gesamt
+                </td>
                 <td className="p-3 text-center border">
                   {getPersonJahresUrlaub(ausgewaehltePersonId, currentYear)}
                 </td>
@@ -112,17 +117,6 @@ const MonthlyDetail = () => {
                 <td className="p-3 text-center border">
                   {getPersonJahresFeiertage(ausgewaehltePersonId, currentYear)}
                 </td>
-                <td className="p-3 text-center border"></td>
-              </tr>
-              <tr className="bg-gray-200 font-bold">
-                <td className="p-3 border">Mit Resturlaub</td>
-                <td className="p-3 text-center border">
-                  {getPersonJahresUrlaub(ausgewaehltePersonId, currentYear) + getPersonResturlaub(ausgewaehltePersonId)}
-                </td>
-                <td className="p-3 text-center border">-</td>
-                <td className="p-3 text-center border">-</td>
-                <td className="p-3 text-center border">-</td>
-                <td className="p-3 text-center border">-</td>
                 <td className="p-3 text-center border"></td>
               </tr>
             </tfoot>

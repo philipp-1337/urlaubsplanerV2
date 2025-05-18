@@ -99,10 +99,6 @@ const MonthlyView = () => { // navigateToView prop removed
                 <div className="w-4 h-4 mr-1 bg-orange-500 rounded"></div>
                 <span>Feiertag (X)</span>
               </div>
-              {/* <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-gray-200 border border-gray-300 rounded"></div>
-                <span>Wochenende</span>
-              </div> */}
             </div>
             <p className="text-sm text-gray-600">Klicken Sie auf einen Tag (außer Wochenende) in der Tabelle, um zwischen den Status-Typen zu wechseln.</p>
           </div>
@@ -111,7 +107,7 @@ const MonthlyView = () => { // navigateToView prop removed
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border min-w-[150px]">Person</th>
+                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border min-w-[100px]">Person</th> {/* z-10 ist korrekt */}
                   {getTageImMonat().map(tag => (
                     <th key={`header-${tag.tag}`} className={`p-1 text-center border min-w-[50px] ${tag.istWochenende ? 'bg-gray-200' : 'bg-gray-100'}`}>
                       <div>{tag.tag}</div>
@@ -130,7 +126,7 @@ const MonthlyView = () => { // navigateToView prop removed
                 {personen.map((person) => {
                   return (
                     <tr key={person.id}>
-                      <td className="sticky left-0 z-0 p-2 text-left bg-white border min-w-[150px]">{person.name}</td>
+                      <td className="sticky left-0 z-10 p-2 text-left bg-white border min-w-[100px]">{person.name}</td> {/* z-0 auf z-10 geändert für Konsistenz mit YearlyOverview */}
                       {getTageImMonat().map(tag => {
                         const status = getTagStatus(String(person.id), tag.tag);
                         let cellClass = "p-2 text-center border min-w-[50px]";
@@ -190,7 +186,7 @@ const MonthlyView = () => { // navigateToView prop removed
               </tbody>
               <tfoot>
                 <tr className="bg-gray-100 font-bold">
-                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border"><SigmaIcon size={20} /></td>
+                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border"><SigmaIcon size={20} /></td> {/* z-10 ist korrekt */}
                   {getTageImMonat().map(tag => {
                     const dailyTotals = getTagesGesamtStatus(tag.tag);
                     return (
