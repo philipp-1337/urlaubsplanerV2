@@ -1,8 +1,7 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import ErrorMessage from '../common/ErrorMessage';
-import { CalendarRangeIcon } from 'lucide-react';
+import { GanttChartIcon } from 'lucide-react';
 
 const YearlyOverview = () => { // navigateToView prop removed
   const navigate = useNavigate();
@@ -80,7 +79,9 @@ const YearlyOverview = () => { // navigateToView prop removed
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="p-3 text-left border">Person</th>
+                  <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
+                    Person
+                  </th>
                   <th className="p-3 text-center border">Resturlaub</th>
                   <th className="p-3 text-center border">Urlaub</th>
                   <th className="p-3 text-center border">Gesamt</th>
@@ -107,7 +108,9 @@ const YearlyOverview = () => { // navigateToView prop removed
                   
                   return (
                     <tr key={person.id}>
-                      <td className="p-3 border">{person.name}</td>
+                      <td className="sticky left-0 z-10 p-3 bg-white border">
+                        {person.name}
+                      </td>
                       <td className="p-3 text-center border">
                         {personResturlaub}
                       </td>
@@ -128,7 +131,7 @@ const YearlyOverview = () => { // navigateToView prop removed
                           }}
                           className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                         >
-                          <CalendarRangeIcon className="w-4 h-4 mr-1" />
+                          <GanttChartIcon size={16} />
                         </button>
                       </td>
                     </tr>

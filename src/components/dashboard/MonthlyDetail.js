@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorMessage from '../common/ErrorMessage';
 import { useCalendar } from '../../hooks/useCalendar';
+import { CalendarDaysIcon } from 'lucide-react';
 
 const MonthlyDetail = () => {
   const navigate = useNavigate();
@@ -37,22 +38,13 @@ const MonthlyDetail = () => {
       {loginError && <ErrorMessage message={loginError} />}
       
       <div className="p-6 bg-white rounded-lg shadow-md">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => {
-              setAnsichtModus('jahresuebersicht');
-              navigate('/yearly-overview');
-            }}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
-          >
-            &larr; Zurück zur Jahresübersicht
-          </button>
+        <div className="relative flex items-center justify-center mb-6"> {/* Geändert: justify-between zu justify-center, relative hinzugefügt */}
           
-          <h2 className="text-xl font-bold">
-            {ausgewaehltePerson.name} - Monatsdetails {currentYear}
+          <h2 className="text-xl font-bold"> {/* Wird nun zentriert */}
+            {ausgewaehltePerson.name} - {currentYear}
           </h2>
           
-          <div className="w-36"></div> {/* Spacer für gleichmäßiges Layout */}
+          {/* Spacer entfernt, da der Titel durch justify-center auf dem Elternelement zentriert wird */}
         </div>
         
         <div className="overflow-x-auto">
@@ -96,7 +88,7 @@ const MonthlyDetail = () => {
                       }}
                       className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                     >
-                      Bearbeiten
+                      <CalendarDaysIcon size={16} />
                     </button>
                   </td>
                 </tr>
@@ -136,6 +128,17 @@ const MonthlyDetail = () => {
             </tfoot>
           </table>
         </div>
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setAnsichtModus('jahresuebersicht');
+                navigate('/yearly-overview');
+              }}
+              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Jahresübersicht
+            </button>
+          </div>
       </div>
     </main>
   );

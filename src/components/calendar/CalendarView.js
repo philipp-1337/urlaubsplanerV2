@@ -1,6 +1,4 @@
-import React from 'react';
 import { useCalendar } from '../../hooks/useCalendar';
-import { useNavigate } from 'react-router-dom';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import DayCell from './DayCell';
 import ErrorMessage from '../common/ErrorMessage';
@@ -8,7 +6,6 @@ import { ArrowLeftIcon } from 'lucide-react';
 
 const CalendarView = ({ navigateToView }) => {
   const {
-    // navigateToView prop is removed, will use useNavigate
     loginError,
     currentMonth,
     currentYear,
@@ -23,9 +20,7 @@ const CalendarView = ({ navigateToView }) => {
     getPersonGesamtFortbildung,
     getPersonGesamtInterneTeamtage,
     getPersonGesamtFeiertage,
-    setAnsichtModus
   } = useCalendar(); // Destructure directly from the hook's return value
-  const navigate = useNavigate();
 
   const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
   const tageImMonat = getTageImMonat();
@@ -150,17 +145,6 @@ const CalendarView = ({ navigateToView }) => {
             </div>
           </div>
           
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setAnsichtModus('liste');
-                navigate('/');
-              }}
-              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-            >
-              Zurück zur Übersicht
-            </button>
-          </div>
         </div>
       </main>
     </div>

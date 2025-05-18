@@ -4,7 +4,11 @@ import { useFirestore } from './useFirestore';
 import { getMonatsName as getMonatsNameUtil, getWochentagName as getWochentagNameUtil, getTageImMonat as getDaysInMonthUtil } from '../services/dateUtils';
 
 export const useCalendar = () => {
-  const { 
+  const context = useContext(CalendarContext);
+  if (!context) {
+    throw new Error('useCalendar must be used within a CalendarProvider');
+  }
+  const {
     personen,
     currentMonth,
     currentYear,
@@ -16,10 +20,11 @@ export const useCalendar = () => {
     ausgewaehltePersonId,
     setAusgewaehltePersonId,
     tagDaten,
+    globalTagDaten: contextGlobalTagDaten, // Get global tag data from context, alias to avoid conflict
     yearConfigurations, // Get from context
     resturlaub,
     loginError
-  } = useContext(CalendarContext);
+  } = context;
   
   const { isLoadingData, setTagStatus } = useFirestore();
   
@@ -37,11 +42,23 @@ export const useCalendar = () => {
     // The getDaysInMonthUtil from dateUtils.js takes (monat, jahr)
     return getDaysInMonthUtil(monat, jahr);
   };
+
+  // Ensure globalTagDaten is always an object to prevent errors when accessing its properties
+  const globalTagDaten = contextGlobalTagDaten || {};
   
   // Prüft den Status eines bestimmten Tages für eine Person
   const getTagStatus = (personId, tag, monat = currentMonth, jahr = currentYear) => {
-    const key = `${personId}-${jahr}-${monat}-${tag}`;
-    return tagDaten[key] || null;
+    // 1. Prüfe personenspezifischen Eintrag
+    const personSpecificKey = `${personId}-${jahr}-${monat}-${tag}`;
+    if (tagDaten[personSpecificKey] !== undefined) { // Auch 'null' als expliziter Status ist gültig
+      return tagDaten[personSpecificKey];
+    }
+    // 2. Wenn kein personenspezifischer Eintrag, prüfe globalen Eintrag für diesen Tag
+    const globalKey = `${jahr}-${monat}-${tag}`;
+    if (globalTagDaten[globalKey] !== undefined) {
+      return globalTagDaten[globalKey];
+    }
+    return null; // Kein spezifischer oder globaler Status gefunden
   };
   
   // Berechnet Anzahl der Urlaubstage pro Person im angegebenen Monat

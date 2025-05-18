@@ -27,6 +27,10 @@ export function CalendarProvider({ children }) {
   // Format: { 'personId-jahr-monat-tag': 'urlaub'|'durchfuehrung'|null }
   const [tagDaten, setTagDaten] = useState({});
 
+  // Globale Tageseinstellungen (z.B. Feiertage, Teamtage für alle)
+  // Format: { 'jahr-monat-tag': 'status' }
+  const [globalTagDaten, setGlobalTagDaten] = useState({});
+
   // Beschäftigungsdaten
   // Format: { personId: { type: 'full-time' | 'part-time', percentage: 100, id: 'personId' } }
   const [employmentData, setEmploymentData] = useState({});
@@ -102,6 +106,8 @@ export function CalendarProvider({ children }) {
     setLoginError,
     tagDaten,
     setTagDaten,
+    globalTagDaten,
+    setGlobalTagDaten,
     resturlaub,
     setResturlaub,
     employmentData, // Beschäftigungsdaten bereitstellen

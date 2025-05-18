@@ -7,13 +7,19 @@ import { Plus, Save, Trash2, Loader2 } from 'lucide-react'; // Import Lucide ico
 import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndicator
 
 const SettingsPage = () => {
-  const { personen, currentYear: globalCurrentYear } = useCalendar(); // Renamed to avoid conflict
+  const {
+    personen,
+    currentYear: globalCurrentYear,
+    getMonatsName,
+    globalTagDaten // globalTagDaten für Prüfung, ob schon gesetzt
+  } = useCalendar(); // Renamed to avoid conflict, consolidated useCalendar call
   const { currentUser } = useAuth();
   const {
     addPerson, updatePersonName, deletePersonFirebase, 
     saveResturlaub, saveEmploymentData,
     fetchYearConfigurations, addYearConfiguration, deleteYearConfiguration,
-    batchSetGlobalDayStatus, // Neue Funktion aus useFirestore
+    setGlobalDaySetting,    // Neue Funktion
+    deleteGlobalDaySetting, // Neue Funktion
     // updateYearConfiguration, // For future enhancement
   } = useFirestore();
   // State for new person input
@@ -29,7 +35,6 @@ const SettingsPage = () => {
   // State for prefilling global days
   const [prefillDate, setPrefillDate] = useState({ day: '', month: '' });
   const [isPrefilling, setIsPrefilling] = useState(false);
-  const { getMonatsName } = useCalendar(); // Für die Alert-Nachricht
 
   // Fetch year configurations on mount and when currentUser is available
   useEffect(() => {
@@ -311,6 +316,12 @@ const SettingsPage = () => {
     const day = parseInt(prefillDate.day, 10);
     const month = parseInt(prefillDate.month, 10) - 1; // Konvertiere 1-12 zu 0-11
 
+    // Zusätzliche Sicherung und detailliertes Logging
+    const safeGlobalTagDaten = globalTagDaten || {};
+    // Prüfen, ob dieser Tag bereits global mit diesem Status gesetzt ist
+    const globalKey = `${selectedConfigYear}-${month}-${day}`;
+    console.log('SettingsPage - handleApplyPrefill - globalTagDaten (von useCalendar):', globalTagDaten, 'safeGlobalTagDaten (lokal gesichert):', safeGlobalTagDaten, 'globalKey:', globalKey);
+    const currentGlobalStatus = safeGlobalTagDaten[globalKey];
     // Basisvalidierung
     if (isNaN(day) || day < 1 || day > 31 || isNaN(month) || month < 0 || month > 11) {
       alert("Ungültiger Tag oder Monat.");
@@ -325,17 +336,32 @@ const SettingsPage = () => {
       return;
     }
 
-    const confirmMessage = `Möchten Sie den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} für alle Personen als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} setzen? Bestehende Einträge werden überschrieben.`;
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
     setIsPrefilling(true);
+    let actionConfirmedAndExecuted = false;
     try {
-      // batchSetGlobalDayStatus verwendet 'personen' aus dem CalendarContext
-      await batchSetGlobalDayStatus(day, month, selectedConfigYear, statusToSet);
-      alert(`${statusToSet === 'interne teamtage' ? 'Teamtage' : 'Feiertage'} für den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} wurden für alle Personen gesetzt.`);
-      setPrefillDate({ day: '', month: '' }); // Formular zurücksetzen
+      if (currentGlobalStatus === statusToSet) {
+        // Wenn der Tag bereits mit diesem Status global gesetzt ist, entfernen wir ihn
+        const confirmMessage = `Der ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} ist bereits als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} global gesetzt. Möchten Sie diese globale Einstellung entfernen?`;
+        if (window.confirm(confirmMessage)) {
+          await deleteGlobalDaySetting(day, month, selectedConfigYear);
+          alert(`Die globale Einstellung für den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} wurde entfernt.`);
+          actionConfirmedAndExecuted = true;
+        }
+      } else {
+        // Andernfalls setzen wir den neuen globalen Status (oder überschreiben einen anderen globalen Status)
+        const confirmMessage = `Möchten Sie den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} für alle Personen als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} setzen? Eine eventuell vorhandene andere globale Einstellung für diesen Tag wird überschrieben. Personenspezifische Einträge bleiben davon unberührt.`;
+        if (window.confirm(confirmMessage)) {
+          await setGlobalDaySetting(day, month, selectedConfigYear, statusToSet);
+          alert(`${statusToSet === 'interne teamtage' ? 'Teamtage' : 'Feiertage'} für den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} wurden global gesetzt.`);
+          actionConfirmedAndExecuted = true;
+        }
+      }
+      // Formular nur zurücksetzen, wenn eine Aktion durchgeführt wurde (nicht bei Abbruch durch User)
+      // Da window.confirm den Fluss unterbricht, wenn false, ist ein explizites Zurücksetzen hier ok.
+      // Bei komplexeren Flows würde man das anders handhaben.
+      if (actionConfirmedAndExecuted) { 
+         setPrefillDate({ day: '', month: '' });
+      }
     } catch (error) {
       console.error("Error prefilling global day status:", error);
       alert(`Fehler beim Vorbelegen: ${error.message}`);
@@ -466,9 +492,9 @@ const SettingsPage = () => {
         </div>
       </section>
 
-      {/* Jahresspezifische Personendaten verwalten */}
+      {/* Jahresspezifische Daten verwalten */}
       <section className="p-6 bg-white rounded-lg shadow-md">
-        <h2 className="mb-4 text-2xl font-semibold text-gray-700">Jahresspezifische Personendaten verwalten</h2>
+        <h2 className="mb-4 text-2xl font-semibold text-gray-700">Jahresspezifische Daten verwalten</h2>
 
         {/* Tabs für Jahresauswahl */}
         <div className="flex mb-6 border-b border-gray-200">
@@ -572,18 +598,17 @@ const SettingsPage = () => {
           personen.length === 0 && 
           <p>Keine Personen vorhanden. Bitte fügen Sie zuerst Personen im Abschnitt "Personen verwalten" hinzu.</p>
         )}
-      </section>
 
-      {/* Globale Tage vorbefüllen */}
-      <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
-        <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+        {/* Globale Tage vorbefüllen */}
+
+        <h2 className="mb-4 mt-8 text-2xl font-semibold text-gray-700">
           Globale Tage vorbefüllen {selectedConfigYear ? `(für Jahr ${selectedConfigYear})` : ''}
         </h2>
         {yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
           <>
             <p className="mb-4 text-sm text-gray-600">
               Setzen Sie hier einen Tag für alle Personen im ausgewählten Jahr ({selectedConfigYear}) als Teamtag oder Feiertag.
-              Bestehende Einträge für diesen Tag und diese Personen werden überschrieben.
+              Eine bestehende globale Einstellung für diesen Tag wird überschrieben. Erneutes Klicken mit gleichem Status entfernt die globale Einstellung. Personenspezifische Einträge haben Vorrang.
             </p>
             <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-2 md:items-end">
               <div>

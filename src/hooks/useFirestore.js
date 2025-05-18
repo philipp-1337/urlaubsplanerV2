@@ -8,8 +8,7 @@ import {
   deleteDoc,
   addDoc, // Import addDoc for creating new documents
   query,
-  where,
-  writeBatch // Import writeBatch
+  where
 } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import CalendarContext from '../context/CalendarContext';
@@ -20,12 +19,12 @@ export const useFirestore = () => {
     currentMonth, // Wird für setTagStatus Defaults benötigt
     tagDaten, // Wird für setTagStatus Rollback und batchSetGlobalDayStatus benötigt
     setPersonen, // Setter für Personen aus dem Context
+    setGlobalTagDaten, // Setter für globale Tageseinstellungen
     setTagDaten,
     setResturlaub,
     setEmploymentData, // Setter für Beschäftigungsdaten
     setYearConfigurations, // Setter from CalendarContext
     setLoginError,
-    personen, // Get 'personen' directly from CalendarContext for batch operations
   } = useContext(CalendarContext);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -39,6 +38,7 @@ export const useFirestore = () => {
       debounceTimers.current = {};
 
       setPersonen([]);
+      setGlobalTagDaten({});
       setTagDaten({});
       setResturlaub({});
       setEmploymentData({});
@@ -113,6 +113,18 @@ export const useFirestore = () => {
         });
         setTagDaten(newTagDaten); // Speichert alle Einträge des Jahres
 
+        // 6. Fetch Global Day Settings for the currentYear
+        const globalDaySettingsQuery = query(collection(db, 'globalDaySettings'),
+                                     where('userId', '==', currentUser.uid),
+                                     where('year', '==', currentYear));
+        const globalDaySettingsSnapshot = await getDocs(globalDaySettingsQuery);
+        const newGlobalTagDaten = {};
+        globalDaySettingsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const key = `${data.year}-${data.month}-${data.day}`; // Keyed by date for the current year
+          newGlobalTagDaten[key] = data.status;
+        });
+        setGlobalTagDaten(newGlobalTagDaten);
       } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
         setLoginError("Fehler beim Laden der Daten von Firestore.");
@@ -126,8 +138,8 @@ export const useFirestore = () => {
   // currentMonth, ansichtModus, ausgewaehltePersonId wurden entfernt, da tagDaten jetzt jahresweise geladen werden
   // und diese Änderungen kein Neuladen der Jahresdaten aus Firestore auslösen sollen.
   // Die Setter-Funktionen (setPersonen, setTagDaten etc.) sind hier enthalten, da sie im Effekt verwendet werden und stabil sind.
-  // Sie sind durch useState und useContext stabil.
-  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]); // currentMonth ist hier nicht nötig für das Laden der Jahresdaten
+  // Sie sind durch useState und useContext stabil. // Added setGlobalTagDaten
+  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]);
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
@@ -381,52 +393,63 @@ export const useFirestore = () => {
     }
   };
 
-  // Batch set status for a specific day for ALL persons for a given year
-  const batchSetGlobalDayStatus = async (day, month, year, statusToSet) => {
+  // Set or update a global day setting (e.g., Feiertag for all)
+  const setGlobalDaySetting = async (day, month, year, statusToSet) => {
     if (!currentUser) {
-      throw new Error("Benutzer nicht authentifiziert für Batch-Operation.");
+      throw new Error("Benutzer nicht authentifiziert für globale Tageseinstellung.");
     }
-    if (!personen || personen.length === 0) {
-      console.warn("Keine Personen zum Aktualisieren für batchSetGlobalDayStatus vorhanden.");
-      // Eventuell eine Meldung an den Benutzer, dass keine Personen angelegt sind.
-      // Für den Moment geben wir Erfolg zurück, da nichts zu tun war.
-      return { success: true, message: "Keine Personen zum Aktualisieren vorhanden." };
-    }
-
-    const batch = writeBatch(db);
-    const updatedTagDatenLocally = {};
-
-    personen.forEach(person => {
-      const personIdStr = String(person.id);
-      const docId = `${currentUser.uid}_${personIdStr}-${year}-${month}-${day}`;
-      const entryRef = doc(db, 'dayStatusEntries', docId);
-
-      const dataToSet = {
-        personId: personIdStr,
-        userId: currentUser.uid,
-        year: year,
-        month: month, // 0-indexed month
-        day: day,
-        status: statusToSet
-      };
-      batch.set(entryRef, dataToSet);
-
-      // Für lokales optimistisches Update vorbereiten
-      const localKey = `${personIdStr}-${year}-${month}-${day}`;
-      updatedTagDatenLocally[localKey] = statusToSet;
-    });
+    const docId = `${currentUser.uid}_${year}-${month}-${day}`; // Global key for the day
+    const entryRef = doc(db, 'globalDaySettings', docId);
+    const dataToSet = {
+      userId: currentUser.uid,
+      year: year,
+      month: month, // 0-indexed month
+      day: day,
+      status: statusToSet
+    };
 
     try {
-      await batch.commit();
-      console.log(`[Firestore Batch SUCCESS] Status '${statusToSet}' für Tag ${day}.${month + 1}.${year} für ${personen.length} Personen gesetzt.`);
-      setTagDaten(prevTagDaten => ({ ...prevTagDaten, ...updatedTagDatenLocally }));
+      await setDoc(entryRef, dataToSet);
+      console.log(`[Firestore GlobalDay SUCCESS] Status '${statusToSet}' für Tag ${day}.${month + 1}.${year} global gesetzt.`);
+      // Update local state if it's for the current year
+      if (year === currentYear) {
+        setGlobalTagDaten(prev => ({ ...prev, [`${year}-${month}-${day}`]: statusToSet }));
+      }
       return { success: true };
     } catch (error) {
-      console.error("[Firestore Batch ERROR] Fehler beim Setzen des globalen Tagesstatus: ", error);
+      console.error("[Firestore GlobalDay ERROR] Fehler beim Setzen des globalen Tagesstatus: ", error);
       setLoginError(`Fehler beim globalen Setzen des Status: ${error.message}.`);
       throw error; // Erneut werfen, damit SettingsPage den Fehler behandeln kann
     }
   };
+
+  // Delete a global day setting
+  const deleteGlobalDaySetting = async (day, month, year) => {
+    if (!currentUser) {
+      throw new Error("Benutzer nicht authentifiziert für Löschen globaler Tageseinstellung.");
+    }
+    const docId = `${currentUser.uid}_${year}-${month}-${day}`;
+    const entryRef = doc(db, 'globalDaySettings', docId);
+
+    try {
+      await deleteDoc(entryRef);
+      console.log(`[Firestore GlobalDay SUCCESS] Globale Einstellung für Tag ${day}.${month + 1}.${year} gelöscht.`);
+      // Update local state if it's for the current year
+      if (year === currentYear) {
+        setGlobalTagDaten(prev => {
+          const newState = { ...prev };
+          delete newState[`${year}-${month}-${day}`];
+          return newState;
+        });
+      }
+      return { success: true };
+    } catch (error) {
+      console.error("[Firestore GlobalDay ERROR] Fehler beim Löschen des globalen Tagesstatus: ", error);
+      setLoginError(`Fehler beim Löschen des globalen Status: ${error.message}.`);
+      throw error;
+    }
+  };
+
   return {
     isLoadingData,
     setTagStatus,
@@ -441,6 +464,7 @@ export const useFirestore = () => {
     updateYearConfiguration: memoizedUpdateYearConfiguration,
     deleteYearConfiguration: memoizedDeleteYearConfiguration,
     fetchPersonSpecificDataForYear, // Expose placeholder
-    batchSetGlobalDayStatus, // Die neue Funktion exportieren
+    setGlobalDaySetting,    // Neue Funktion zum Setzen globaler Tage
+    deleteGlobalDaySetting, // Neue Funktion zum Löschen globaler Tage
   };
 };
