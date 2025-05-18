@@ -343,11 +343,11 @@ export const useFirestore = () => {
   const fetchPersonSpecificDataForYear = async (personId, year) => {
     if (!currentUser) return null;
     try {
-      const resturlaubDocId = `${currentUser.uid}_${personId}_${year}`;
-      const employmentDocId = `${currentUser.uid}_${personId}_${year}`;
+      // const resturlaubDocId = `${currentUser.uid}_${personId}_${year}`; // Platzhalter: ID wird noch nicht verwendet
+      // const employmentDocId = `${currentUser.uid}_${personId}_${year}`; // Platzhalter: ID wird noch nicht verwendet
 
-      const resturlaubRef = doc(db, 'resturlaubData', resturlaubDocId);
-      const employmentRef = doc(db, 'employmentData', employmentDocId);
+      // const resturlaubRef = doc(db, 'resturlaubData', resturlaubDocId); // Platzhalter: Ref wird noch nicht verwendet
+      // const employmentRef = doc(db, 'employmentData', employmentDocId); // Platzhalter: Ref wird noch nicht verwendet
       // This part needs to be completed: fetch these two docs and return their data.
       // For simplicity, SettingsPage might fetch these directly or this function needs to be fleshed out.
       // For now, SettingsPage will handle its own fetching for specific years if needed.

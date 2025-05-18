@@ -3,6 +3,7 @@ import { useCalendar } from '../../hooks/useCalendar';
 import { useFirestore } from '../../hooks/useFirestore';
 import { db, doc, getDoc } from '../../firebase'; // For direct doc fetching
 import { useAuth } from '../../context/AuthContext'; // To get currentUser for doc IDs
+import { Plus, Save, Trash2, Loader2 } from 'lucide-react'; // Import Lucide icons, added Loader2
 import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndicator
 
 const SettingsPage = () => {
@@ -23,6 +24,7 @@ const SettingsPage = () => {
   const [isLoadingYearConfigs, setIsLoadingYearConfigs] = useState(false);
   const [selectedConfigYear, setSelectedConfigYear] = useState(globalCurrentYear);
   const [newYearData, setNewYearData] = useState({ year: new Date().getFullYear() + 1, urlaubsanspruch: 30 });
+  const [deletingYearConfigId, setDeletingYearConfigId] = useState(null); // Tracks which config is being deleted
 
   // Fetch year configurations on mount and when currentUser is available
   useEffect(() => {
@@ -50,8 +52,12 @@ const SettingsPage = () => {
   // State for save success feedback
   const [personSaveSuccess, setPersonSaveSuccess] = useState(null); // Stores personId on success
   const [yearlyDataSaveSuccess, setYearlyDataSaveSuccess] = useState(null); // Stores personId on success
+  const [personSavingStates, setPersonSavingStates] = useState({}); // Tracks saving state for person names { [personId]: boolean }
+  const [yearlyDataSavingStates, setYearlyDataSavingStates] = useState({}); // Tracks saving state for yearly data { [personId]: boolean }
+
   const [isLoadingYearlyPersonData, setIsLoadingYearlyPersonData] = useState(false); // New state for loading yearly person data
 
+  const [initialYearlyPersonData, setInitialYearlyPersonData] = useState({}); // Stores the initial yearly data for comparison
   // State for yearly person data
   const [yearlyPersonData, setYearlyPersonData] = useState({}); // { personId: { resturlaub, employmentPercentage, employmentType } }
 
@@ -60,6 +66,7 @@ const SettingsPage = () => {
     if (!currentUser || personen.length === 0 || !selectedConfigYear) {
       setIsLoadingYearlyPersonData(false); // Ensure loading is false if conditions aren't met
       setYearlyPersonData({});
+      setInitialYearlyPersonData({});
       return;
     }
 
@@ -131,12 +138,14 @@ const SettingsPage = () => {
           };
         });
         setYearlyPersonData(newYearlyData);
+        setInitialYearlyPersonData(newYearlyData); // Store initial data for comparison
         console.log("SettingsPage - Successfully fetched and set all person-specific yearly data.");
         setIsLoadingYearlyPersonData(false); // End loading on success
       })
       .catch(error => {
         console.error("SettingsPage - Error in Promise.all when fetching person-specific yearly data:", error);
         // Hier könntest du eine Fehlermeldung im UI anzeigen
+        setInitialYearlyPersonData({}); // Clear initial data on error
         setIsLoadingYearlyPersonData(false); // End loading on error
       });
 
@@ -175,50 +184,83 @@ const SettingsPage = () => {
 
   const handleSavePerson = async (personId) => {
     const editData = editingPersons[personId];
-    if (!editData) return;
-
-    // Save name
-    let nameUpdated = false;
-    if (editData.name && editData.name !== personen.find(p => p.id === personId)?.name) {
-      const result = await updatePersonName(personId, editData.name);
-      if (result.success) {
-        nameUpdated = true;
-      }
+    if (!editData) {
+      return;
     }
 
-    if (nameUpdated) {
-      setPersonSaveSuccess(personId);
-      setTimeout(() => setPersonSaveSuccess(null), 2000); // Hide after 2 seconds
+    setPersonSavingStates(prev => ({ ...prev, [personId]: true }));
+    let nameUpdated = false;
+
+    try {
+      // Save name
+      if (editData.name && editData.name !== personen.find(p => p.id === personId)?.name) {
+        const result = await updatePersonName(personId, editData.name);
+        if (result.success) {
+          nameUpdated = true;
+        }
+      }
+
+      if (nameUpdated) {
+        setPersonSaveSuccess(personId);
+        setTimeout(() => setPersonSaveSuccess(null), 2000); // Hide after 2 seconds
+      }
+    } catch (error) {
+      console.error("Error saving person name:", error);
+      // Hier könntest du eine Fehlermeldung für den Benutzer anzeigen
+    } finally {
+      setPersonSavingStates(prev => ({ ...prev, [personId]: false }));
     }
   };
 
   const handleSaveYearlyData = async (personId) => {
     const yearlyData = yearlyPersonData[personId];
-    if (!yearlyData || !selectedConfigYear) return;
+    if (!yearlyData || !selectedConfigYear) {
+      return;
+    }
+
+    setYearlyDataSavingStates(prev => ({ ...prev, [personId]: true }));
     let resturlaubSaved = false;
     let employmentSaved = false;
 
-    // Save Resturlaub
-    const resturlaubResult = await saveResturlaub(personId, selectedConfigYear, parseInt(yearlyData.resturlaub, 10) || 0);
-    if (resturlaubResult.success) resturlaubSaved = true;
+    try {
+      // Save Resturlaub
+      const resturlaubResult = await saveResturlaub(personId, selectedConfigYear, parseInt(yearlyData.resturlaub, 10) || 0);
+      if (resturlaubResult.success) resturlaubSaved = true;
 
-    // Save Employment Data
-    const employmentResult = await saveEmploymentData(personId, { 
-      percentage: parseInt(yearlyData.employmentPercentage, 10) || 100, 
-      type: yearlyData.employmentType || 'full-time'
-    }, selectedConfigYear);
-    if (employmentResult.success) employmentSaved = true;
+      // Save Employment Data
+      const employmentResult = await saveEmploymentData(personId, { 
+        percentage: parseInt(yearlyData.employmentPercentage, 10) || 100, 
+        type: yearlyData.employmentType || 'full-time' // Default type if not set
+      }, selectedConfigYear);
+      if (employmentResult.success) employmentSaved = true;
 
-    if (resturlaubSaved || employmentSaved) { // If at least one was successful
-      setYearlyDataSaveSuccess(personId);
-      setTimeout(() => setYearlyDataSaveSuccess(null), 2000); // Hide after 2 seconds
+      if (resturlaubSaved || employmentSaved) { // If at least one was successful
+        setYearlyDataSaveSuccess(personId);
+        setTimeout(() => setYearlyDataSaveSuccess(null), 2000); // Hide after 2 seconds
+        // Update initial data to reflect the saved state, so the button becomes disabled again
+        setInitialYearlyPersonData(prev => ({
+          ...prev,
+          [personId]: {
+            resturlaub: parseInt(yearlyData.resturlaub, 10) || 0,
+            employmentPercentage: parseInt(yearlyData.employmentPercentage, 10) || 100,
+            employmentType: yearlyData.employmentType || 'full-time',
+          }
+        }));
+      }
+    } catch (error) {
+      console.error("Error saving yearly data:", error);
+      // Hier könntest du eine Fehlermeldung für den Benutzer anzeigen
+    } finally {
+      setYearlyDataSavingStates(prev => ({ ...prev, [personId]: false }));
     }
   };
 
   const handleAddPerson = async () => {
     if (newPersonName.trim() === '') return;
-    await addPerson(newPersonName.trim());
+    const result = await addPerson(newPersonName.trim());
+    if (result.success) {
     setNewPersonName(''); // Clear input
+    }
   };
 
   const handleDeletePerson = async (personId) => {
@@ -241,10 +283,18 @@ const SettingsPage = () => {
 
   const handleDeleteYearConfig = async (configId) => {
     if (window.confirm("Sind Sie sicher, dass Sie diese Jahreskonfiguration löschen möchten?")) {
-      await deleteYearConfiguration(configId);
-      // Refresh list after deletion
-      const configs = await fetchYearConfigurations();
-      setYearConfigs(configs);
+      setDeletingYearConfigId(configId);
+      try {
+        await deleteYearConfiguration(configId);
+        // Refresh list after deletion
+        const configs = await fetchYearConfigurations();
+        setYearConfigs(configs);
+      } catch (error) {
+        console.error("Error deleting year configuration:", error);
+        // Optionally show an error message to the user
+      } finally {
+        setDeletingYearConfigId(null);
+      }
     }
   };
 
@@ -270,25 +320,37 @@ const SettingsPage = () => {
             onChange={(e) => setNewYearData(prev => ({ ...prev, urlaubsanspruch: parseInt(e.target.value) || 0 }))}
             className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button onClick={handleAddYearConfig} className="w-full px-4 py-2 text-white bg-blue-600 rounded-md md:w-auto hover:bg-blue-700">
-            Jahr hinzufügen
+          <button 
+            onClick={handleAddYearConfig} 
+            className="w-full px-3 py-2 text-white bg-blue-600 rounded-md md:w-auto hover:bg-blue-700 flex items-center justify-center"
+            aria-label="Jahr hinzufügen"
+          >
+            <Plus size={20} />
           </button>
         </div>
         {isLoadingYearConfigs && <p>Lade Jahreskonfigurationen...</p>}
         <ul className="mt-4 space-y-2">
           {yearConfigs.map(yc => (
-            <li key={yc.id} className="flex justify-between p-2 border rounded">
-              <span className="self-center">Jahr: {yc.year}, Urlaubsanspruch: {yc.urlaubsanspruch} Tage</span>
-              <div>
-                {/* TODO: Add Edit button here, calling updateYearConfiguration */}
-                <button 
-                  onClick={() => handleDeleteYearConfig(yc.id)} 
-                  className="px-3 py-1 ml-2 text-sm text-white bg-red-500 rounded hover:bg-red-600"
-                >
-                  Löschen
-                </button>
-              </div>
-            </li>
+            (() => { // IIFE to use const for isDeleting
+              const isDeleting = deletingYearConfigId === yc.id;
+              return (
+                <li key={yc.id} className="flex items-center justify-between p-2 border rounded">
+                  <span className="self-center">Jahr: {yc.year}, Urlaub: {yc.urlaubsanspruch} Tage</span>
+                  <div>
+                    {/* TODO: Add Edit button here, calling updateYearConfiguration */}
+                    <button 
+                      onClick={() => handleDeleteYearConfig(yc.id)} 
+                      disabled={isDeleting}
+                      className={`p-2 ml-2 text-white rounded flex items-center justify-center
+                                  ${isDeleting ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'}`}
+                      aria-label={isDeleting ? "Jahreskonfiguration wird gelöscht..." : "Jahreskonfiguration löschen"}
+                    >
+                      {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                    </button>
+                  </div>
+                </li>
+              );
+            })()
           ))}
         </ul>
         {yearConfigs.length === 0 && !isLoadingYearConfigs && <p>Noch keine Jahre konfiguriert. Fügen Sie ein Jahr hinzu, um zu starten.</p>}
@@ -297,40 +359,63 @@ const SettingsPage = () => {
       {/* Personen verwalten - unabhängig vom Jahr */}
       <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
         <h2 className="mb-4 text-2xl font-semibold text-gray-700">Personen verwalten</h2>
-        <div className="mb-6">
+        <div className="mb-6 space-y-3 md:space-y-0 md:flex md:items-center md:space-x-2">
           <input
             type="text"
             value={newPersonName}
             onChange={(e) => setNewPersonName(e.target.value)}
             placeholder="Name der neuen Person"
-            className="w-full max-w-xs px-3 py-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button onClick={handleAddPerson} className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
-            Person hinzufügen
+          <button 
+            onClick={handleAddPerson} 
+            className="w-full px-3 py-2 text-white bg-blue-600 rounded-md md:w-auto hover:bg-blue-700 flex items-center justify-center"
+            aria-label="Person hinzufügen"
+          >
+            <Plus size={20} />
           </button>
         </div>
         <div className="space-y-4">
           {personen.map(person => (
-            <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
-              <div className="flex-grow mb-2 md:mb-0">
-                <input 
-                  type="text"
-                  value={editingPersons[person.id]?.name ?? person.name}
-                  onChange={(e) => handleEditPersonChange(person.id, e.target.value)}
-                  className="w-full px-2 py-1 border rounded-md md:w-auto"
-                  placeholder="Name"
-                />
-              </div>
-              <div className="flex-shrink-0 md:ml-4">
-                <button onClick={() => handleSavePerson(person.id)} className="w-full mb-2 text-sm text-white bg-green-500 rounded md:w-auto md:mb-0 md:mr-2 px-3 py-1 hover:bg-green-600">Speichern</button>
-                {personSaveSuccess === person.id && <span className="ml-2 text-sm text-green-600">Gespeichert!</span>}
-                <button 
-                  onClick={() => handleDeletePerson(person.id)} 
-                  className="w-full mt-2 text-sm text-white bg-red-500 rounded md:w-auto md:mt-0 md:ml-2 px-3 py-1 hover:bg-red-600"
-                >Löschen
-                </button>
-              </div>
-            </div>
+            (() => { // IIFE to use const for isSavingName
+              const originalPerson = personen.find(p => p.id === person.id);
+              const nameHasChanged = editingPersons[person.id]?.name !== originalPerson?.name;
+              const isSavingName = personSavingStates[person.id];
+              return (
+                <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
+                  <div className="flex-grow mb-2 md:mb-0">
+                    <input 
+                      type="text"
+                      value={editingPersons[person.id]?.name ?? person.name}
+                      onChange={(e) => handleEditPersonChange(person.id, e.target.value)}
+                      className="w-full px-2 py-1 border rounded-md md:w-auto"
+                      placeholder="Name"
+                      disabled={isSavingName}
+                    />
+                  </div>
+                  <div className="flex-shrink-0 md:ml-4 flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-2">
+                    <button 
+                      onClick={() => handleSavePerson(person.id)} 
+                      disabled={isSavingName || !nameHasChanged}
+                      className={`w-full p-2 text-sm text-white rounded md:w-auto flex items-center justify-center
+                                  ${isSavingName ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (nameHasChanged ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
+                      aria-label={isSavingName ? "Namen speichern..." : (nameHasChanged ? "Namen speichern" : "Keine Änderungen am Namen")}
+                    >
+                      {/* Die Erfolgsmeldung wird hier angezeigt, wenn personSaveSuccess die ID der aktuellen Person ist UND nicht gerade gespeichert wird */}
+                      {isSavingName ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    </button>
+                    <button 
+                      onClick={() => handleDeletePerson(person.id)} 
+                      className="w-full p-2 text-sm text-white bg-red-500 rounded md:w-auto hover:bg-red-600 flex items-center justify-center"
+                      aria-label="Person löschen"
+                      disabled={isSavingName}
+                    ><Trash2 size={16} />
+                    </button>
+                    {personSaveSuccess === person.id && !isSavingName && <span className="text-sm text-green-600">Gespeichert!</span>}
+                  </div>
+                </div>
+              );
+            })()
           ))}
           {personen.length === 0 && <p>Noch keine Personen angelegt. Fügen Sie eine Person hinzu, um zu starten.</p>}
         </div>
@@ -366,38 +451,78 @@ const SettingsPage = () => {
           <LoadingIndicator message={`Lade Daten für Jahr ${selectedConfigYear}...`} />
         ) : yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
           <div className="space-y-4">
-            {personen.map(person => (
-              <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
-                <div className="flex-grow mb-2 md:mb-0">
-                  <p className="font-medium text-gray-700">{person.name}</p>
-                  <div className="mt-2 md:flex md:space-x-2">
-                    <input
-                      type="number"
-                      placeholder={`Resturlaub ${selectedConfigYear}`}
-                      value={yearlyPersonData[person.id]?.resturlaub ?? ''} 
-                      onChange={(e) => handleEditYearlyDataChange(person.id, 'resturlaub', e.target.value)}
-                      className="w-full px-2 py-1 mb-2 border rounded-md md:w-auto md:mb-0"
-                    />
-                    <input
-                      type="number"
-                      placeholder={`Arbeitszeit % ${selectedConfigYear}`}
-                      value={yearlyPersonData[person.id]?.employmentPercentage ?? ''} 
-                      onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
-                      className="w-full px-2 py-1 border rounded-md md:w-auto"
-                    />
-                    {/* Consider adding employmentType dropdown as well */}
+            {personen.map(person => {
+              const initialDataForPerson = initialYearlyPersonData[person.id];
+              const currentDataForPerson = yearlyPersonData[person.id];
+              let hasYearlyDataChanged = false;
+
+              if (initialDataForPerson && currentDataForPerson) {
+                const currentResturlaubStr = String(currentDataForPerson.resturlaub ?? '');
+                const initialResturlaubStr = String(initialDataForPerson.resturlaub ?? '');
+                const currentEmploymentPercentageStr = String(currentDataForPerson.employmentPercentage ?? '');
+                const initialEmploymentPercentageStr = String(initialDataForPerson.employmentPercentage ?? '');
+
+                if (currentResturlaubStr !== initialResturlaubStr) hasYearlyDataChanged = true;
+                if (!hasYearlyDataChanged && currentEmploymentPercentageStr !== initialEmploymentPercentageStr) hasYearlyDataChanged = true;
+              } else if (currentDataForPerson) { // If user typed into a form that had no initial data (e.g. new person, year not yet saved)
+                if (String(currentDataForPerson.resturlaub ?? '') !== '' || String(currentDataForPerson.employmentPercentage ?? '') !== (initialDataForPerson?.employmentPercentage ?? '100')) hasYearlyDataChanged = true;
+              }
+              const isSavingYearly = yearlyDataSavingStates[person.id];
+              return (
+                <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
+                  <div className="flex-grow mb-2 md:mb-0">
+                    <p className="font-medium text-gray-700">{person.name}</p>
+                    <div className="mt-2 md:flex md:space-x-4"> {/* Increased space for better layout with labels */}
+                      <div className="flex flex-col mb-2 md:mb-0">
+                        <label 
+                          htmlFor={`resturlaub-${person.id}-${selectedConfigYear}`} 
+                          className="mb-1 text-sm font-medium text-gray-600"
+                        >
+                          Resturlaub {selectedConfigYear} (Tage)
+                        </label>
+                        <input
+                          id={`resturlaub-${person.id}-${selectedConfigYear}`}
+                          type="number"
+                          value={yearlyPersonData[person.id]?.resturlaub ?? ''} 
+                          onChange={(e) => handleEditYearlyDataChange(person.id, 'resturlaub', e.target.value)}
+                          className="w-full px-2 py-1 border rounded-md md:w-auto"
+                          disabled={isSavingYearly}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label 
+                          htmlFor={`employmentPercentage-${person.id}-${selectedConfigYear}`}
+                          className="mb-1 text-sm font-medium text-gray-600"
+                        >
+                          Arbeitszeit % {selectedConfigYear}
+                        </label>
+                        <input
+                          id={`employmentPercentage-${person.id}-${selectedConfigYear}`}
+                          type="number"
+                          value={yearlyPersonData[person.id]?.employmentPercentage ?? ''} 
+                          onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
+                          className="w-full px-2 py-1 border rounded-md md:w-auto"
+                          disabled={isSavingYearly}
+                        />
+                      </div>
+                      {/* Consider adding employmentType dropdown as well */}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 md:ml-4">
+                    <button 
+                      onClick={() => handleSaveYearlyData(person.id)} 
+                      disabled={isSavingYearly || !hasYearlyDataChanged || !initialDataForPerson}
+                      className={`w-full p-2 text-sm text-white rounded md:w-auto flex items-center justify-center
+                                  ${isSavingYearly ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (hasYearlyDataChanged && initialDataForPerson ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
+                      aria-label={isSavingYearly ? "Jährliche Daten speichern..." : (hasYearlyDataChanged && initialDataForPerson ? "Jährliche Daten speichern" : "Keine Änderungen an jährlichen Daten")}
+                    >
+                      {isSavingYearly ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    </button>
+                    {yearlyDataSaveSuccess === person.id && !isSavingYearly && <span className="ml-2 text-sm text-green-600">Gespeichert!</span>}
                   </div>
                 </div>
-                <div className="flex-shrink-0 md:ml-4">
-                  <button 
-                    onClick={() => handleSaveYearlyData(person.id)} 
-                    className="w-full text-sm text-white bg-green-500 rounded md:w-auto px-3 py-1 hover:bg-green-600"
-                  >Speichern
-                  </button>
-                  {yearlyDataSaveSuccess === person.id && <span className="ml-2 text-sm text-green-600">Gespeichert!</span>}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           personen.length === 0 && 
