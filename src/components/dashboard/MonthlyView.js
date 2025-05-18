@@ -1,8 +1,8 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import ErrorMessage from '../common/ErrorMessage';
+import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon } from 'lucide-react';
 
 const MonthlyView = () => { // navigateToView prop removed
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const MonthlyView = () => { // navigateToView prop removed
               onClick={() => handleMonatWechsel('zurueck')}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              &larr;
+               <ArrowLeftIcon className="w-4 h-4 mr-1" />
             </button>
             
             <h2 className="text-xl font-bold">
@@ -73,7 +73,7 @@ const MonthlyView = () => { // navigateToView prop removed
               onClick={() => handleMonatWechsel('vor')}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              &rarr;
+               <ArrowLeftIcon className="w-4 h-4 mr-1 transform rotate-180" />
             </button>
           </div>
           
@@ -123,7 +123,7 @@ const MonthlyView = () => { // navigateToView prop removed
                   <th className="p-2 text-center border min-w-[100px]">Gesamt Fortb.</th>
                   <th className="p-2 text-center border min-w-[100px]">Gesamt Teamt.</th>
                   <th className="p-2 text-center border min-w-[100px]">Gesamt Feiert.</th>
-                  <th className="p-2 text-center border min-w-[150px]">Aktionen</th>
+                  <th className="p-2 text-center border min-w-[100px]">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -172,7 +172,7 @@ const MonthlyView = () => { // navigateToView prop removed
                       <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFortbildung(String(person.id))}</td>
                       <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtInterneTeamtage(String(person.id))}</td>
                       <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFeiertage(String(person.id))}</td>
-                      <td className="p-2 text-center border min-w-[150px]">
+                      <td className="p-2 text-center border min-w-[100px]">
                         <button
                           onClick={() => {
                             setAusgewaehltePersonId(person.id);
@@ -181,7 +181,7 @@ const MonthlyView = () => { // navigateToView prop removed
                           }}
                           className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
                         >
-                          Kalender
+                          <CalendarDaysIcon size={16} />
                         </button>
                       </td>
                     </tr>
@@ -190,7 +190,7 @@ const MonthlyView = () => { // navigateToView prop removed
               </tbody>
               <tfoot>
                 <tr className="bg-gray-100 font-bold">
-                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border">Gesamtsumme</td>
+                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border"><SigmaIcon size={20} /></td>
                   {getTageImMonat().map(tag => {
                     const dailyTotals = getTagesGesamtStatus(tag.tag);
                     return (

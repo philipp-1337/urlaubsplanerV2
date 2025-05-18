@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import ErrorMessage from '../common/ErrorMessage';
+import { CalendarRangeIcon } from 'lucide-react';
 
 const YearlyOverview = () => { // navigateToView prop removed
   const navigate = useNavigate();
@@ -80,15 +81,15 @@ const YearlyOverview = () => { // navigateToView prop removed
               <thead>
                 <tr className="bg-gray-100">
                   <th className="p-3 text-left border">Person</th>
-                  <th className="p-3 text-center border">Resturlaub<br />(aus {currentYear - 1})</th>
-                  <th className="p-3 text-center border">Urlaubsanspruch<br />{currentYear}</th>
-                  <th className="p-3 text-center border">Gesamt verfügbarer<br />Urlaub</th>
-                  <th className="p-3 text-center border">Urlaubstage {currentYear}</th>
-                  <th className="p-3 text-center border">Verbleibender<br />Urlaub</th>
-                  <th className="p-3 text-center border">Durchführungstage {currentYear}</th>
-                  <th className="p-3 text-center border">Fortbildungstage {currentYear}</th>
-                  <th className="p-3 text-center border">Teamtage {currentYear}</th>
-                  <th className="p-3 text-center border">Feiertage {currentYear}</th>
+                  <th className="p-3 text-center border">Resturlaub</th>
+                  <th className="p-3 text-center border">Urlaub</th>
+                  <th className="p-3 text-center border">Gesamt</th>
+                  <th className="p-3 text-center border">Urlaubstage</th>
+                  <th className="p-3 text-center border">Verbleibend</th>
+                  <th className="p-3 text-center border">Durchführung</th>
+                  <th className="p-3 text-center border">Fortbildung</th>
+                  <th className="p-3 text-center border">Teamtage</th>
+                  <th className="p-3 text-center border">Feiertage</th>
                   <th className="p-3 text-center border">Details</th>
                 </tr>
               </thead>
@@ -127,7 +128,7 @@ const YearlyOverview = () => { // navigateToView prop removed
                           }}
                           className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                         >
-                          Monatsdetails
+                          <CalendarRangeIcon className="w-4 h-4 mr-1" />
                         </button>
                       </td>
                     </tr>

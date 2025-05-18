@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import DayCell from './DayCell';
 import ErrorMessage from '../common/ErrorMessage';
+import { ArrowLeftIcon } from 'lucide-react';
 
 const CalendarView = ({ navigateToView }) => {
   const {
@@ -57,7 +58,7 @@ const CalendarView = ({ navigateToView }) => {
               onClick={() => handleMonatWechsel('zurueck')}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              &larr;
+              <ArrowLeftIcon className="w-4 h-4 mr-1" />
             </button>
             
             <h2 className="text-xl font-bold">
@@ -68,7 +69,7 @@ const CalendarView = ({ navigateToView }) => {
               onClick={() => handleMonatWechsel('vor')}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              &rarr;
+              <ArrowLeftIcon className="w-4 h-4 mr-1 transform rotate-180" />
             </button>
           </div>
           
