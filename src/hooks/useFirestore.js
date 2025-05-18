@@ -16,9 +16,7 @@ export const useFirestore = () => {
   const { isLoggedIn, currentUser } = useAuth(); // Get currentUser from useAuth
   const {
     currentYear,
-    currentMonth,
-    ansichtModus,
-    ausgewaehltePersonId, 
+    currentMonth, // currentMonth wird für setTagStatus benötigt, also hier wieder aufnehmen
     tagDaten, // tagDaten hier hinzufügen
     setPersonen, // Setter für Personen aus dem Context
     setTagDaten,
@@ -97,36 +95,22 @@ export const useFirestore = () => {
         const fetchedYearConfigs = yearConfigsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => a.year - b.year);
         setYearConfigurations(fetchedYearConfigs);
 
-        // 5. Fetch TagDaten based on ansichtModus and current view context
-        let dayStatusQuery;
-        if (ansichtModus === 'liste' || (ansichtModus === 'kalender' && ausgewaehltePersonId)) {
-          // For list view or specific person's calendar: fetch data for the currentMonth of currentYear
-          dayStatusQuery = query(collection(db, 'dayStatusEntries'), 
-                             where('userId', '==', currentUser.uid),
-                             where('year', '==', currentYear), 
-                             where('month', '==', currentMonth));
-        } else if (ansichtModus === 'jahresuebersicht' || (ansichtModus === 'jahresdetail' && ausgewaehltePersonId)) {
-          // For yearly overview or specific person's year detail: fetch all data for the currentYear
-          dayStatusQuery = query(collection(db, 'dayStatusEntries'), 
+        // 5. Fetch TagDaten - IMMER FÜR DAS GESAMTE AKTUELLE JAHR
+        // Die Unterscheidung nach ansichtModus oder currentMonth für das Laden der dayStatusEntries entfällt.
+        // Wir laden immer alle Einträge für das currentYear des currentUser.
+        const dayStatusQuery = query(collection(db, 'dayStatusEntries'),
                              where('userId', '==', currentUser.uid),
                              where('year', '==', currentYear));
-        } else {
-          // Fallback or initial state before any specific view is fully determined
-          setTagDaten({});
-          setIsLoadingData(false);
-          return;
-        }
 
-        if (dayStatusQuery) { // Ensure query is defined before executing
-          const dayStatusSnapshot = await getDocs(dayStatusQuery);
-          const newTagDaten = {};
-          dayStatusSnapshot.forEach((doc) => {
-            const data = doc.data();
-            const key = `${data.personId}-${data.year}-${data.month}-${data.day}`;
-            newTagDaten[key] = data.status;
-          });
-          setTagDaten(newTagDaten);
-        }
+        const dayStatusSnapshot = await getDocs(dayStatusQuery);
+        const newTagDaten = {};
+        dayStatusSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const key = `${data.personId}-${data.year}-${data.month}-${data.day}`;
+          newTagDaten[key] = data.status;
+        });
+        setTagDaten(newTagDaten); // Speichert alle Einträge des Jahres
+
       } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
         setLoginError("Fehler beim Laden der Daten von Firestore.");
@@ -136,9 +120,12 @@ export const useFirestore = () => {
     };
 
     fetchData();
-  // Ensure all setters from context are stable and included if needed, or rely on their stability.
-  // currentUser object is now a dependency.
-  }, [isLoggedIn, currentMonth, currentYear, ansichtModus, ausgewaehltePersonId, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]);
+  // ANGEPASSTE ABHÄNGIGKEITSLISTE:
+  // currentMonth, ansichtModus, ausgewaehltePersonId wurden entfernt, da tagDaten jetzt jahresweise geladen werden
+  // und diese Änderungen kein Neuladen der Jahresdaten aus Firestore auslösen sollen.
+  // Die Setter-Funktionen (setPersonen, setTagDaten etc.) sind hier enthalten, da sie im Effekt verwendet werden.
+  // Sie sind durch useState und useContext stabil.
+  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]);
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
