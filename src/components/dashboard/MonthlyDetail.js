@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorMessage from '../common/ErrorMessage';
 import { useCalendar } from '../../hooks/useCalendar';
 
@@ -12,7 +11,6 @@ const MonthlyDetail = () => {
     setAnsichtModus,
     ausgewaehltePersonId,
     personen,
-    isLoadingData,
     loginError,
     getMonatsName,
     getPersonGesamtUrlaub,
@@ -30,7 +28,6 @@ const MonthlyDetail = () => {
 
   return (
     <main className="container px-4 py-8 mx-auto">
-      {isLoadingData && <LoadingIndicator message="Lade Monatsdetails..." />}
       {loginError && <ErrorMessage message={loginError} />}
       
       <div className="p-6 bg-white rounded-lg shadow-md">

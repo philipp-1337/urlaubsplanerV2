@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useCalendar } from '../../context/CalendarContext';
+import { useCalendar } from '../../hooks/useCalendar'; // Korrigierter Importpfad
+import { Loader2 } from 'lucide-react'; // Ladeindikator-Icon
 
 function Header() {
   const { logout } = useAuth();
-  const { setAnsichtModus, handleMonatWechsel } = useCalendar();
+  const { setAnsichtModus, handleMonatWechsel, isLoadingData } = useCalendar(); // isLoadingData hier holen
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
-
+  
   const closeDrawer = () => {
     setIsDrawerOpen(false);
   };
-
+  
   const handleNavClick = (mode, direction = null) => {
     setAnsichtModus(mode);
     if (direction) {
@@ -31,20 +32,23 @@ function Header() {
     }
     closeDrawer(); // Close drawer after navigation
   };
-
+  
   return (
     <header className="bg-blue-600 text-white shadow-md">
       <div className="container flex items-center justify-between px-4 py-4 mx-auto">
-        <h1 className="text-2xl font-bold">
-          <button
-            onClick={() => {
-              setAnsichtModus('liste');
-              navigate('/');
-            }}
-          >
-            Urlaubsplaner
-          </button>
-        </h1>
+        <div className="flex items-center"> {/* Wrapper für Titel und Ladeindikator */}
+          <h1 className="text-2xl font-bold">
+            <button
+              onClick={() => {
+                setAnsichtModus('liste');
+                navigate('/');
+              }}
+            >
+              Urlaubsplaner
+            </button>
+          </h1>
+          {isLoadingData && <Loader2 size={24} className="ml-3 animate-spin" />}
+        </div>
 
         {/* Hamburger Icon for mobile */}
         <button

@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useCallback } from 'react';
+import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { 
   db,
   collection,
@@ -19,6 +19,7 @@ export const useFirestore = () => {
     currentMonth,
     ansichtModus,
     ausgewaehltePersonId, 
+    tagDaten, // tagDaten hier hinzufügen
     setPersonen, // Setter für Personen aus dem Context
     setTagDaten,
     setResturlaub,
@@ -28,10 +29,15 @@ export const useFirestore = () => {
   } = useContext(CalendarContext);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const debounceTimers = useRef({}); // Für die Debounce-Timer
 
   // Fetch data from Firestore
   useEffect(() => {
     if (!isLoggedIn) {
+      // Clear any pending debounce timers on logout
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+      debounceTimers.current = {};
+
       setPersonen([]);
       setTagDaten({});
       setResturlaub({});
@@ -137,44 +143,71 @@ export const useFirestore = () => {
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
     const personIdStr = String(personId);
-    const docId = `${currentUser.uid}_${personIdStr}-${jahr}-${monat}-${tag}`; // User-specific doc ID
-    const entryRef = doc(db, 'dayStatusEntries', docId);
-
     const localKey = `${personIdStr}-${jahr}-${monat}-${tag}`;
+    const timerKey = localKey; // Use the same key for the debounce timer
     
-    // We need current tag data for rollback
-    setLoginError(''); // Clear previous errors
+    // Store the previous status for potential rollback
+    const previousStatus = tagDaten[localKey] || null;
 
-    // Firestore update
-    try {
+    // Optimistic UI update: Update local state immediately
+    setTagDaten(prev => {
+      const neueTagDatenState = { ...prev };
       if (status === null) {
-        await deleteDoc(entryRef);
+        delete neueTagDatenState[localKey];
       } else {
-        await setDoc(entryRef, { 
-          personId: personIdStr,
-          userId: currentUser.uid, // Store userId
-          year: jahr,
-          month: monat,
-          day: tag,
-          status: status 
+        neueTagDatenState[localKey] = status;
+      }
+      return neueTagDatenState;
+    });
+
+    // Clear existing timer for this specific day entry
+    if (debounceTimers.current[timerKey]) {
+      clearTimeout(debounceTimers.current[timerKey]);
+    }
+    
+    // Set a new timer
+    debounceTimers.current[timerKey] = setTimeout(async () => {
+      const docId = `${currentUser.uid}_${personIdStr}-${jahr}-${monat}-${tag}`; // User-specific doc ID
+      const entryRef = doc(db, 'dayStatusEntries', docId);
+      
+      setLoginError(''); // Clear previous errors
+
+      console.log(`[Firestore POST] Attempting to save status for Person: ${personIdStr}, Date: ${tag}.${monat + 1}.${jahr}, New Status: ${status === null ? 'NONE (deleting)' : status}`);
+
+      // Firestore update
+      try {
+        if (status === null) {
+          await deleteDoc(entryRef);
+          console.log(`[Firestore POST SUCCESS] Deleted status for Person: ${personIdStr}, Date: ${tag}.${monat + 1}.${jahr}`);
+        } else {
+          await setDoc(entryRef, { 
+            personId: personIdStr,
+            userId: currentUser.uid, // Store userId
+            year: jahr,
+            month: monat,
+            day: tag,
+            status: status 
+          });
+          console.log(`[Firestore POST SUCCESS] Saved status for Person: ${personIdStr}, Date: ${tag}.${monat + 1}.${jahr}, Status: ${status}`);
+        }
+        
+        // Local state is already updated optimistically. No action needed on success.
+      } catch (error) {
+        console.error("[Firestore POST ERROR] Error updating tag status in Firestore: ", error);
+        setLoginError(`Fehler beim Speichern: ${error.message}. Bitte erneut versuchen.`);
+        
+        // Rollback optimistic UI update on error
+        setTagDaten(prev => {
+          const revertedState = { ...prev };
+          if (previousStatus === null) {
+            delete revertedState[localKey];
+          } else {
+            revertedState[localKey] = previousStatus;
+          }
+          return revertedState;
         });
       }
-      
-      // Update local state after successful Firestore operation
-      setTagDaten(prev => {
-        const neueTagDatenState = { ...prev };
-        if (status === null) {
-          delete neueTagDatenState[localKey];
-        } else {
-          neueTagDatenState[localKey] = status;
-        }
-        return neueTagDatenState;
-      });
-      
-    } catch (error) {
-      console.error("Error updating tag status in Firestore: ", error);
-      setLoginError(`Fehler beim Speichern: ${error.message}. Bitte erneut versuchen.`);
-    }
+    }, 1000); // 1s debounce time
   };
 
   // CRUD for Persons

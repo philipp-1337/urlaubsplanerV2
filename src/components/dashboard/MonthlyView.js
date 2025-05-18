@@ -2,13 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
-import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorMessage from '../common/ErrorMessage';
 
 const MonthlyView = () => { // navigateToView prop removed
   const navigate = useNavigate();
   const {
-    isLoadingData,
     loginError,
     currentMonth,
     currentYear,
@@ -44,7 +42,6 @@ const MonthlyView = () => { // navigateToView prop removed
     <div className="min-h-screen bg-gray-100">
       
       <main className="container px-4 py-8 mx-auto">
-        {isLoadingData && <LoadingIndicator message="Lade Monatsübersicht..." />}
         <ErrorMessage message={loginError} />
         
         <div className="p-6 bg-white rounded-lg shadow-md">
@@ -53,7 +50,7 @@ const MonthlyView = () => { // navigateToView prop removed
               onClick={() => handleMonatWechsel('zurueck')}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              &larr; Vorheriger Monat
+              &larr;
             </button>
             
             <h2 className="text-xl font-bold">
@@ -64,7 +61,7 @@ const MonthlyView = () => { // navigateToView prop removed
               onClick={() => handleMonatWechsel('vor')}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
-              Nächster Monat &rarr;
+              &rarr;
             </button>
           </div>
           

@@ -1,13 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
-import LoadingIndicator from '../common/LoadingIndicator';
 import ErrorMessage from '../common/ErrorMessage';
 
 const YearlyOverview = () => { // navigateToView prop removed
   const navigate = useNavigate();
   const {
-    isLoadingData,
     loginError,
     currentYear,
     setCurrentYear,
@@ -49,7 +47,6 @@ const YearlyOverview = () => { // navigateToView prop removed
     <div className="min-h-screen bg-gray-100">
       
       <main className="container px-4 py-8 mx-auto">
-        {isLoadingData && <LoadingIndicator message="Lade Jahresübersicht..." />}
         {loginError && <ErrorMessage message={loginError} />}
         
         <div className="p-6 bg-white rounded-lg shadow-md">
@@ -59,11 +56,11 @@ const YearlyOverview = () => { // navigateToView prop removed
               disabled={!canGoToPreviousYear()}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              &larr; Vorheriges Jahr
+              &larr;
             </button>
             
             <h2 className="text-xl font-bold">
-              Jahresübersicht {configuredYears.length > 0 && !configuredYears.includes(currentYear) ? `(Jahr ${currentYear} nicht konfiguriert)` : currentYear}
+              Übersicht {configuredYears.length > 0 && !configuredYears.includes(currentYear) ? `(Jahr ${currentYear} nicht konfiguriert)` : currentYear}
             </h2>
             
             <button
@@ -71,7 +68,7 @@ const YearlyOverview = () => { // navigateToView prop removed
               disabled={!canGoToNextYear()}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Nächstes Jahr &rarr;
+              &rarr;
             </button>
           </div>
           
