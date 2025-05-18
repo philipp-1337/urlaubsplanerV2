@@ -1,8 +1,5 @@
 import { createContext, useState, useContext } from 'react';
 
-// Statischer Urlaubsanspruch pro Jahr
-export const URLAUBSANSPRUCH_PRO_JAHR = 30;
-
 // Erstellen des Kontexts
 const CalendarContext = createContext();
 
@@ -34,29 +31,52 @@ export function CalendarProvider({ children }) {
   // Format: { personId: { type: 'full-time' | 'part-time', percentage: 100, id: 'personId' } }
   const [employmentData, setEmploymentData] = useState({});
 
+  // Jahreskonfigurationen
+  // Format: [{ id: 'docId', year: 2024, urlaubsanspruch: 30, userId: 'uid' }, ...]
+  const [yearConfigurations, setYearConfigurations] = useState([]);
+
   // Monat wechseln
   const handleMonatWechsel = (richtung) => {
     let neuerMonat = currentMonth;
     let neuesJahr = currentYear;
+    const configuredYears = yearConfigurations.map(yc => yc.year).sort((a, b) => a - b);
     
     if (richtung === 'vor') {
       if (currentMonth === 11) {
-        neuerMonat = 0;
-        neuesJahr = currentYear + 1;
+        const naechstesJahr = currentYear + 1;
+        if (configuredYears.length === 0 || configuredYears.includes(naechstesJahr)) {
+          neuerMonat = 0;
+          neuesJahr = naechstesJahr;
+        } else {
+          // Optional: Feedback to user or simply do nothing
+          console.warn(`Year ${naechstesJahr} is not configured. Staying in ${currentYear}.`);
+          return; // Prevent change
+        }
       } else {
         neuerMonat = currentMonth + 1;
       }
     } else if (richtung === 'zurueck') {
       if (currentMonth === 0) {
-        neuerMonat = 11;
-        neuesJahr = currentYear - 1;
+        const vorherigesJahr = currentYear - 1;
+        if (configuredYears.length === 0 || configuredYears.includes(vorherigesJahr)) {
+          neuerMonat = 11;
+          neuesJahr = vorherigesJahr;
+        } else {
+          // Optional: Feedback to user or simply do nothing
+          console.warn(`Year ${vorherigesJahr} is not configured. Staying in ${currentYear}.`);
+          return; // Prevent change
+        }
       } else {
         neuerMonat = currentMonth - 1;
       }
     } else if (richtung === 'aktuell') {
       const aktuellesDatum = new Date();
+      // Ensure the actual current year is configured, or default to a configured one if not.
+      // For simplicity, 'aktuell' will just set month/year. If that year isn't configured, other views might show "no data".
+      // A more robust approach might be to jump to the closest configured year to new Date().getFullYear().
+      // For now, this is fine as SettingsPage allows adding the current year.
       neuerMonat = aktuellesDatum.getMonth();
-      neuesJahr = aktuellesDatum.getFullYear();
+      neuesJahr = aktuellesDatum.getFullYear(); // This might be an unconfigured year.
     }
     
     setCurrentMonth(neuerMonat);
@@ -86,8 +106,9 @@ export function CalendarProvider({ children }) {
     setResturlaub,
     employmentData, // Beschäftigungsdaten bereitstellen
     setEmploymentData, // Setter für Beschäftigungsdaten
-    // Helper functions that depend on state will be in the hook
-    URLAUBSANSPRUCH_PRO_JAHR
+    yearConfigurations,
+    setYearConfigurations,
+    // Helper functions that depend on state will be in the useCalendar hook
   };
 
   return <CalendarContext.Provider value={value}>{children}</CalendarContext.Provider>;

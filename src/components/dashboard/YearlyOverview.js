@@ -17,32 +17,59 @@ const YearlyOverview = () => { // navigateToView prop removed
     getPersonResturlaub,
     setAusgewaehltePersonId,
     setAnsichtModus,
-    URLAUBSANSPRUCH_PRO_JAHR
+    getCurrentYearUrlaubsanspruch,
+    getConfiguredYears // Get the list of configured years
   } = useCalendar();
+
+  const configuredYears = getConfiguredYears();
+
+  const handleYearChange = (direction) => {
+    const newYear = direction === 'next' ? currentYear + 1 : currentYear - 1;
+    if (configuredYears.length === 0 || configuredYears.includes(newYear)) {
+      setCurrentYear(newYear);
+    } else {
+      console.warn(`Cannot navigate to year ${newYear} as it is not configured.`);
+      // Optionally, provide user feedback here
+    }
+  };
+
+  const canGoToPreviousYear = () => {
+    if (configuredYears.length === 0) return true; // Allow if no years are configured yet
+    const prevYear = currentYear - 1;
+    return configuredYears.includes(prevYear);
+  };
+
+  const canGoToNextYear = () => {
+    if (configuredYears.length === 0) return true; // Allow if no years are configured yet
+    const nextYear = currentYear + 1;
+    return configuredYears.includes(nextYear);
+  };
   
   return (
     <div className="min-h-screen bg-gray-100">
       
       <main className="container px-4 py-8 mx-auto">
         {isLoadingData && <LoadingIndicator message="Lade Jahresübersicht..." />}
-        <ErrorMessage message={loginError} />
+        {loginError && <ErrorMessage message={loginError} />}
         
         <div className="p-6 bg-white rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-6">
             <button
-              onClick={() => setCurrentYear(currentYear - 1)}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
+              onClick={() => handleYearChange('previous')}
+              disabled={!canGoToPreviousYear()}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               &larr; Vorheriges Jahr
             </button>
             
             <h2 className="text-xl font-bold">
-              Jahresübersicht {currentYear}
+              Jahresübersicht {configuredYears.length > 0 && !configuredYears.includes(currentYear) ? `(Jahr ${currentYear} nicht konfiguriert)` : currentYear}
             </h2>
             
             <button
-              onClick={() => setCurrentYear(currentYear + 1)}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
+              onClick={() => handleYearChange('next')}
+              disabled={!canGoToNextYear()}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Nächstes Jahr &rarr;
             </button>
@@ -67,7 +94,7 @@ const YearlyOverview = () => { // navigateToView prop removed
                   const urlaubstageDiesesJahr = getPersonJahresUrlaub(person.id, currentYear);
                   const jahresDurchfuehrung = getPersonJahresDurchfuehrung(person.id, currentYear);
                   const personResturlaub = getPersonResturlaub(person.id);
-                  const urlaubsanspruchAktuell = URLAUBSANSPRUCH_PRO_JAHR;
+                  const urlaubsanspruchAktuell = getCurrentYearUrlaubsanspruch(currentYear);
                   const gesamtVerfuegbarerUrlaub = urlaubsanspruchAktuell + personResturlaub;
                   const verbleibenderUrlaub = gesamtVerfuegbarerUrlaub - urlaubstageDiesesJahr;
                   

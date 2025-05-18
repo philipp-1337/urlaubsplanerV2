@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { 
   db,
   collection,
@@ -23,6 +23,7 @@ export const useFirestore = () => {
     setTagDaten,
     setResturlaub,
     setEmploymentData, // Setter für Beschäftigungsdaten
+    setYearConfigurations, // Setter from CalendarContext
     setLoginError,
   } = useContext(CalendarContext);
 
@@ -35,6 +36,7 @@ export const useFirestore = () => {
       setTagDaten({});
       setResturlaub({});
       setEmploymentData({});
+      setYearConfigurations([]);
       return;
     }
 
@@ -66,19 +68,30 @@ export const useFirestore = () => {
         });
         setResturlaub(newResturlaub);
 
-        // 3. Fetch Employment Data (dependent on fetchedPersons)
-        // Assuming one employmentData entry per person, keyed by personId or a query
-        const employmentQuery = query(collection(db, 'employmentData'), where('userId', '==', currentUser.uid));
+        // 3. Fetch Employment Data for the currentYear (dependent on fetchedPersons)
+        const employmentQuery = query(
+          collection(db, 'employmentData'), 
+          where('userId', '==', currentUser.uid),
+          where('forYear', '==', currentYear) // Fetch only for the current global year
+        );
         const employmentSnapshot = await getDocs(employmentQuery);
         const newEmploymentData = {};
         employmentSnapshot.forEach((doc) => {
           const data = doc.data();
-          // doc.id is the employmentData document's ID, data.personId links to the person
+          // For the main app, employmentData in context is for the currentYear.
+          // SettingsPage will fetch for other years separately.
+          // Key by personId for easy lookup for the currentYear.
           newEmploymentData[data.personId] = { type: data.type, percentage: data.percentage, id: doc.id };
         });
         setEmploymentData(newEmploymentData);
 
-        // 4. Fetch TagDaten based on ansichtModus and current view context
+        // 4. Fetch Year Configurations
+        const yearConfigsQuery = query(collection(db, 'yearConfigurations'), where('userId', '==', currentUser.uid));
+        const yearConfigsSnapshot = await getDocs(yearConfigsQuery);
+        const fetchedYearConfigs = yearConfigsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => a.year - b.year);
+        setYearConfigurations(fetchedYearConfigs);
+
+        // 5. Fetch TagDaten based on ansichtModus and current view context
         let dayStatusQuery;
         if (ansichtModus === 'liste' || (ansichtModus === 'kalender' && ausgewaehltePersonId)) {
           // For list view or specific person's calendar: fetch data for the currentMonth of currentYear
@@ -119,7 +132,7 @@ export const useFirestore = () => {
     fetchData();
   // Ensure all setters from context are stable and included if needed, or rely on their stability.
   // currentUser object is now a dependency.
-  }, [isLoggedIn, currentMonth, currentYear, ansichtModus, ausgewaehltePersonId, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setLoginError]);
+  }, [isLoggedIn, currentMonth, currentYear, ansichtModus, ausgewaehltePersonId, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]);
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
@@ -237,17 +250,111 @@ export const useFirestore = () => {
     }
   };
   // Save Employment Data
-  const saveEmploymentData = async (personId, empData) => { // empData = { type, percentage }
-    // Use personId as docId if one employment record per person, and user-specific
-    const docId = `${currentUser.uid}_${personId}`;
+  const saveEmploymentData = async (personId, empData, forYear) => { // empData = { type, percentage }
+    if (!forYear) {
+      console.error("saveEmploymentData: forYear is required");
+      setLoginError("Fehler: Jahr nicht spezifiziert für Beschäftigungsdaten.");
+      return { success: false, error: "forYear is required" };
+    }
+    const docId = `${currentUser.uid}_${personId}_${forYear}`;
     const entryRef = doc(db, 'employmentData', docId);
     try {
-      await setDoc(entryRef, { userId: currentUser.uid, personId, ...empData });
-      setEmploymentData(prev => ({ ...prev, [personId]: { ...empData, id: docId, personId } })); // id here is docId
+      await setDoc(entryRef, { userId: currentUser.uid, personId, forYear, ...empData });
+      // If the saved data is for the current global year, update the context.
+      // Otherwise, SettingsPage will manage its own state for the selectedConfigYear.
+      if (forYear === currentYear) {
+        setEmploymentData(prev => ({ 
+          ...prev, 
+          [personId]: { ...empData, id: docId, personId, forYear } 
+        }));
+      }
       return { success: true };
     } catch (error) {
       console.error("Error saving employment data: ", error);
       setLoginError("Fehler beim Speichern der Beschäftigungsdaten.");
+      return { success: false, error };
+    }
+  };
+
+  // --- Year Configuration Functions ---
+  const fetchYearConfigurations = async () => {
+    if (!currentUser) return [];    
+    try {
+      const q = query(collection(db, 'yearConfigurations'), where('userId', '==', currentUser.uid)); // Removed setIsLoadingData(true)
+      const snapshot = await getDocs(q);
+      const configs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return configs.sort((a, b) => a.year - b.year); // Sort by year
+    } catch (error) {
+      console.error("Error fetching year configurations: ", error);
+      setLoginError("Fehler beim Laden der Jahreskonfigurationen.");
+      return [];
+    } finally {
+      // Removed setIsLoadingData(false)
+    }
+  };
+  const memoizedFetchYearConfigurations = useCallback(fetchYearConfigurations, [currentUser, setLoginError]);
+
+  const addYearConfiguration = async (year, urlaubsanspruch) => {
+    if (!currentUser) return { success: false, error: "User not authenticated" };
+    const docId = `${currentUser.uid}_${year}`;
+    const entryRef = doc(db, 'yearConfigurations', docId);
+    try {
+      await setDoc(entryRef, { userId: currentUser.uid, year, urlaubsanspruch });      
+      setYearConfigurations(prev => [...prev, { id: docId, userId: currentUser.uid, year, urlaubsanspruch }].sort((a,b) => a.year - b.year));
+      return { success: true, id: docId }; // Return new config to update local state if needed
+    } catch (error) {
+      console.error("Error adding year configuration: ", error);
+      setLoginError("Fehler beim Hinzufügen der Jahreskonfiguration.");
+      return { success: false, error };
+    }
+  };
+  const memoizedAddYearConfiguration = useCallback(addYearConfiguration, [currentUser, setLoginError, setYearConfigurations]);
+
+  const updateYearConfiguration = async (docId, urlaubsanspruch) => {
+    // docId is already userId_year
+    const entryRef = doc(db, 'yearConfigurations', docId);
+    try {
+      await setDoc(entryRef, { urlaubsanspruch }, { merge: true });
+      setYearConfigurations(prev => prev.map(yc => yc.id === docId ? {...yc, urlaubsanspruch} : yc).sort((a,b) => a.year - b.year) );
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating year configuration: ", error);
+      setLoginError("Fehler beim Aktualisieren der Jahreskonfiguration.");
+      return { success: false, error };
+    }
+  };
+  const memoizedUpdateYearConfiguration = useCallback(updateYearConfiguration, [setLoginError, setYearConfigurations]);
+
+  const deleteYearConfiguration = async (docId) => {
+    const entryRef = doc(db, 'yearConfigurations', docId);
+    try {
+      await deleteDoc(entryRef);
+      setYearConfigurations(prev => prev.filter(yc => yc.id !== docId).sort((a,b) => a.year - b.year));
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting year configuration: ", error);
+      setLoginError("Fehler beim Löschen der Jahreskonfiguration.");
+      return { success: false, error };
+    }
+  };
+  const memoizedDeleteYearConfiguration = useCallback(deleteYearConfiguration, [setLoginError, setYearConfigurations]);
+
+  // --- Functions to fetch person-specific data for a given year (for SettingsPage) ---
+  const fetchPersonSpecificDataForYear = async (personId, year) => {
+    if (!currentUser) return null;
+    try {
+      const resturlaubDocId = `${currentUser.uid}_${personId}_${year}`;
+      const employmentDocId = `${currentUser.uid}_${personId}_${year}`;
+
+      const resturlaubRef = doc(db, 'resturlaubData', resturlaubDocId);
+      const employmentRef = doc(db, 'employmentData', employmentDocId);
+      // This part needs to be completed: fetch these two docs and return their data.
+      // For simplicity, SettingsPage might fetch these directly or this function needs to be fleshed out.
+      // For now, SettingsPage will handle its own fetching for specific years if needed.
+      console.warn("fetchPersonSpecificDataForYear is a placeholder and needs full implementation if used.");
+      return null; 
+    } catch (error) {
+      console.error(`Error fetching person-specific data for year ${year}:`, error);
       return { success: false, error };
     }
   };
@@ -260,5 +367,11 @@ export const useFirestore = () => {
     deletePersonFirebase,
     saveResturlaub,
     saveEmploymentData,
+    // Year Config functions
+    fetchYearConfigurations: memoizedFetchYearConfigurations,
+    addYearConfiguration: memoizedAddYearConfiguration,
+    updateYearConfiguration: memoizedUpdateYearConfiguration,
+    deleteYearConfiguration: memoizedDeleteYearConfiguration,
+    fetchPersonSpecificDataForYear, // Expose placeholder
   };
 };

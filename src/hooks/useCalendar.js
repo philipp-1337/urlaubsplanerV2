@@ -16,14 +16,12 @@ export const useCalendar = () => {
     ausgewaehltePersonId,
     setAusgewaehltePersonId,
     tagDaten,
+    yearConfigurations, // Get from context
     resturlaub,
     loginError
   } = useContext(CalendarContext);
   
   const { isLoadingData, setTagStatus } = useFirestore();
-  
-  // Konstanten
-  const URLAUBSANSPRUCH_PRO_JAHR = 30;
   
   // Use utils for date names and days in month, but keep them as part of the hook's API
   const getMonatsName = (monat) => {
@@ -127,6 +125,20 @@ export const useCalendar = () => {
     return { urlaubCount, durchfuehrungCount };
   };
   
+  // Get Urlaubsanspruch for the current (or specified) year from configurations
+  const getCurrentYearUrlaubsanspruch = (jahr = currentYear) => {
+    const config = yearConfigurations.find(yc => yc.year === jahr);
+    return config ? config.urlaubsanspruch : 0; // Default to 0 if no config for the year
+  };
+
+  // Get a sorted list of configured year numbers
+  const getConfiguredYears = () => {
+    return yearConfigurations.map(yc => yc.year).sort((a, b) => a - b);
+  };
+
+  // TODO: Consider how to handle default Urlaubsanspruch if a year is not configured.
+  // For now, getCurrentYearUrlaubsanspruch returns 0.
+
   // handleMonatWechsel is now taken from context
 
   // Helper function for handling clicks on day cells
@@ -155,7 +167,6 @@ export const useCalendar = () => {
     setAusgewaehltePersonId,
     isLoadingData,
     loginError,
-    URLAUBSANSPRUCH_PRO_JAHR,
     getMonatsName,
     getWochentagName,
     getTageImMonat,
@@ -170,6 +181,9 @@ export const useCalendar = () => {
     getPersonResturlaub,
     getTagesGesamtStatus,
     handleMonatWechsel,
-    handleDayCellClick
+    handleDayCellClick,
+    // New functions based on yearConfigurations
+    getCurrentYearUrlaubsanspruch,
+    getConfiguredYears,
   };
 };

@@ -5,6 +5,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc, // Import getDoc here
   setDoc,
   deleteDoc,
   query,
@@ -34,6 +35,7 @@ export {
   collection,
   doc,
   getDocs,
+  getDoc, // Export getDoc here
   setDoc,
   deleteDoc,
   addDoc, // Export addDoc
