@@ -12,6 +12,9 @@ const YearlyOverview = () => { // navigateToView prop removed
     personen,
     getPersonJahresUrlaub,
     getPersonJahresDurchfuehrung,
+    getPersonJahresFortbildung,
+    getPersonJahresInterneTeamtage,
+    getPersonJahresFeiertage,
     getPersonResturlaub,
     setAusgewaehltePersonId,
     setAnsichtModus,
@@ -83,6 +86,9 @@ const YearlyOverview = () => { // navigateToView prop removed
                   <th className="p-3 text-center border">Urlaubstage {currentYear}</th>
                   <th className="p-3 text-center border">Verbleibender<br />Urlaub</th>
                   <th className="p-3 text-center border">Durchführungstage {currentYear}</th>
+                  <th className="p-3 text-center border">Fortbildungstage {currentYear}</th>
+                  <th className="p-3 text-center border">Teamtage {currentYear}</th>
+                  <th className="p-3 text-center border">Feiertage {currentYear}</th>
                   <th className="p-3 text-center border">Details</th>
                 </tr>
               </thead>
@@ -90,6 +96,9 @@ const YearlyOverview = () => { // navigateToView prop removed
                 {personen.map((person) => {
                   const urlaubstageDiesesJahr = getPersonJahresUrlaub(person.id, currentYear);
                   const jahresDurchfuehrung = getPersonJahresDurchfuehrung(person.id, currentYear);
+                  const jahresFortbildung = getPersonJahresFortbildung(person.id, currentYear);
+                  const jahresTeamtage = getPersonJahresInterneTeamtage(person.id, currentYear);
+                  const jahresFeiertage = getPersonJahresFeiertage(person.id, currentYear);
                   const personResturlaub = getPersonResturlaub(person.id);
                   const urlaubsanspruchAktuell = getCurrentYearUrlaubsanspruch(currentYear);
                   const gesamtVerfuegbarerUrlaub = urlaubsanspruchAktuell + personResturlaub;
@@ -106,6 +115,9 @@ const YearlyOverview = () => { // navigateToView prop removed
                       <td className="p-3 text-center border">{urlaubstageDiesesJahr}</td>
                       <td className="p-3 text-center border">{verbleibenderUrlaub}</td>
                       <td className="p-3 text-center border">{jahresDurchfuehrung}</td>
+                      <td className="p-3 text-center border">{jahresFortbildung}</td>
+                      <td className="p-3 text-center border">{jahresTeamtage}</td>
+                      <td className="p-3 text-center border">{jahresFeiertage}</td>
                       <td className="p-3 text-center border">
                         <button
                           onClick={() => {

@@ -15,8 +15,14 @@ const MonthlyDetail = () => {
     getMonatsName,
     getPersonGesamtUrlaub,
     getPersonGesamtDurchfuehrung,
+    getPersonGesamtFortbildung,
+    getPersonGesamtInterneTeamtage,
+    getPersonGesamtFeiertage,
     getPersonJahresUrlaub,
     getPersonJahresDurchfuehrung,
+    getPersonJahresFortbildung,
+    getPersonJahresInterneTeamtage,
+    getPersonJahresFeiertage,
     getPersonResturlaub
   } = useCalendar();
 
@@ -56,6 +62,9 @@ const MonthlyDetail = () => {
                 <th className="p-3 text-left border">Monat</th>
                 <th className="p-3 text-center border">Urlaubstage</th>
                 <th className="p-3 text-center border">Durchführungstage</th>
+                <th className="p-3 text-center border">Fortbildungstage</th>
+                <th className="p-3 text-center border">Teamtage</th>
+                <th className="p-3 text-center border">Feiertage</th>
                 <th className="p-3 text-center border">Aktionen</th>
               </tr>
             </thead>
@@ -68,6 +77,15 @@ const MonthlyDetail = () => {
                   </td>
                   <td className="p-3 text-center border">
                     {getPersonGesamtDurchfuehrung(ausgewaehltePersonId, monat, currentYear)}
+                  </td>
+                  <td className="p-3 text-center border">
+                    {getPersonGesamtFortbildung(ausgewaehltePersonId, monat, currentYear)}
+                  </td>
+                  <td className="p-3 text-center border">
+                    {getPersonGesamtInterneTeamtage(ausgewaehltePersonId, monat, currentYear)}
+                  </td>
+                  <td className="p-3 text-center border">
+                    {getPersonGesamtFeiertage(ausgewaehltePersonId, monat, currentYear)}
                   </td>
                   <td className="p-3 text-center border">
                     <button
@@ -93,6 +111,15 @@ const MonthlyDetail = () => {
                 <td className="p-3 text-center border">
                   {getPersonJahresDurchfuehrung(ausgewaehltePersonId, currentYear)}
                 </td>
+                <td className="p-3 text-center border">
+                  {getPersonJahresFortbildung(ausgewaehltePersonId, currentYear)}
+                </td>
+                <td className="p-3 text-center border">
+                  {getPersonJahresInterneTeamtage(ausgewaehltePersonId, currentYear)}
+                </td>
+                <td className="p-3 text-center border">
+                  {getPersonJahresFeiertage(ausgewaehltePersonId, currentYear)}
+                </td>
                 <td className="p-3 text-center border"></td>
               </tr>
               <tr className="bg-gray-200 font-bold">
@@ -100,6 +127,9 @@ const MonthlyDetail = () => {
                 <td className="p-3 text-center border">
                   {getPersonJahresUrlaub(ausgewaehltePersonId, currentYear) + getPersonResturlaub(ausgewaehltePersonId)}
                 </td>
+                <td className="p-3 text-center border">-</td>
+                <td className="p-3 text-center border">-</td>
+                <td className="p-3 text-center border">-</td>
                 <td className="p-3 text-center border">-</td>
                 <td className="p-3 text-center border"></td>
               </tr>

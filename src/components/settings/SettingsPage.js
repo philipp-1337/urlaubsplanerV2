@@ -9,13 +9,13 @@ import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndi
 const SettingsPage = () => {
   const { personen, currentYear: globalCurrentYear } = useCalendar(); // Renamed to avoid conflict
   const { currentUser } = useAuth();
-  const { 
+  const {
     addPerson, updatePersonName, deletePersonFirebase, 
     saveResturlaub, saveEmploymentData,
     fetchYearConfigurations, addYearConfiguration, deleteYearConfiguration,
+    batchSetGlobalDayStatus, // Neue Funktion aus useFirestore
     // updateYearConfiguration, // For future enhancement
   } = useFirestore();
-
   // State for new person input
   const [newPersonName, setNewPersonName] = useState('');
 
@@ -25,6 +25,11 @@ const SettingsPage = () => {
   const [selectedConfigYear, setSelectedConfigYear] = useState(globalCurrentYear);
   const [newYearData, setNewYearData] = useState({ year: new Date().getFullYear() + 1, urlaubsanspruch: 30 });
   const [deletingYearConfigId, setDeletingYearConfigId] = useState(null); // Tracks which config is being deleted
+
+  // State for prefilling global days
+  const [prefillDate, setPrefillDate] = useState({ day: '', month: '' });
+  const [isPrefilling, setIsPrefilling] = useState(false);
+  const { getMonatsName } = useCalendar(); // Für die Alert-Nachricht
 
   // Fetch year configurations on mount and when currentUser is available
   useEffect(() => {
@@ -293,6 +298,52 @@ const SettingsPage = () => {
     }
   };
 
+  const handlePrefillDateChange = (field, value) => {
+    setPrefillDate(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleApplyPrefill = async (statusToSet) => {
+    if (!selectedConfigYear || !prefillDate.day || !prefillDate.month) {
+      alert("Bitte wählen Sie ein Jahr und geben Sie Tag und Monat für die Vorbelegung ein.");
+      return;
+    }
+    // Monat ist 0-indiziert für Date-Objekte und unsere interne Logik
+    const day = parseInt(prefillDate.day, 10);
+    const month = parseInt(prefillDate.month, 10) - 1; // Konvertiere 1-12 zu 0-11
+
+    // Basisvalidierung
+    if (isNaN(day) || day < 1 || day > 31 || isNaN(month) || month < 0 || month > 11) {
+      alert("Ungültiger Tag oder Monat.");
+      return;
+    }
+
+    // Validieren, ob der Tag im Monat für das ausgewählte Jahr existiert
+    // new Date(year, monthIndex + 1, 0) gibt den letzten Tag des Monats monthIndex zurück
+    const daysInSelectedMonth = new Date(selectedConfigYear, month + 1, 0).getDate();
+    if (day > daysInSelectedMonth) {
+      alert(`Der Monat ${getMonatsName(month)} im Jahr ${selectedConfigYear} hat nur ${daysInSelectedMonth} Tage.`);
+      return;
+    }
+
+    const confirmMessage = `Möchten Sie den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} für alle Personen als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} setzen? Bestehende Einträge werden überschrieben.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsPrefilling(true);
+    try {
+      // batchSetGlobalDayStatus verwendet 'personen' aus dem CalendarContext
+      await batchSetGlobalDayStatus(day, month, selectedConfigYear, statusToSet);
+      alert(`${statusToSet === 'interne teamtage' ? 'Teamtage' : 'Feiertage'} für den ${prefillDate.day}.${prefillDate.month}.${selectedConfigYear} wurden für alle Personen gesetzt.`);
+      setPrefillDate({ day: '', month: '' }); // Formular zurücksetzen
+    } catch (error) {
+      console.error("Error prefilling global day status:", error);
+      alert(`Fehler beim Vorbelegen: ${error.message}`);
+    } finally {
+      setIsPrefilling(false);
+    }
+  };
+
   return (
     <main className="container px-4 py-8 mx-auto">
       <h1 className="mb-6 text-3xl font-bold text-gray-800">Einstellungen</h1>
@@ -520,6 +571,69 @@ const SettingsPage = () => {
         ) : (
           personen.length === 0 && 
           <p>Keine Personen vorhanden. Bitte fügen Sie zuerst Personen im Abschnitt "Personen verwalten" hinzu.</p>
+        )}
+      </section>
+
+      {/* Globale Tage vorbefüllen */}
+      <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
+        <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+          Globale Tage vorbefüllen {selectedConfigYear ? `(für Jahr ${selectedConfigYear})` : ''}
+        </h2>
+        {yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
+          <>
+            <p className="mb-4 text-sm text-gray-600">
+              Setzen Sie hier einen Tag für alle Personen im ausgewählten Jahr ({selectedConfigYear}) als Teamtag oder Feiertag.
+              Bestehende Einträge für diesen Tag und diese Personen werden überschrieben.
+            </p>
+            <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-2 md:items-end">
+              <div>
+                <label htmlFor="prefillDay" className="block text-sm font-medium text-gray-700">Tag (1-31)</label>
+                <input
+                  type="number"
+                  id="prefillDay"
+                  value={prefillDate.day}
+                  onChange={(e) => handlePrefillDateChange('day', e.target.value)}
+                  placeholder="TT"
+                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="1"
+                  max="31"
+                />
+              </div>
+              <div>
+                <label htmlFor="prefillMonth" className="block text-sm font-medium text-gray-700">Monat (1-12)</label>
+                <input
+                  type="number"
+                  id="prefillMonth"
+                  value={prefillDate.month}
+                  onChange={(e) => handlePrefillDateChange('month', e.target.value)}
+                  placeholder="MM"
+                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="1"
+                  max="12"
+                />
+              </div>
+              <button
+                onClick={() => handleApplyPrefill('interne teamtage')}
+                disabled={isPrefilling || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
+                className="w-full px-4 py-2 text-white bg-purple-600 rounded-md md:w-auto hover:bg-purple-700 disabled:bg-gray-400 flex items-center justify-center"
+              >
+                {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Teamtag
+              </button>
+              <button
+                onClick={() => handleApplyPrefill('feiertag')}
+                disabled={isPrefilling || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
+                className="w-full px-4 py-2 text-white bg-orange-600 rounded-md md:w-auto hover:bg-orange-700 disabled:bg-gray-400 flex items-center justify-center"
+              >
+                {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Feiertag
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="text-gray-500">
+            {yearConfigs.length === 0 ? "Bitte zuerst ein Jahr unter \"Jahreskonfiguration verwalten\" hinzufügen." :
+             !selectedConfigYear ? "Bitte oben ein Jahr auswählen, um dessen Personendaten zu bearbeiten oder globale Tage vorzubefüllen." :
+             "Bitte zuerst Personen im Abschnitt \"Personen verwalten\" hinzufügen."}
+          </p>
         )}
       </section>
     </main>

@@ -17,9 +17,15 @@ const MonthlyView = () => { // navigateToView prop removed
     setTagStatus,
     getPersonGesamtUrlaub,
     getPersonGesamtDurchfuehrung,
+    getPersonGesamtFortbildung,
+    getPersonGesamtInterneTeamtage,
+    getPersonGesamtFeiertage,
     getTagesGesamtStatus,
     getGesamtUrlaub,
     getGesamtDurchfuehrung,
+    getGesamtFortbildung,
+    getGesamtInterneTeamtage,
+    getGesamtFeiertage,
     setAusgewaehltePersonId,
     setAnsichtModus
   } = useCalendar();
@@ -33,8 +39,14 @@ const MonthlyView = () => { // navigateToView prop removed
         neuerStatus = 'urlaub';
       } else if (currentStatus === 'urlaub') {
         neuerStatus = 'durchfuehrung';
-      } // if currentStatus is 'durchfuehrung', neuerStatus remains null, deleting the entry.
-      setTagStatus(String(personId), tagObject.tag, neuerStatus);
+      } else if (currentStatus === 'durchfuehrung') {
+        neuerStatus = 'fortbildung';
+      } else if (currentStatus === 'fortbildung') {
+        neuerStatus = 'interne teamtage';
+      } else if (currentStatus === 'interne teamtage') {
+        neuerStatus = 'feiertag';
+      } // if currentStatus is 'feiertag', neuerStatus remains null, deleting the entry.
+      setTagStatus(String(personId), tagObject.tag, neuerStatus, currentMonth, currentYear);
     }
   };
 
@@ -75,12 +87,24 @@ const MonthlyView = () => { // navigateToView prop removed
                 <div className="w-4 h-4 mr-1 bg-green-500 rounded"></div>
                 <span>Durchführung (D)</span>
               </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-yellow-500 rounded"></div>
+                <span>Fortbildung (F)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-purple-500 rounded"></div>
+                <span>Teamtag (T)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-orange-500 rounded"></div>
+                <span>Feiertag (X)</span>
+              </div>
               {/* <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-gray-200 border border-gray-300 rounded"></div>
                 <span>Wochenende</span>
               </div> */}
             </div>
-            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag (außer Wochenende) in der Tabelle, um zwischen Urlaub, Durchführung und keinem Status zu wechseln.</p>
+            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag (außer Wochenende) in der Tabelle, um zwischen den Status-Typen zu wechseln.</p>
           </div>
 
           <div className="overflow-x-auto">
@@ -96,6 +120,9 @@ const MonthlyView = () => { // navigateToView prop removed
                   ))}
                   <th className="p-2 text-center border min-w-[100px]">Gesamt Urlaub</th>
                   <th className="p-2 text-center border min-w-[100px]">Gesamt Durchf.</th>
+                  <th className="p-2 text-center border min-w-[100px]">Gesamt Fortb.</th>
+                  <th className="p-2 text-center border min-w-[100px]">Gesamt Teamt.</th>
+                  <th className="p-2 text-center border min-w-[100px]">Gesamt Feiert.</th>
                   <th className="p-2 text-center border min-w-[150px]">Aktionen</th>
                 </tr>
               </thead>
@@ -119,6 +146,15 @@ const MonthlyView = () => { // navigateToView prop removed
                           } else if (status === 'durchfuehrung') {
                             cellClass += " bg-green-500 text-white hover:bg-green-600";
                             cellContent = "D";
+                          } else if (status === 'fortbildung') {
+                            cellClass += " bg-yellow-500 text-white hover:bg-yellow-600";
+                            cellContent = "F";
+                          } else if (status === 'interne teamtage') {
+                            cellClass += " bg-purple-500 text-white hover:bg-purple-600";
+                            cellContent = "T";
+                          } else if (status === 'feiertag') {
+                            cellClass += " bg-orange-500 text-white hover:bg-orange-600";
+                            cellContent = "X";
                           }
                         }
                         return (
@@ -133,6 +169,9 @@ const MonthlyView = () => { // navigateToView prop removed
                       })}
                       <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtUrlaub(String(person.id))}</td>
                       <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtDurchfuehrung(String(person.id))}</td>
+                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFortbildung(String(person.id))}</td>
+                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtInterneTeamtage(String(person.id))}</td>
+                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFeiertage(String(person.id))}</td>
                       <td className="p-2 text-center border min-w-[150px]">
                         <button
                           onClick={() => {
@@ -156,14 +195,19 @@ const MonthlyView = () => { // navigateToView prop removed
                     const dailyTotals = getTagesGesamtStatus(tag.tag);
                     return (
                       <td key={`footer-total-${tag.tag}`} className={`p-1 text-xs text-center border min-w-[50px] ${tag.istWochenende ? 'bg-gray-200' : 'bg-gray-100'}`}>
-                        {dailyTotals.urlaubCount > 0 && <span className="text-blue-600">U:{dailyTotals.urlaubCount}</span>}
-                        {dailyTotals.urlaubCount > 0 && dailyTotals.durchfuehrungCount > 0 && <br/>}
-                        {dailyTotals.durchfuehrungCount > 0 && <span className="text-green-600">D:{dailyTotals.durchfuehrungCount}</span>}
+                        {dailyTotals.urlaubCount > 0 && <div className="text-blue-600">U:{dailyTotals.urlaubCount}</div>}
+                        {dailyTotals.durchfuehrungCount > 0 && <div className="text-green-600">D:{dailyTotals.durchfuehrungCount}</div>}
+                        {dailyTotals.fortbildungCount > 0 && <div className="text-yellow-600">F:{dailyTotals.fortbildungCount}</div>}
+                        {dailyTotals.interneTeamtageCount > 0 && <div className="text-purple-600">T:{dailyTotals.interneTeamtageCount}</div>}
+                        {dailyTotals.feiertagCount > 0 && <div className="text-orange-600">X:{dailyTotals.feiertagCount}</div>}
                       </td>
                     );
                   })}
                   <td className="p-2 text-center border">{getGesamtUrlaub()}</td>
                   <td className="p-2 text-center border">{getGesamtDurchfuehrung()}</td>
+                  <td className="p-2 text-center border">{getGesamtFortbildung()}</td>
+                  <td className="p-2 text-center border">{getGesamtInterneTeamtage()}</td>
+                  <td className="p-2 text-center border">{getGesamtFeiertage()}</td>
                   <td className="p-2 border"></td>
                 </tr>
               </tfoot>

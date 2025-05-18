@@ -8,7 +8,8 @@ import {
   deleteDoc,
   addDoc, // Import addDoc for creating new documents
   query,
-  where
+  where,
+  writeBatch // Import writeBatch
 } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import CalendarContext from '../context/CalendarContext';
@@ -16,14 +17,15 @@ export const useFirestore = () => {
   const { isLoggedIn, currentUser } = useAuth(); // Get currentUser from useAuth
   const {
     currentYear,
-    currentMonth, // currentMonth wird für setTagStatus benötigt, also hier wieder aufnehmen
-    tagDaten, // tagDaten hier hinzufügen
+    currentMonth, // Wird für setTagStatus Defaults benötigt
+    tagDaten, // Wird für setTagStatus Rollback und batchSetGlobalDayStatus benötigt
     setPersonen, // Setter für Personen aus dem Context
     setTagDaten,
     setResturlaub,
     setEmploymentData, // Setter für Beschäftigungsdaten
     setYearConfigurations, // Setter from CalendarContext
     setLoginError,
+    personen, // Get 'personen' directly from CalendarContext for batch operations
   } = useContext(CalendarContext);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -123,9 +125,9 @@ export const useFirestore = () => {
   // ANGEPASSTE ABHÄNGIGKEITSLISTE:
   // currentMonth, ansichtModus, ausgewaehltePersonId wurden entfernt, da tagDaten jetzt jahresweise geladen werden
   // und diese Änderungen kein Neuladen der Jahresdaten aus Firestore auslösen sollen.
-  // Die Setter-Funktionen (setPersonen, setTagDaten etc.) sind hier enthalten, da sie im Effekt verwendet werden.
+  // Die Setter-Funktionen (setPersonen, setTagDaten etc.) sind hier enthalten, da sie im Effekt verwendet werden und stabil sind.
   // Sie sind durch useState und useContext stabil.
-  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]);
+  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError]); // currentMonth ist hier nicht nötig für das Laden der Jahresdaten
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {
@@ -379,6 +381,52 @@ export const useFirestore = () => {
     }
   };
 
+  // Batch set status for a specific day for ALL persons for a given year
+  const batchSetGlobalDayStatus = async (day, month, year, statusToSet) => {
+    if (!currentUser) {
+      throw new Error("Benutzer nicht authentifiziert für Batch-Operation.");
+    }
+    if (!personen || personen.length === 0) {
+      console.warn("Keine Personen zum Aktualisieren für batchSetGlobalDayStatus vorhanden.");
+      // Eventuell eine Meldung an den Benutzer, dass keine Personen angelegt sind.
+      // Für den Moment geben wir Erfolg zurück, da nichts zu tun war.
+      return { success: true, message: "Keine Personen zum Aktualisieren vorhanden." };
+    }
+
+    const batch = writeBatch(db);
+    const updatedTagDatenLocally = {};
+
+    personen.forEach(person => {
+      const personIdStr = String(person.id);
+      const docId = `${currentUser.uid}_${personIdStr}-${year}-${month}-${day}`;
+      const entryRef = doc(db, 'dayStatusEntries', docId);
+
+      const dataToSet = {
+        personId: personIdStr,
+        userId: currentUser.uid,
+        year: year,
+        month: month, // 0-indexed month
+        day: day,
+        status: statusToSet
+      };
+      batch.set(entryRef, dataToSet);
+
+      // Für lokales optimistisches Update vorbereiten
+      const localKey = `${personIdStr}-${year}-${month}-${day}`;
+      updatedTagDatenLocally[localKey] = statusToSet;
+    });
+
+    try {
+      await batch.commit();
+      console.log(`[Firestore Batch SUCCESS] Status '${statusToSet}' für Tag ${day}.${month + 1}.${year} für ${personen.length} Personen gesetzt.`);
+      setTagDaten(prevTagDaten => ({ ...prevTagDaten, ...updatedTagDatenLocally }));
+      return { success: true };
+    } catch (error) {
+      console.error("[Firestore Batch ERROR] Fehler beim Setzen des globalen Tagesstatus: ", error);
+      setLoginError(`Fehler beim globalen Setzen des Status: ${error.message}.`);
+      throw error; // Erneut werfen, damit SettingsPage den Fehler behandeln kann
+    }
+  };
   return {
     isLoadingData,
     setTagStatus,
@@ -393,5 +441,6 @@ export const useFirestore = () => {
     updateYearConfiguration: memoizedUpdateYearConfiguration,
     deleteYearConfiguration: memoizedDeleteYearConfiguration,
     fetchPersonSpecificDataForYear, // Expose placeholder
+    batchSetGlobalDayStatus, // Die neue Funktion exportieren
   };
 };

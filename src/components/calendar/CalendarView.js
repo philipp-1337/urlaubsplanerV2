@@ -19,6 +19,9 @@ const CalendarView = ({ navigateToView }) => {
     setTagStatus,
     getPersonGesamtUrlaub,
     getPersonGesamtDurchfuehrung,
+    getPersonGesamtFortbildung,
+    getPersonGesamtInterneTeamtage,
+    getPersonGesamtFeiertage,
     setAnsichtModus
   } = useCalendar(); // Destructure directly from the hook's return value
   const navigate = useNavigate();
@@ -32,7 +35,11 @@ const CalendarView = ({ navigateToView }) => {
       let neuerStatus = null;
       if (status === null) neuerStatus = 'urlaub';
       else if (status === 'urlaub') neuerStatus = 'durchfuehrung';
-      setTagStatus(String(ausgewaehltePersonId), tagObject.tag, neuerStatus);
+      else if (status === 'durchfuehrung') neuerStatus = 'fortbildung';
+      else if (status === 'fortbildung') neuerStatus = 'interne teamtage';
+      else if (status === 'interne teamtage') neuerStatus = 'feiertag';
+      // Wenn 'feiertag', dann wird neuerStatus null und der Eintrag gelöscht
+      setTagStatus(String(ausgewaehltePersonId), tagObject.tag, neuerStatus, currentMonth, currentYear);
     }
   };
   
@@ -66,7 +73,7 @@ const CalendarView = ({ navigateToView }) => {
           </div>
           
           <div className="mb-6">
-            <div className="flex mb-2 space-x-2">
+            <div className="flex flex-wrap mb-2 space-x-2">
               <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-blue-500 rounded"></div>
                 <span>Urlaub</span>
@@ -75,12 +82,24 @@ const CalendarView = ({ navigateToView }) => {
                 <div className="w-4 h-4 mr-1 bg-green-500 rounded"></div>
                 <span>Durchführung</span>
               </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-yellow-500 rounded"></div>
+                <span>Fortbildung</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-purple-500 rounded"></div>
+                <span>Teamtag</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-1 bg-orange-500 rounded"></div>
+                <span>Feiertag</span>
+              </div>
               {/* <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-gray-300 rounded"></div>
                 <span>Wochenende</span>
               </div> */}
             </div>
-            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag, um zwischen Urlaub, Durchführung und keinem Status zu wechseln.</p>
+            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln.</p>
           </div>
           
           <div className="grid grid-cols-7 gap-2 text-center">
@@ -112,12 +131,21 @@ const CalendarView = ({ navigateToView }) => {
             })}
           </div>
           
-          <div className="flex justify-between mt-6">
+          <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-3">
             <div className="text-lg">
               <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(String(ausgewaehltePersonId))}
             </div>
             <div className="text-lg">
               <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(String(ausgewaehltePersonId))}
+            </div>
+            <div className="text-lg">
+              <strong>Fortbildungstage:</strong> {getPersonGesamtFortbildung(String(ausgewaehltePersonId))}
+            </div>
+            <div className="text-lg">
+              <strong>Teamtage:</strong> {getPersonGesamtInterneTeamtage(String(ausgewaehltePersonId))}
+            </div>
+            <div className="text-lg">
+              <strong>Feiertage:</strong> {getPersonGesamtFeiertage(String(ausgewaehltePersonId))}
             </div>
           </div>
           
