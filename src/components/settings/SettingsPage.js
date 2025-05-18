@@ -3,6 +3,7 @@ import { useCalendar } from '../../hooks/useCalendar';
 import { useFirestore } from '../../hooks/useFirestore';
 import { db, doc, getDoc } from '../../firebase'; // For direct doc fetching
 import { useAuth } from '../../context/AuthContext'; // To get currentUser for doc IDs
+import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndicator
 
 const SettingsPage = () => {
   const { personen, currentYear: globalCurrentYear } = useCalendar(); // Renamed to avoid conflict
@@ -10,8 +11,8 @@ const SettingsPage = () => {
   const { 
     addPerson, updatePersonName, deletePersonFirebase, 
     saveResturlaub, saveEmploymentData,
-    fetchYearConfigurations, addYearConfiguration, 
-    // updateYearConfiguration, deleteYearConfiguration, // For future enhancement
+    fetchYearConfigurations, addYearConfiguration, deleteYearConfiguration,
+    // updateYearConfiguration, // For future enhancement
   } = useFirestore();
 
   // State for new person input
@@ -46,12 +47,18 @@ const SettingsPage = () => {
   // State for editing persons
   const [editingPersons, setEditingPersons] = useState({}); // { personId: { name } }
   
+  // State for save success feedback
+  const [personSaveSuccess, setPersonSaveSuccess] = useState(null); // Stores personId on success
+  const [yearlyDataSaveSuccess, setYearlyDataSaveSuccess] = useState(null); // Stores personId on success
+  const [isLoadingYearlyPersonData, setIsLoadingYearlyPersonData] = useState(false); // New state for loading yearly person data
+
   // State for yearly person data
   const [yearlyPersonData, setYearlyPersonData] = useState({}); // { personId: { resturlaub, employmentPercentage, employmentType } }
 
   // Effect to load person-specific data (Resturlaub, Employment) for the selectedConfigYear
   useEffect(() => {
     if (!currentUser || personen.length === 0 || !selectedConfigYear) {
+      setIsLoadingYearlyPersonData(false); // Ensure loading is false if conditions aren't met
       setYearlyPersonData({});
       return;
     }
@@ -59,6 +66,7 @@ const SettingsPage = () => {
     const fetchPromises = personen.map(async (p) => {
       // Detailliertes Logging vor der ID-Erstellung
       console.log('SettingsPage - Preparing to fetch for person:', p?.id, 'User UID:', currentUser?.uid, 'Selected Year:', selectedConfigYear);
+      setIsLoadingYearlyPersonData(true); // Start loading
 
       if (!currentUser?.uid || !p?.id || typeof selectedConfigYear === 'undefined' || selectedConfigYear === null) {
         console.error("SettingsPage - CRITICAL: Missing data for doc ID construction!", 
@@ -124,10 +132,12 @@ const SettingsPage = () => {
         });
         setYearlyPersonData(newYearlyData);
         console.log("SettingsPage - Successfully fetched and set all person-specific yearly data.");
+        setIsLoadingYearlyPersonData(false); // End loading on success
       })
       .catch(error => {
         console.error("SettingsPage - Error in Promise.all when fetching person-specific yearly data:", error);
         // Hier könntest du eine Fehlermeldung im UI anzeigen
+        setIsLoadingYearlyPersonData(false); // End loading on error
       });
 
   }, [selectedConfigYear, personen, currentUser]);
@@ -168,23 +178,41 @@ const SettingsPage = () => {
     if (!editData) return;
 
     // Save name
+    let nameUpdated = false;
     if (editData.name && editData.name !== personen.find(p => p.id === personId)?.name) {
-      await updatePersonName(personId, editData.name);
+      const result = await updatePersonName(personId, editData.name);
+      if (result.success) {
+        nameUpdated = true;
+      }
+    }
+
+    if (nameUpdated) {
+      setPersonSaveSuccess(personId);
+      setTimeout(() => setPersonSaveSuccess(null), 2000); // Hide after 2 seconds
     }
   };
 
   const handleSaveYearlyData = async (personId) => {
     const yearlyData = yearlyPersonData[personId];
     if (!yearlyData || !selectedConfigYear) return;
-    
+    let resturlaubSaved = false;
+    let employmentSaved = false;
+
     // Save Resturlaub
-    await saveResturlaub(personId, selectedConfigYear, parseInt(yearlyData.resturlaub, 10) || 0);
-    
+    const resturlaubResult = await saveResturlaub(personId, selectedConfigYear, parseInt(yearlyData.resturlaub, 10) || 0);
+    if (resturlaubResult.success) resturlaubSaved = true;
+
     // Save Employment Data
-    await saveEmploymentData(personId, { 
+    const employmentResult = await saveEmploymentData(personId, { 
       percentage: parseInt(yearlyData.employmentPercentage, 10) || 100, 
       type: yearlyData.employmentType || 'full-time'
     }, selectedConfigYear);
+    if (employmentResult.success) employmentSaved = true;
+
+    if (resturlaubSaved || employmentSaved) { // If at least one was successful
+      setYearlyDataSaveSuccess(personId);
+      setTimeout(() => setYearlyDataSaveSuccess(null), 2000); // Hide after 2 seconds
+    }
   };
 
   const handleAddPerson = async () => {
@@ -209,6 +237,15 @@ const SettingsPage = () => {
     setNewYearData({ year: new Date().getFullYear() + 1, urlaubsanspruch: 30 }); // Reset form
     const configs = await fetchYearConfigurations(); // Refresh list
     setYearConfigs(configs);
+  };
+
+  const handleDeleteYearConfig = async (configId) => {
+    if (window.confirm("Sind Sie sicher, dass Sie diese Jahreskonfiguration löschen möchten?")) {
+      await deleteYearConfiguration(configId);
+      // Refresh list after deletion
+      const configs = await fetchYearConfigurations();
+      setYearConfigs(configs);
+    }
   };
 
   return (
@@ -241,8 +278,16 @@ const SettingsPage = () => {
         <ul className="mt-4 space-y-2">
           {yearConfigs.map(yc => (
             <li key={yc.id} className="flex justify-between p-2 border rounded">
-              <span>Jahr: {yc.year}, Urlaubsanspruch: {yc.urlaubsanspruch} Tage</span>
-              {/* TODO: Add Edit/Delete buttons here, calling updateYearConfiguration/deleteYearConfiguration */}
+              <span className="self-center">Jahr: {yc.year}, Urlaubsanspruch: {yc.urlaubsanspruch} Tage</span>
+              <div>
+                {/* TODO: Add Edit button here, calling updateYearConfiguration */}
+                <button 
+                  onClick={() => handleDeleteYearConfig(yc.id)} 
+                  className="px-3 py-1 ml-2 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+                >
+                  Löschen
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -277,8 +322,13 @@ const SettingsPage = () => {
                 />
               </div>
               <div className="flex-shrink-0 md:ml-4">
-                <button onClick={() => handleSavePerson(person.id)} className="w-full mb-2 mr-0 text-sm text-white bg-green-500 rounded md:w-auto md:mb-0 md:mr-2 px-3 py-1 hover:bg-green-600">Speichern</button>
-                <button onClick={() => handleDeletePerson(person.id)} className="w-full text-sm text-white bg-red-500 rounded md:w-auto px-3 py-1 hover:bg-red-600">Löschen</button>
+                <button onClick={() => handleSavePerson(person.id)} className="w-full mb-2 text-sm text-white bg-green-500 rounded md:w-auto md:mb-0 md:mr-2 px-3 py-1 hover:bg-green-600">Speichern</button>
+                {personSaveSuccess === person.id && <span className="ml-2 text-sm text-green-600">Gespeichert!</span>}
+                <button 
+                  onClick={() => handleDeletePerson(person.id)} 
+                  className="w-full mt-2 text-sm text-white bg-red-500 rounded md:w-auto md:mt-0 md:ml-2 px-3 py-1 hover:bg-red-600"
+                >Löschen
+                </button>
               </div>
             </div>
           ))}
@@ -312,7 +362,9 @@ const SettingsPage = () => {
         </div>
 
         {/* Conditional rendering of yearly person data management UI */}
-        {yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
+        {isLoadingYearlyPersonData ? (
+          <LoadingIndicator message={`Lade Daten für Jahr ${selectedConfigYear}...`} />
+        ) : yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
           <div className="space-y-4">
             {personen.map(person => (
               <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
@@ -340,9 +392,9 @@ const SettingsPage = () => {
                   <button 
                     onClick={() => handleSaveYearlyData(person.id)} 
                     className="w-full text-sm text-white bg-green-500 rounded md:w-auto px-3 py-1 hover:bg-green-600"
-                  >
-                    Speichern
+                  >Speichern
                   </button>
+                  {yearlyDataSaveSuccess === person.id && <span className="ml-2 text-sm text-green-600">Gespeichert!</span>}
                 </div>
               </div>
             ))}
