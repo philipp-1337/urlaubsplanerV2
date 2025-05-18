@@ -4,7 +4,7 @@ import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import ErrorMessage from '../common/ErrorMessage';
 import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon } from 'lucide-react';
 
-const MonthlyView = () => { // navigateToView prop removed
+const MonthlyView = () => {
   const navigate = useNavigate();
   const {
     loginError,
@@ -52,28 +52,22 @@ const MonthlyView = () => { // navigateToView prop removed
 
   return (
     <div className="min-h-screen bg-gray-100">
-      
       <main className="container px-4 py-8 mx-auto">
         <ErrorMessage message={loginError} />
-        
         <div className="p-6 bg-white rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => handleMonatWechsel('zurueck')}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
-            >
-               <ArrowLeftIcon className="w-4 h-4 mr-1" />
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
+              <ArrowLeftIcon className="w-4 h-4 mr-1" />
             </button>
-            
             <h2 className="text-xl font-bold">
               {getMonatsName(currentMonth)} {currentYear}
             </h2>
-            
             <button
               onClick={() => handleMonatWechsel('vor')}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
-            >
-               <ArrowLeftIcon className="w-4 h-4 mr-1 transform rotate-180" />
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
+              <ArrowLeftIcon className="w-4 h-4 mr-1 transform rotate-180" />
             </button>
           </div>
           
@@ -107,7 +101,7 @@ const MonthlyView = () => { // navigateToView prop removed
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border min-w-[100px]">Person</th> {/* z-10 ist korrekt */}
+                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border min-w-[100px]">Person</th>
                   {getTageImMonat().map(tag => (
                     <th key={`header-${tag.tag}`} className={`p-1 text-center border min-w-[50px] ${tag.istWochenende ? 'bg-gray-200' : 'bg-gray-100'}`}>
                       <div>{tag.tag}</div>
@@ -123,70 +117,64 @@ const MonthlyView = () => { // navigateToView prop removed
                 </tr>
               </thead>
               <tbody>
-                {personen.map((person) => {
-                  return (
-                    <tr key={person.id}>
-                      <td className="sticky left-0 z-10 p-2 text-left bg-white border min-w-[100px]">{person.name}</td> {/* z-0 auf z-10 geändert für Konsistenz mit YearlyOverview */}
-                      {getTageImMonat().map(tag => {
-                        const status = getTagStatus(String(person.id), tag.tag);
-                        let cellClass = "p-2 text-center border min-w-[50px]";
-                        let cellContent = "";
+                {personen.map((person) => (
+                  <tr key={person.id}>
+                    <td className="sticky left-0 z-10 p-2 text-left bg-white border min-w-[100px]">{person.name}</td>
+                    {getTageImMonat().map(tag => {
+                      const status = getTagStatus(String(person.id), tag.tag);
+                      let cellClass = "p-2 text-center border min-w-[50px]";
+                      let cellContent = "";
 
-                        if (tag.istWochenende) {
-                          cellClass += " bg-gray-200";
-                        } else {
-                          cellClass += " cursor-pointer hover:bg-black-50";
-                          if (status === 'urlaub') {
-                            cellClass += " bg-blue-500 text-white hover:bg-blue-600";
-                            cellContent = "U";
-                          } else if (status === 'durchfuehrung') {
-                            cellClass += " bg-green-500 text-white hover:bg-green-600";
-                            cellContent = "D";
-                          } else if (status === 'fortbildung') {
-                            cellClass += " bg-yellow-500 text-white hover:bg-yellow-600";
-                            cellContent = "F";
-                          } else if (status === 'interne teamtage') {
-                            cellClass += " bg-purple-500 text-white hover:bg-purple-600";
-                            cellContent = "T";
-                          } else if (status === 'feiertag') {
-                            cellClass += " bg-orange-500 text-white hover:bg-orange-600";
-                            cellContent = "X";
-                          }
+                      if (tag.istWochenende) {
+                        cellClass += " bg-gray-200";
+                      } else {
+                        cellClass += " cursor-pointer hover:bg-black-50";
+                        if (status === 'urlaub') {
+                          cellClass += " bg-blue-500 text-white hover:bg-blue-600";
+                          cellContent = "U";
+                        } else if (status === 'durchfuehrung') {
+                          cellClass += " bg-green-500 text-white hover:bg-green-600";
+                          cellContent = "D";
+                        } else if (status === 'fortbildung') {
+                          cellClass += " bg-yellow-500 text-white hover:bg-yellow-600";
+                          cellContent = "F";
+                        } else if (status === 'interne teamtage') {
+                          cellClass += " bg-purple-500 text-white hover:bg-purple-600";
+                          cellContent = "T";
+                        } else if (status === 'feiertag') {
+                          cellClass += " bg-orange-500 text-white hover:bg-orange-600";
+                          cellContent = "X";
                         }
-                        return (
-                          <td 
-                            key={`${person.id}-${tag.tag}`}
-                            className={cellClass}
-                            onClick={() => handleDayCellClick(person.id, tag)}
-                          >
-                            {cellContent}
-                          </td>
-                        );
-                      })}
-                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtUrlaub(String(person.id))}</td>
-                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtDurchfuehrung(String(person.id))}</td>
-                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFortbildung(String(person.id))}</td>
-                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtInterneTeamtage(String(person.id))}</td>
-                      <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFeiertage(String(person.id))}</td>
-                      <td className="p-2 text-center border min-w-[100px]">
-                        <button
-                          onClick={() => {
-                            setAusgewaehltePersonId(person.id);
-                            setAnsichtModus('kalender');
-                            navigate(`/calendar/${person.id}`);
-                          }}
-                          className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
-                        >
-                          <CalendarDaysIcon size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      }
+                      return (
+                        <td 
+                          key={`${person.id}-${tag.tag}`}
+                          className={cellClass}
+                          onClick={() => handleDayCellClick(person.id, tag)}
+                        >{cellContent}</td>
+                      );
+                    })}
+                    <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtUrlaub(String(person.id))}</td>
+                    <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtDurchfuehrung(String(person.id))}</td>
+                    <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFortbildung(String(person.id))}</td>
+                    <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtInterneTeamtage(String(person.id))}</td>
+                    <td className="p-2 text-center border min-w-[100px]">{getPersonGesamtFeiertage(String(person.id))}</td>
+                    <td className="p-2 text-center border min-w-[100px]">
+                      <button
+                        onClick={() => {
+                          setAusgewaehltePersonId(person.id);
+                          setAnsichtModus('kalender');
+                          navigate(`/calendar/${person.id}`);
+                        }}
+                        className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                      ><CalendarDaysIcon size={16} /></button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
               <tfoot>
                 <tr className="bg-gray-100 font-bold">
-                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border"><SigmaIcon size={20} /></td> {/* z-10 ist korrekt */}
+                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border"><SigmaIcon size={20} /></td>
                   {getTageImMonat().map(tag => {
                     const dailyTotals = getTagesGesamtStatus(tag.tag);
                     return (
