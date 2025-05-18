@@ -75,10 +75,10 @@ const MonthlyView = () => { // navigateToView prop removed
                 <div className="w-4 h-4 mr-1 bg-green-500 rounded"></div>
                 <span>Durchführung (D)</span>
               </div>
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-gray-200 border border-gray-300 rounded"></div>
                 <span>Wochenende</span>
-              </div>
+              </div> */}
             </div>
             <p className="text-sm text-gray-600">Klicken Sie auf einen Tag (außer Wochenende) in der Tabelle, um zwischen Urlaub, Durchführung und keinem Status zu wechseln.</p>
           </div>

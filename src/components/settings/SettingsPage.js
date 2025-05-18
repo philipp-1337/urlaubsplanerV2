@@ -49,9 +49,6 @@ const SettingsPage = () => {
   // State for editing persons
   const [editingPersons, setEditingPersons] = useState({}); // { personId: { name } }
   
-  // State for save success feedback
-  const [personSaveSuccess, setPersonSaveSuccess] = useState(null); // Stores personId on success
-  const [yearlyDataSaveSuccess, setYearlyDataSaveSuccess] = useState(null); // Stores personId on success
   const [personSavingStates, setPersonSavingStates] = useState({}); // Tracks saving state for person names { [personId]: boolean }
   const [yearlyDataSavingStates, setYearlyDataSavingStates] = useState({}); // Tracks saving state for yearly data { [personId]: boolean }
 
@@ -201,8 +198,7 @@ const SettingsPage = () => {
       }
 
       if (nameUpdated) {
-        setPersonSaveSuccess(personId);
-        setTimeout(() => setPersonSaveSuccess(null), 2000); // Hide after 2 seconds
+        // Success feedback is now handled by button animation
       }
     } catch (error) {
       console.error("Error saving person name:", error);
@@ -235,8 +231,7 @@ const SettingsPage = () => {
       if (employmentResult.success) employmentSaved = true;
 
       if (resturlaubSaved || employmentSaved) { // If at least one was successful
-        setYearlyDataSaveSuccess(personId);
-        setTimeout(() => setYearlyDataSaveSuccess(null), 2000); // Hide after 2 seconds
+        // Success feedback is now handled by button animation
         // Update initial data to reflect the saved state, so the button becomes disabled again
         setInitialYearlyPersonData(prev => ({
           ...prev,
@@ -410,8 +405,7 @@ const SettingsPage = () => {
                       aria-label="Person löschen"
                       disabled={isSavingName}
                     ><Trash2 size={16} />
-                    </button>
-                    {personSaveSuccess === person.id && !isSavingName && <span className="text-sm text-green-600">Gespeichert!</span>}
+                    </button>                    
                   </div>
                 </div>
               );
@@ -518,7 +512,6 @@ const SettingsPage = () => {
                     >
                       {isSavingYearly ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     </button>
-                    {yearlyDataSaveSuccess === person.id && !isSavingYearly && <span className="ml-2 text-sm text-green-600">Gespeichert!</span>}
                   </div>
                 </div>
               );

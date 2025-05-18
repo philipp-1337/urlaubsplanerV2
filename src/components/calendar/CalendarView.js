@@ -75,10 +75,10 @@ const CalendarView = ({ navigateToView }) => {
                 <div className="w-4 h-4 mr-1 bg-green-500 rounded"></div>
                 <span>Durchführung</span>
               </div>
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-gray-300 rounded"></div>
                 <span>Wochenende</span>
-              </div>
+              </div> */}
             </div>
             <p className="text-sm text-gray-600">Klicken Sie auf einen Tag, um zwischen Urlaub, Durchführung und keinem Status zu wechseln.</p>
           </div>
