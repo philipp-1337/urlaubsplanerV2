@@ -113,7 +113,7 @@ const MonthlyView = () => {
                     <th
                       key={`header-${tag.tag}`}
                       className={`p-1 text-center border-t border-r min-w-[50px] ${
-                        tag.istWochenende ? "bg-gray-light" : "bg-gray-light" // Consistent background for header
+                        tag.istWochenende ? "bg-gray-medium" : "bg-gray-light" // Consistent background for header
                       }`}
                     >
                       <div>{tag.tag}</div>
@@ -154,7 +154,7 @@ const MonthlyView = () => {
                       let cellContent = "";
 
                       if (tag.istWochenende) {
-                        cellClass += " bg-gray-light";
+                        cellClass += " bg-gray-medium";
                       } else {
                         cellClass += " cursor-pointer";
                         if (status === "urlaub") {
@@ -228,9 +228,6 @@ const MonthlyView = () => {
                         key={`footer-total-${tag.tag}`}
                         className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
                           tag.istWochenende ? "bg-gray-medium" : "bg-gray-light"
-                          // Corrected: Use bg-gray-light for weekend footers as well for consistency
-                          // tag.istWochenende ? "bg-gray-light" : "bg-gray-light" // This would make all footer cells gray-light
-                          // Keeping non-weekend footer cells as bg-gray-light and weekend as bg-gray-light
                         }`}
                       >
                         {dailyTotals.urlaubCount > 0 && (

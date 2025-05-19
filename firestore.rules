@@ -30,14 +30,14 @@ service cloud.firestore {
       allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
                        // userId cannot change
                        request.resource.data.userId == resource.data.userId &&
-                       // Validate name ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('name') ||
+                       // Validate name if it's being updated
+                       (!('name' in request.resource.data) ||
                         (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100)) &&
-                       // Validate orderIndex ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('orderIndex') ||
+                       // Validate orderIndex if it's being updated
+                       (!('orderIndex' in request.resource.data) ||
                         (request.resource.data.orderIndex is number)) &&
                        // Ensure only 'name' and 'orderIndex' are in the set of changed fields
-                       request.resource.data.diff(resource.data).affectedKeys().difference(['name', 'orderIndex'].toSet()).size() == 0;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'orderIndex']);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
@@ -55,10 +55,10 @@ service cloud.firestore {
                        request.resource.data.userId == resource.data.userId &&
                        request.resource.data.personId == resource.data.personId &&
                        request.resource.data.forYear == resource.data.forYear &&
-                       // Validate tage ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('tage') ||
+                       // Validate tage if it's being updated
+                       (!('tage' in request.resource.data) ||
                         (request.resource.data.tage is number && request.resource.data.tage >= 0)) &&
-                       request.resource.data.diff(resource.data).affectedKeys().difference(['tage'].toSet()).size() == 0;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tage']);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
@@ -80,26 +80,15 @@ service cloud.firestore {
                        request.resource.data.userId == resource.data.userId &&
                        request.resource.data.personId == resource.data.personId &&
                        request.resource.data.forYear == resource.data.forYear &&
-                       // Validate 'type' ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('type') ||
-                         (request.resource.data.type is string && (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time'))) &&
-                       // Validate 'percentage' ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('percentage') ||
-                         (request.resource.data.percentage is number && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100 &&
-                           // Percentage must be 100 if effective type is full-time
-                           ( ( (('type' in request.resource.data) ? request.resource.data.type : resource.data.type) == 'full-time' && request.resource.data.percentage == 100 ) ||
-                             ( (('type' in request.resource.data) ? request.resource.data.type : resource.data.type) == 'part-time' )
-                           )
-                         )) &&
-                       // Validate 'daysPerWeek' ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('daysPerWeek') ||
-                         (
-                           ( ( ('type' in request.resource.data) ? request.resource.data.type : resource.data.type ) == 'full-time' && request.resource.data.daysPerWeek == null) ||
-                           ( ( ('type' in request.resource.data) ? request.resource.data.type : resource.data.type ) == 'part-time' && request.resource.data.daysPerWeek is number && request.resource.data.daysPerWeek >= 1 && request.resource.data.daysPerWeek <= 5)
+                       // Validate updatable fields
+                       (!('type' in request.resource.data) || (request.resource.data.type is string && (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time'))) &&
+                       (!('percentage' in request.resource.data) || (request.resource.data.percentage is number && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100)) &&
+                       (!('daysPerWeek' in request.resource.data) ||
+                         ( (request.resource.data.type == 'full-time' && request.resource.data.daysPerWeek == null) ||
+                           (request.resource.data.type == 'part-time' && request.resource.data.daysPerWeek is number && request.resource.data.daysPerWeek >= 1 && request.resource.data.daysPerWeek <= 5)
                          )
                        ) &&
-                       // Ensure only allowed fields are changed
-                       request.resource.data.diff(resource.data).affectedKeys().difference(['type', 'percentage', 'daysPerWeek'].toSet()).size() == 0;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'percentage', 'daysPerWeek']);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
@@ -115,10 +104,10 @@ service cloud.firestore {
                        // Key fields cannot change
                        request.resource.data.userId == resource.data.userId &&
                        request.resource.data.year == resource.data.year &&
-                       // Validate urlaubsanspruch ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('urlaubsanspruch') ||
+                       // Validate urlaubsanspruch if it's being updated
+                       (!('urlaubsanspruch' in request.resource.data) ||
                         (request.resource.data.urlaubsanspruch is number && request.resource.data.urlaubsanspruch >= 0)) &&
-                       request.resource.data.diff(resource.data).affectedKeys().difference(['urlaubsanspruch'].toSet()).size() == 0;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['urlaubsanspruch']);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
@@ -140,10 +129,10 @@ service cloud.firestore {
                        request.resource.data.year == resource.data.year &&
                        request.resource.data.month == resource.data.month &&
                        request.resource.data.day == resource.data.day &&
-                       // Validate status ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('status') ||
+                       // Validate status if it's being updated
+                       (!('status' in request.resource.data) ||
                         (request.resource.data.status is string && ['urlaub', 'durchfuehrung', 'fortbildung', 'interne teamtage', 'feiertag'].hasAny([request.resource.data.status]))) &&
-                       request.resource.data.diff(resource.data).affectedKeys().difference(['status'].toSet()).size() == 0;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
@@ -163,10 +152,10 @@ service cloud.firestore {
                        request.resource.data.year == resource.data.year &&
                        request.resource.data.month == resource.data.month &&
                        request.resource.data.day == resource.data.day &&
-                       // Validate status ONLY IF it's being updated
-                       (!request.resource.data.diff(resource.data).affectedKeys().has('status') ||
+                       // Validate status if it's being updated
+                       (!('status' in request.resource.data) ||
                         (request.resource.data.status is string && ['interne teamtage', 'feiertag'].hasAny([request.resource.data.status]))) &&
-                       request.resource.data.diff(resource.data).affectedKeys().difference(['status'].toSet()).size() == 0;
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
