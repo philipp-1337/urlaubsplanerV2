@@ -227,7 +227,7 @@ const MonthlyView = () => {
                       <td
                         key={`footer-total-${tag.tag}`}
                         className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
-                          tag.istWochenende ? "bg-gray-medium" : "bg-gray-light"
+                          tag.istWochenende ? "bg-gray-light" : "bg-gray-light"
                         }`}
                       >
                         {dailyTotals.urlaubCount > 0 && (
