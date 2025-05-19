@@ -40,8 +40,8 @@ function Header() {
           <h1 className="text-2xl font-bold">
             <button
               onClick={() => {
-                setAnsichtModus('liste');
-                navigate('/');
+                setAnsichtModus('jahresuebersicht');
+                navigate('/yearly-overview');
               }}
             >
               Urlaubsplaner

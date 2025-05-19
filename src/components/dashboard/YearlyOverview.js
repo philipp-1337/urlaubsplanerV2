@@ -19,7 +19,8 @@ const YearlyOverview = () => { // navigateToView prop removed
     setAusgewaehltePersonId,
     setAnsichtModus,
     getCurrentYearUrlaubsanspruch,
-    getConfiguredYears // Get the list of configured years
+    getConfiguredYears, // Get the list of configured years
+    employmentData // Get employment data for badges
   } = useCalendar();
 
   const configuredYears = getConfiguredYears();
@@ -101,15 +102,22 @@ const YearlyOverview = () => { // navigateToView prop removed
                   const jahresFortbildung = getPersonJahresFortbildung(person.id, currentYear);
                   const jahresTeamtage = getPersonJahresInterneTeamtage(person.id, currentYear);
                   // const jahresFeiertage = getPersonJahresFeiertage(person.id, currentYear);
-                  const personResturlaub = getPersonResturlaub(person.id);
-                  const urlaubsanspruchAktuell = getCurrentYearUrlaubsanspruch(currentYear);
+                  const personResturlaub = getPersonResturlaub(person.id); // Resturlaub is year-agnostic for now in getPersonResturlaub
+                  const urlaubsanspruchAktuell = getCurrentYearUrlaubsanspruch(person.id, currentYear); // Pass person.id
                   const gesamtVerfuegbarerUrlaub = urlaubsanspruchAktuell + personResturlaub;
                   const verbleibenderUrlaub = gesamtVerfuegbarerUrlaub - urlaubstageDiesesJahr;
                   
+                  // Check if person is part-time for the current year
+                  const personEmpRecord = employmentData[person.id];
+                  const isPartTime = personEmpRecord && personEmpRecord.type === 'part-time';
+
                   return (
                     <tr key={person.id}>
                       <td className="sticky left-0 z-10 p-3 bg-white border">
                         {person.name}
+                        {isPartTime && (
+                          <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-sky-700 bg-sky-100 rounded-full">TZ</span>
+                        )}
                       </td>
                       <td className="p-3 text-center border">
                         {personResturlaub}

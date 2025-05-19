@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import DayCell from './DayCell';
@@ -5,6 +6,7 @@ import ErrorMessage from '../common/ErrorMessage';
 import { ArrowLeftIcon } from 'lucide-react';
 
 const CalendarView = ({ navigateToView }) => {
+  const navigate = useNavigate();
   const {
     loginError,
     currentMonth,
@@ -20,6 +22,7 @@ const CalendarView = ({ navigateToView }) => {
     getPersonGesamtFortbildung,
     getPersonGesamtInterneTeamtage,
     getPersonGesamtFeiertage,
+    setAnsichtModus, // Added for navigation
   } = useCalendar(); // Destructure directly from the hook's return value
 
   const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
@@ -149,6 +152,28 @@ const CalendarView = ({ navigateToView }) => {
             </div>
           </div>
           
+          {/* Navigation Buttons */}
+          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <button
+              onClick={() => {
+                setAnsichtModus('liste'); // Set mode for MonthlyView (all users table)
+                navigate('/'); // Navigate to the route that renders MonthlyView.js
+              }}
+              className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
+            >
+              {getMonatsName(currentMonth)} Übersicht {currentYear}
+            </button>
+            <button
+              onClick={() => {
+                setAnsichtModus('jahresdetail'); // This is the mode for MonthlyDetail view
+                navigate(`/monthly-detail/${ausgewaehltePersonId}`);
+              }}
+              className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
+            >
+              {ausgewaehltePerson.name} Übersicht {currentYear}
+            </button>
+          </div>
+
         </div>
       </main>
     </div>
