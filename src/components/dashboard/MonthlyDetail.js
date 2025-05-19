@@ -53,9 +53,9 @@ const MonthlyDetail = () => {
                 <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
                   Monat
                 </th>
-                <th className="p-3 text-center border">Urlaubstage</th>
-                <th className="p-3 text-center border">Durchführungstage</th>
-                <th className="p-3 text-center border">Fortbildungstage</th>
+                <th className="p-3 text-center border">Urlaub</th>
+                <th className="p-3 text-center border">Durchführung</th>
+                <th className="p-3 text-center border">Fortbildung</th>
                 <th className="p-3 text-center border">Teamtage</th>
                 {/* <th className="p-3 text-center border">Feiertage</th> */}
                 <th className="p-3 text-center border">Aktionen</th>

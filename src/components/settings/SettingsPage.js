@@ -575,19 +575,6 @@ const SettingsPage = () => {
             <Plus size={20} />
           </button>
         </div>
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={handleSavePersonOrder}
-            disabled={!isOrderChanged || isSavingOrder || isSavingOrder}
-            className={`px-4 py-2 text-sm text-white rounded-md flex items-center justify-center
-                        ${isSavingOrder ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' :
-                          (isOrderChanged ? 'bg-primary hover:bg-accent hover:text-primary' : 'bg-gray-400 cursor-not-allowed')}`}
-            aria-label={isSavingOrder ? "Reihenfolge wird gespeichert..." : (isOrderChanged ? "Reihenfolge speichern" : "Keine Änderungen an der Reihenfolge")}
-          >
-            {isSavingOrder ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-            Reihenfolge speichern
-          </button>
-        </div>
         <div className="space-y-4">
           {orderedPersons.map((person, index) => ( // Use orderedPersons here
             (() => { // IIFE to use const for isSavingName
@@ -650,6 +637,19 @@ const SettingsPage = () => {
             })()
           ))}
           {orderedPersons.length === 0 && <p>Noch keine Personen angelegt. Fügen Sie eine Person hinzu, um zu starten.</p>}
+        </div>
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handleSavePersonOrder}
+            disabled={!isOrderChanged || isSavingOrder || isSavingOrder}
+            className={`px-4 py-2 text-sm text-white rounded-md flex items-center justify-center
+                        ${isSavingOrder ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' :
+                          (isOrderChanged ? 'bg-primary hover:bg-accent hover:text-primary' : 'bg-gray-400 cursor-not-allowed')}`}
+            aria-label={isSavingOrder ? "Reihenfolge wird gespeichert..." : (isOrderChanged ? "Reihenfolge speichern" : "Keine Änderungen an der Reihenfolge")}
+          >
+            {isSavingOrder ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+            Reihenfolge speichern
+          </button>
         </div>
       </section>
 
