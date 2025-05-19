@@ -1,167 +1,78 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    // Helper function to check if the user is the owner of the resource (based on a userId field)
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    function isOwner() {
+      return isSignedIn() && request.auth.uid == resource.data.userId;
     }
 
-    // Helper function to validate that the userId in the data matches the authenticated user
-    function isValidUserData(data) {
-      return data.userId == request.auth.uid;
+    function isSelfWrite() {
+      return isSignedIn() && request.auth.uid == request.resource.data.userId;
     }
 
-    // Persons Collection
+    // Beispiel: Pflichtfelder für Personen
+    function validPerson() {
+      return request.resource.data.keys().hasAll(['userId', 'name'])
+        && request.resource.data.userId is string
+        && request.resource.data.name is string;
+    }
+
     match /persons/{personId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() &&
-                       isValidUserData(request.resource.data) &&
-                       request.resource.data.name is string &&
-                       request.resource.data.name.size() > 0 &&
-                       request.resource.data.name.size() < 100 &&
-                       request.resource.data.orderIndex is number;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
-                       // userId cannot change
-                       request.resource.data.userId == resource.data.userId &&
-                       // Validate name if it's being updated
-                       (!('name' in request.resource.data) ||
-                        (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100)) &&
-                       // Validate orderIndex if it's being updated
-                       (!('orderIndex' in request.resource.data) ||
-                        (request.resource.data.orderIndex is number)) &&
-                       // Ensure only 'name' and 'orderIndex' are in the set of changed fields
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'orderIndex']);
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow read, delete: if isOwner();
+      allow create: if isSelfWrite() && validPerson();
+      allow update: if isOwner()
+        && request.resource.data.userId == resource.data.userId
+        && validPerson();
     }
 
-    // ResturlaubData Collection - Doc ID: {userId}_{personId}_{forYear}
-    match /resturlaubData/{docId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() &&
-                       isValidUserData(request.resource.data) &&
-                       request.resource.data.personId is string &&
-                       request.resource.data.forYear is number &&
-                       request.resource.data.tage is number && request.resource.data.tage >= 0 &&
-                       docId == request.auth.uid + "_" + request.resource.data.personId + "_" + request.resource.data.forYear;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
-                       // Key fields cannot change
-                       request.resource.data.userId == resource.data.userId &&
-                       request.resource.data.personId == resource.data.personId &&
-                       request.resource.data.forYear == resource.data.forYear &&
-                       // Validate tage if it's being updated
-                       (!('tage' in request.resource.data) ||
-                        (request.resource.data.tage is number && request.resource.data.tage >= 0)) &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tage']);
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    match /resturlaubData/{resturlaubId} {
+      allow read: if (
+        (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
+        (resource.data.userId == null && isSignedIn() && (
+          resturlaubId.matches('^' + request.auth.uid + '_.*$') ||
+          // Support legacy IDs with dash as separator (for backward compatibility)
+          resturlaubId.matches('^' + request.auth.uid + '-.*$')
+        ))
+      );
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.userId
+        && request.resource.data.userId == resource.data.userId;
     }
 
-    // EmploymentData Collection - Doc ID: {userId}_{personId}_{forYear}
-    match /employmentData/{docId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() &&
-                       isValidUserData(request.resource.data) &&
-                       request.resource.data.personId is string &&
-                       request.resource.data.forYear is number &&
-                       request.resource.data.type is string && (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time') &&
-                       request.resource.data.percentage is number && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100 &&
-                       ( (request.resource.data.type == 'full-time' && request.resource.data.daysPerWeek == null) ||
-                         (request.resource.data.type == 'part-time' && request.resource.data.daysPerWeek is number && request.resource.data.daysPerWeek >= 1 && request.resource.data.daysPerWeek <= 5)
-                       ) &&
-                       docId == request.auth.uid + "_" + request.resource.data.personId + "_" + request.resource.data.forYear;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
-                       // Key fields cannot change
-                       request.resource.data.userId == resource.data.userId &&
-                       request.resource.data.personId == resource.data.personId &&
-                       request.resource.data.forYear == resource.data.forYear &&
-                       // Validate updatable fields
-                       (!('type' in request.resource.data) || (request.resource.data.type is string && (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time'))) &&
-                       (!('percentage' in request.resource.data) || (request.resource.data.percentage is number && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100)) &&
-                       (!('daysPerWeek' in request.resource.data) ||
-                         ( (request.resource.data.type == 'full-time' && request.resource.data.daysPerWeek == null) ||
-                           (request.resource.data.type == 'part-time' && request.resource.data.daysPerWeek is number && request.resource.data.daysPerWeek >= 1 && request.resource.data.daysPerWeek <= 5)
-                         )
-                       ) &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['type', 'percentage', 'daysPerWeek']);
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    match /employmentData/{employmentId} {
+      allow read, delete: if isOwner();
+      allow create: if isSelfWrite();
+      allow update: if isOwner()
+        && request.resource.data.userId == resource.data.userId;
     }
 
-    // YearConfigurations Collection - Doc ID: {userId}_{year}
-    match /yearConfigurations/{docId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() &&
-                       isValidUserData(request.resource.data) &&
-                       request.resource.data.year is number &&
-                       request.resource.data.urlaubsanspruch is number && request.resource.data.urlaubsanspruch >= 0 &&
-                       docId == request.auth.uid + "_" + request.resource.data.year;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
-                       // Key fields cannot change
-                       request.resource.data.userId == resource.data.userId &&
-                       request.resource.data.year == resource.data.year &&
-                       // Validate urlaubsanspruch if it's being updated
-                       (!('urlaubsanspruch' in request.resource.data) ||
-                        (request.resource.data.urlaubsanspruch is number && request.resource.data.urlaubsanspruch >= 0)) &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['urlaubsanspruch']);
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    match /yearConfigurations/{yearConfigId} {
+      allow read, delete: if isOwner();
+      allow create: if isSelfWrite();
+      allow update: if isOwner()
+        && request.resource.data.userId == resource.data.userId;
     }
 
-    // DayStatusEntries Collection - Doc ID: {userId}_{personId}-{year}-{month}-{day}
-    match /dayStatusEntries/{docId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() &&
-                       isValidUserData(request.resource.data) &&
-                       request.resource.data.personId is string &&
-                       request.resource.data.year is number &&
-                       request.resource.data.month is number && request.resource.data.month >= 0 && request.resource.data.month <= 11 &&
-                       request.resource.data.day is number && request.resource.data.day >= 1 && request.resource.data.day <= 31 &&
-                       request.resource.data.status is string && ['urlaub', 'durchfuehrung', 'fortbildung', 'interne teamtage', 'feiertag'].hasAny([request.resource.data.status]) &&
-                       docId == request.auth.uid + "_" + request.resource.data.personId + "-" + request.resource.data.year + "-" + request.resource.data.month + "-" + request.resource.data.day;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
-                       // Key fields cannot change
-                       request.resource.data.userId == resource.data.userId &&
-                       request.resource.data.personId == resource.data.personId &&
-                       request.resource.data.year == resource.data.year &&
-                       request.resource.data.month == resource.data.month &&
-                       request.resource.data.day == resource.data.day &&
-                       // Validate status if it's being updated
-                       (!('status' in request.resource.data) ||
-                        (request.resource.data.status is string && ['urlaub', 'durchfuehrung', 'fortbildung', 'interne teamtage', 'feiertag'].hasAny([request.resource.data.status]))) &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    match /dayStatusEntries/{entryId} {
+      allow read: if (
+        (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
+        (resource.data.userId == null && isSignedIn() && entryId.matches('^' + request.auth.uid + '_.*$'))
+      );
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.userId
+        && request.resource.data.userId == resource.data.userId;
     }
 
-    // GlobalDaySettings Collection - Doc ID: {userId}_{year}-{month}-{day}
-    match /globalDaySettings/{docId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() &&
-                       isValidUserData(request.resource.data) &&
-                       request.resource.data.year is number &&
-                       request.resource.data.month is number && request.resource.data.month >= 0 && request.resource.data.month <= 11 &&
-                       request.resource.data.day is number && request.resource.data.day >= 1 && request.resource.data.day <= 31 &&
-                       request.resource.data.status is string && ['interne teamtage', 'feiertag'].hasAny([request.resource.data.status]) && // Only these two for global
-                       docId == request.auth.uid + "_" + request.resource.data.year + "-" + request.resource.data.month + "-" + request.resource.data.day;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
-                       // Key fields cannot change
-                       request.resource.data.userId == resource.data.userId &&
-                       request.resource.data.year == resource.data.year &&
-                       request.resource.data.month == resource.data.month &&
-                       request.resource.data.day == resource.data.day &&
-                       // Validate status if it's being updated
-                       (!('status' in request.resource.data) ||
-                        (request.resource.data.status is string && ['interne teamtage', 'feiertag'].hasAny([request.resource.data.status]))) &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
-    // Default deny all other paths not explicitly matched above
-    match /{path=**} {
-      allow read, write: if false;
+    match /globalDaySettings/{globalDayId} {
+      allow read, create, update, delete: if isSignedIn();
     }
   }
 }
