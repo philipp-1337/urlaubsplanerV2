@@ -1,10 +1,49 @@
 rules_version = '2';
-// Rules completely open for developing purpose
-// TODO: Setup secure and efficient rules
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    // Alle Daten liegen unter users/{userId}/...
+    match /users/{userId} {
+
+      // Personen
+      match /persons/{personId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Resturlaub pro Person/Jahr
+      match /resturlaubData/{resturlaubId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Optional: Validierung der Felder
+        allow update, create: if request.resource.data.tage is int && request.resource.data.tage >= 0;
+      }
+
+      // Beschäftigungsdaten pro Person/Jahr
+      match /employmentData/{employmentId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Optional: Validierung der Felder
+        allow update, create: if
+          (request.resource.data.percentage is int && request.resource.data.percentage >= 0 && request.resource.data.percentage <= 100) &&
+          (request.resource.data.type == 'full-time' || request.resource.data.type == 'part-time');
+      }
+
+      // Jahreskonfigurationen
+      match /yearConfigurations/{yearId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Optional: Validierung der Felder
+        allow update, create: if request.resource.data.urlaubsanspruch is int && request.resource.data.urlaubsanspruch >= 0;
+      }
+
+      // Tagesstatus-Einträge (pro Person/Tag oder global)
+      match /dayStatusEntries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Optional: Validierung der Felder
+        allow update, create: if
+          request.resource.data.year is int &&
+          request.resource.data.month is int &&
+          request.resource.data.day is int &&
+          request.resource.data.status is string &&
+          request.resource.data.personId is string;
+      }
     }
   }
 }
