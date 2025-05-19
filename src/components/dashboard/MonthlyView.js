@@ -103,16 +103,16 @@ const MonthlyView = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-light">
-                  <th className="sticky left-0 z-10 p-2 text-left bg-white border min-w-[100px]">
+                  <th className="sticky left-0 z-10 p-2 text-left bg-white border-l border-t border-r min-w-[100px]">
                     Person
                   </th>
                   {getTageImMonat().map((tag) => (
                     <th
                       key={`header-${tag.tag}`}
-                      className={`p-1 text-center border min-w-[50px] ${
+                      className={`p-1 text-center border-t border-r min-w-[50px] ${
                         tag.istWochenende ? "bg-gray-medium" : "bg-gray-light"
                       }`}
                     >
@@ -122,22 +122,22 @@ const MonthlyView = () => {
                       </div>
                     </th>
                   ))}
-                  <th className="p-2 text-center border min-w-[100px]">
+                  <th className="p-2 text-center border-t border-r min-w-[100px]">
                     Gesamt Urlaub
                   </th>
-                  <th className="p-2 text-center border min-w-[100px]">
+                  <th className="p-2 text-center border-t border-r min-w-[100px]">
                     Gesamt Durchf.
                   </th>
-                  <th className="p-2 text-center border min-w-[100px]">
+                  <th className="p-2 text-center border-t border-r min-w-[100px]">
                     Gesamt Fortb.
                   </th>
-                  <th className="p-2 text-center border min-w-[100px]">
+                  <th className="p-2 text-center border-t border-r min-w-[100px]">
                     Gesamt Teamt.
                   </th>
-                  <th className="p-2 text-center border min-w-[100px]">
+                  <th className="p-2 text-center border-t border-r min-w-[100px]">
                     Gesamt Feiert.
                   </th>
-                  <th className="p-2 text-center border min-w-[100px]">
+                  <th className="p-2 text-center border-t border-r min-w-[100px]">
                     Aktionen
                   </th>
                 </tr>
@@ -145,12 +145,12 @@ const MonthlyView = () => {
               <tbody>
                 {personen.map((person) => (
                   <tr key={person.id}>
-                    <td className="sticky left-0 z-10 p-2 text-left bg-white border min-w-[100px]">
+                    <td className="sticky left-0 z-10 p-2 text-left bg-white border-l border-t border-r min-w-[100px]">
                       {person.name}
                     </td>
                     {getTageImMonat().map((tag) => {
                       const status = getTagStatus(String(person.id), tag.tag);
-                      let cellClass = "p-2 text-center border min-w-[50px]";
+                      let cellClass = "p-2 text-center border-t border-r min-w-[50px]";
                       let cellContent = "";
 
                       if (tag.istWochenende) {
@@ -186,22 +186,22 @@ const MonthlyView = () => {
                         </td>
                       );
                     })}
-                    <td className="p-2 text-center border min-w-[100px]">
+                    <td className="p-2 text-center border-t border-r min-w-[100px]">
                       {getPersonGesamtUrlaub(String(person.id))}
                     </td>
-                    <td className="p-2 text-center border min-w-[100px]">
+                    <td className="p-2 text-center border-t border-r min-w-[100px]">
                       {getPersonGesamtDurchfuehrung(String(person.id))}
                     </td>
-                    <td className="p-2 text-center border min-w-[100px]">
+                    <td className="p-2 text-center border-t border-r min-w-[100px]">
                       {getPersonGesamtFortbildung(String(person.id))}
                     </td>
-                    <td className="p-2 text-center border min-w-[100px]">
+                    <td className="p-2 text-center border-t border-r min-w-[100px]">
                       {getPersonGesamtInterneTeamtage(String(person.id))}
                     </td>
-                    <td className="p-2 text-center border min-w-[100px]">
+                    <td className="p-2 text-center border-t border-r min-w-[100px]">
                       {getPersonGesamtFeiertage(String(person.id))}
                     </td>
-                    <td className="p-2 text-center border min-w-[100px]">
+                    <td className="p-2 text-center border-t border-r min-w-[100px]">
                       <button
                         onClick={() => {
                           setAusgewaehltePersonId(person.id);
@@ -226,7 +226,7 @@ const MonthlyView = () => {
                     return (
                       <td
                         key={`footer-total-${tag.tag}`}
-                        className={`p-1 text-xs text-center border min-w-[50px] ${
+                        className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
                           tag.istWochenende ? "bg-gray-medium" : "bg-gray-light"
                         }`}
                       >
@@ -258,22 +258,22 @@ const MonthlyView = () => {
                       </td>
                     );
                   })}
-                  <td className="p-2 text-center border">
+                  <td className="p-2 text-center border-t border-r border-b">
                     {getGesamtUrlaub()}
                   </td>
-                  <td className="p-2 text-center border">
+                  <td className="p-2 text-center border-t border-r border-b">
                     {getGesamtDurchfuehrung()}
                   </td>
-                  <td className="p-2 text-center border">
+                  <td className="p-2 text-center border-t border-r border-b">
                     {getGesamtFortbildung()}
                   </td>
-                  <td className="p-2 text-center border">
+                  <td className="p-2 text-center border-t border-r border-b">
                     {getGesamtInterneTeamtage()}
                   </td>
-                  <td className="p-2 text-center border">
+                  <td className="p-2 text-center border-t border-r border-b">
                     {getGesamtFeiertage()}
                   </td>
-                  <td className="p-2 border"></td>
+                  <td className="p-2 border-t border-r border-b"></td>
                 </tr>
               </tfoot>
             </table>

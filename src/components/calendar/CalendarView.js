@@ -156,21 +156,21 @@ const CalendarView = ({ navigateToView }) => {
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <button
               onClick={() => {
-                setAnsichtModus('liste'); // Set mode for MonthlyView (all users table)
-                navigate('/'); // Navigate to the route that renders MonthlyView.js
-              }}
-              className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
-            >
-              {getMonatsName(currentMonth)} Übersicht {currentYear}
-            </button>
-            <button
-              onClick={() => {
                 setAnsichtModus('jahresdetail'); // This is the mode for MonthlyDetail view
                 navigate(`/monthly-detail/${ausgewaehltePersonId}`);
               }}
               className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
             >
-              {ausgewaehltePerson.name} Übersicht {currentYear}
+              {ausgewaehltePerson.name} - {currentYear}
+            </button>
+            <button
+              onClick={() => {
+                setAnsichtModus('liste'); // Set mode for MonthlyView (all users table)
+                navigate('/'); // Navigate to the route that renders MonthlyView.js
+              }}
+              className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
+            >
+              {getMonatsName(currentMonth)} - {currentYear}
             </button>
           </div>
 
