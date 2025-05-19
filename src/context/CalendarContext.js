@@ -1,18 +1,34 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext'; // Import useAuth
 
 // Erstellen des Kontexts
 const CalendarContext = createContext();
 
 // Provider-Komponente für den Calendar-Kontext
 export function CalendarProvider({ children }) {
+  const { currentUser } = useAuth(); // Get currentUser to detect login/logout
+
+  // Define initial states for clarity and reset
+  const initialAnsichtModus = 'liste';
+  const initialAusgewaehltePersonId = null;
+  const getInitialCurrentDate = () => new Date(); // Function to get fresh date
+  const initialCurrentMonth = getInitialCurrentDate().getMonth();
+  const initialCurrentYear = getInitialCurrentDate().getFullYear();
+  const initialPersonen = [];
+  const initialResturlaub = {};
+  const initialTagDaten = {};
+  const initialGlobalTagDaten = {};
+  const initialEmploymentData = {};
+  const initialYearConfigurations = [];
+  const initialLoginError = '';
+
   // Ansicht und Navigation 
-  const [ansichtModus, setAnsichtModus] = useState('liste'); // 'liste', 'kalender', 'jahresuebersicht' oder 'jahresdetail'
-  const [ausgewaehltePersonId, setAusgewaehltePersonId] = useState(null);
+  const [ansichtModus, setAnsichtModus] = useState(initialAnsichtModus); // 'liste', 'kalender', 'jahresuebersicht' oder 'jahresdetail'
+  const [ausgewaehltePersonId, setAusgewaehltePersonId] = useState(initialAusgewaehltePersonId);
   
   // Aktuelles Datum und Navigation
-  const [currentDate] = useState(new Date());
-  const [currentMonth, setCurrentMonth] = useState(currentDate.getMonth());
-  const [currentYear, setCurrentYear] = useState(currentDate.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(initialCurrentMonth);
+  const [currentYear, setCurrentYear] = useState(initialCurrentYear);
   
   // Daten
   // const [isLoadingData, setIsLoadingData] = useState(false); // Wird von useFirestore gehandhabt
@@ -22,22 +38,35 @@ export function CalendarProvider({ children }) {
   // Resturlaub vom Vorjahr
   const [resturlaub, setResturlaub] = useState({});
 
-  // Urlaubs- und Durchführungsdaten
-  // This state is managed and updated by useFirestore, but held here.
-  // Format: { 'personId-jahr-monat-tag': 'urlaub'|'durchfuehrung'|null }
-  const [tagDaten, setTagDaten] = useState({});
+  // Urlaubs-, Durchführungsdaten etc. (personenspezifisch)
+  const [tagDaten, setTagDaten] = useState(initialTagDaten);
 
   // Globale Tageseinstellungen (z.B. Feiertage, Teamtage für alle)
-  // Format: { 'jahr-monat-tag': 'status' }
-  const [globalTagDaten, setGlobalTagDaten] = useState({});
+  const [globalTagDaten, setGlobalTagDaten] = useState(initialGlobalTagDaten);
 
   // Beschäftigungsdaten
-  // Format: { personId: { type: 'full-time' | 'part-time', percentage: 100, daysPerWeek: 5|null, id: 'docId' } }
-  const [employmentData, setEmploymentData] = useState({});
+  const [employmentData, setEmploymentData] = useState(initialEmploymentData);
 
   // Jahreskonfigurationen
-  // Format: [{ id: 'docId', year: 2024, urlaubsanspruch: 30, userId: 'uid' }, ...]
-  const [yearConfigurations, setYearConfigurations] = useState([]);
+  const [yearConfigurations, setYearConfigurations] = useState(initialYearConfigurations);
+
+  // Effekt zum Zurücksetzen des Kontext-Status bei Logout
+  useEffect(() => {
+    if (!currentUser) {
+      // Benutzer ist ausgeloggt oder die Sitzung ist abgelaufen
+      setAnsichtModus(initialAnsichtModus);
+      setAusgewaehltePersonId(initialAusgewaehltePersonId);
+      const newCurrentDate = getInitialCurrentDate();
+      setCurrentMonth(newCurrentDate.getMonth());
+      setCurrentYear(newCurrentDate.getFullYear());
+      setLoginError(initialLoginError); // Kalenderspezifische Fehler zurücksetzen
+
+      // Die Daten-Collections (personen, tagDaten, globalTagDaten, resturlaub, 
+      // employmentData, yearConfigurations) werden bereits durch den useEffect 
+      // Hook in useFirestore zurückgesetzt, wenn isLoggedIn false wird.
+      // Daher müssen sie hier nicht erneut explizit zurückgesetzt werden.
+    }
+  }, [currentUser]); // Nur von currentUser abhängig
 
   // Monat wechseln
   const handleMonatWechsel = (richtung) => {
