@@ -105,10 +105,6 @@ Das `src`-Verzeichnis enthält den gesamten Quellcode der React-Anwendung:
 
     Die Anwendung sollte unter `http://localhost:3000` im Browser verfügbar sein.
 
-5. **Demo-Login**:
-    - Benutzername: `admin`
-    - Passwort: `12345`
-
 ## Datenmodell (Firestore)
 
 Die Anwendung verwendet zwei Haupt-Collections in Firestore:

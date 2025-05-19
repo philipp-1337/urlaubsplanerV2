@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useCalendar } from '../../hooks/useCalendar';
 import { useFirestore } from '../../hooks/useFirestore';
 import { db, doc, getDoc } from '../../firebase'; // For direct doc fetching
-import { useAuth } from '../../context/AuthContext'; // To get currentUser for doc IDs
-import { Plus, Save, Trash2, Loader2, ArrowUp, ArrowDown } from 'lucide-react'; // Import Lucide icons, added Loader2, ArrowUp, ArrowDown
+import { useAuth } from '../../context/AuthContext';
+import { Plus, Save, Trash2, Loader2, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react'; // Added RotateCcw
 import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndicator
+import ToggleSwitch from '../common/ToggleSwitch'; // Importiere den neuen ToggleSwitch
 
 const SettingsPage = () => {
   const {
@@ -446,6 +447,46 @@ const SettingsPage = () => {
     }
   };
 
+  // Helper to get the definitive initial data for a person for the selected year
+  // (either from loaded/saved data or application defaults if no data exists)
+  const getInitialDataForPerson = (personId) => {
+    const initialDbState = initialYearlyPersonData[personId]; // Data from DB or last save
+    if (initialDbState) {
+      // These values are typically numbers/strings as saved or loaded
+      return {
+        resturlaub: initialDbState.resturlaub, 
+        employmentType: initialDbState.employmentType,
+        employmentPercentage: initialDbState.employmentPercentage,
+      };
+    }
+    // Defaults for a person/year with no existing data in initialYearlyPersonData
+    // (e.g., new person, or data fetch failed/didn't cover this person)
+    return {
+      resturlaub: '', // Represents an empty input field
+      employmentType: 'full-time',
+      employmentPercentage: 100, // Corresponds to full-time type
+    };
+  };
+
+  const handleResetYearlyData = (personId) => {
+    const dataToResetTo = getInitialDataForPerson(personId);
+
+    setYearlyPersonData(prev => {
+      const updatedPersonData = {
+        ...(prev[personId] || {}), // Preserve any other fields if they exist
+        resturlaub: dataToResetTo.resturlaub,
+        employmentType: dataToResetTo.employmentType,
+        employmentPercentage: dataToResetTo.employmentPercentage,
+      };
+      return {
+        ...prev,
+        [personId]: updatedPersonData,
+      };
+    });
+    // After resetting, hasYearlyDataChanged should become false,
+    // which will disable the save/reset buttons.
+  };
+
   return (
     <main className="container px-4 py-8 mx-auto">
       <h1 className="mb-6 text-3xl font-bold text-gray-800">Einstellungen</h1>
@@ -643,33 +684,67 @@ const SettingsPage = () => {
         ) : yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
           <div className="space-y-4">
             {personen.map(person => {
-              const initialDataForPerson = initialYearlyPersonData[person.id];
-              const currentDataForPerson = yearlyPersonData[person.id];
-              let hasYearlyDataChanged = false;
+              const initialComparableData = getInitialDataForPerson(person.id);
+              const currentDataFromState = yearlyPersonData[person.id] || {}; // Ensure object
 
-              if (initialDataForPerson && currentDataForPerson) {
-                const currentResturlaubStr = String(currentDataForPerson.resturlaub ?? '');
-                const initialResturlaubStr = String(initialDataForPerson.resturlaub ?? '');
-                const currentEmploymentPercentageStr = String(currentDataForPerson.employmentPercentage ?? '');
-                const initialEmploymentPercentageStr = String(initialDataForPerson.employmentPercentage ?? '');
-                const currentEmploymentType = currentDataForPerson.employmentType ?? 'full-time';
-                const initialEmploymentType = initialDataForPerson.employmentType ?? 'full-time';
-
-                if (currentResturlaubStr !== initialResturlaubStr) hasYearlyDataChanged = true;
-                if (!hasYearlyDataChanged && currentEmploymentPercentageStr !== initialEmploymentPercentageStr) hasYearlyDataChanged = true;
-                if (!hasYearlyDataChanged && currentEmploymentType !== initialEmploymentType) hasYearlyDataChanged = true;
-              } else if (currentDataForPerson) { // If user typed into a form that had no initial data (e.g. new person, year not yet saved)
-                if (String(currentDataForPerson.resturlaub ?? '') !== '' || String(currentDataForPerson.employmentPercentage ?? '') !== (initialDataForPerson?.employmentPercentage ?? '100')) hasYearlyDataChanged = true;
+              // Construct a comparable representation of the current data in the form
+              const currentComparableData = {
+                  resturlaub: currentDataFromState.resturlaub ?? '', 
+                  employmentType: currentDataFromState.employmentType ?? 'full-time',
+                  // employmentPercentage needs to be derived based on type for comparison
+                  employmentPercentage: currentDataFromState.employmentPercentage 
+              };
+              if (currentComparableData.employmentType === 'full-time') {
+                  currentComparableData.employmentPercentage = 100;
+              } else { // part-time
+                  // If type is part-time, and percentage is undefined, treat as empty string for comparison
+                  if (currentComparableData.employmentPercentage === undefined) {
+                    currentComparableData.employmentPercentage = '';
+                  }
               }
+
+              let hasYearlyDataChanged = false;
+              if (String(currentComparableData.resturlaub) !== String(initialComparableData.resturlaub)) {
+                hasYearlyDataChanged = true;
+              }
+              if (!hasYearlyDataChanged && currentComparableData.employmentType !== initialComparableData.employmentType) {
+                hasYearlyDataChanged = true;
+              }
+              if (!hasYearlyDataChanged && String(currentComparableData.employmentPercentage) !== String(initialComparableData.employmentPercentage)) {
+                hasYearlyDataChanged = true;
+              }
+
               const isSavingYearly = yearlyDataSavingStates[person.id];
+
               return (
                 <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
+                  {/* Linke Seite: Name, Checkbox, Resturlaub, Prozentsatz */}
                   <div className="flex-grow mb-2 md:mb-0">
-                    <p className="font-medium text-gray-700">{person.name}</p>
-                    <div className="mt-2 space-y-3 md:space-y-0 md:flex md:space-x-4 md:items-end"> {/* Adjusted for checkbox alignment */}
-                      <div className="flex flex-col mb-2 md:mb-0">
-                        <label 
-                          htmlFor={`resturlaub-${person.id}-${selectedConfigYear}`} 
+                    {/* Reihe 1: Name und Teilzeit Checkbox */}
+                    <div className="flex items-center mb-3 space-x-4">
+                      <p className="text-lg font-medium text-gray-700">{person.name}</p>
+                      <div className="flex items-center"> {/* Teilzeit Toggle Container */}
+                        <ToggleSwitch
+                          id={`teilzeit-${person.id}-${selectedConfigYear}`}
+                          label={"Teilzeit"}
+                          checked={yearlyPersonData[person.id]?.employmentType === 'part-time'}
+                          onChange={(e) => {
+                            handleEditYearlyDataChange(
+                              person.id,
+                              'employmentType',
+                              e.target.checked ? 'part-time' : 'full-time'
+                            );
+                          }}
+                          disabled={isSavingYearly}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Reihe 2: Resturlaub und Arbeitszeit % */}
+                    <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4 md:items-end">
+                      <div className="flex flex-col"> {/* Resturlaub Input */}
+                        <label
+                          htmlFor={`resturlaub-${person.id}-${selectedConfigYear}`}
                           className="mb-1 text-sm font-medium text-gray-600"
                         >
                           Resturlaub {selectedConfigYear} (Tage)
@@ -677,37 +752,17 @@ const SettingsPage = () => {
                         <input
                           id={`resturlaub-${person.id}-${selectedConfigYear}`}
                           type="number"
-                          value={yearlyPersonData[person.id]?.resturlaub ?? ''} 
+                          value={yearlyPersonData[person.id]?.resturlaub ?? ''}
                           onChange={(e) => handleEditYearlyDataChange(person.id, 'resturlaub', e.target.value)}
                           className="w-full px-2 py-1 border rounded-md md:w-auto"
                           disabled={isSavingYearly}
                         />
                       </div>
-                      <div className="flex items-center"> {/* Checkbox Container */}
-                        <input
-                          type="checkbox"
-                          id={`teilzeit-${person.id}-${selectedConfigYear}`}
-                          checked={yearlyPersonData[person.id]?.employmentType === 'part-time'}
-                          onChange={(e) => 
-                            handleEditYearlyDataChange(
-                              person.id, 
-                              'employmentType', 
-                              e.target.checked ? 'part-time' : 'full-time'
-                            )
-                          }
-                          className="w-4 h-4 mr-2 text-primary border-gray-300 rounded focus:ring-primary"
-                          disabled={isSavingYearly}
-                        />
-                        <label 
-                          htmlFor={`teilzeit-${person.id}-${selectedConfigYear}`} 
-                          className="text-sm font-medium text-gray-600"
-                        >
-                          Teilzeit
-                        </label>
-                      </div>
+
+                      {/* Arbeitszeit % Input (conditional) */}
                       {yearlyPersonData[person.id]?.employmentType === 'part-time' && (
                         <div className="flex flex-col">
-                          <label 
+                          <label
                             htmlFor={`employmentPercentage-${person.id}-${selectedConfigYear}`}
                             className="mb-1 text-sm font-medium text-gray-600"
                           >
@@ -716,7 +771,7 @@ const SettingsPage = () => {
                           <input
                             id={`employmentPercentage-${person.id}-${selectedConfigYear}`}
                             type="number"
-                            value={yearlyPersonData[person.id]?.employmentPercentage ?? ''} 
+                            value={yearlyPersonData[person.id]?.employmentPercentage ?? ''}
                             onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
                             className="w-full px-2 py-1 border rounded-md md:w-auto"
                             max="100"
@@ -727,15 +782,28 @@ const SettingsPage = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex-shrink-0 md:ml-4">
+                  {/* Rechte Seite: Speicher- und Reset-Button */}
+                  <div className="flex items-center flex-shrink-0 mt-3 md:mt-0 md:ml-4">
                     <button 
                       onClick={() => handleSaveYearlyData(person.id)} 
-                      disabled={isSavingYearly || !hasYearlyDataChanged || !initialDataForPerson}
+                      disabled={isSavingYearly || !hasYearlyDataChanged}
                       className={`w-full p-2 text-sm text-white rounded md:w-auto flex items-center justify-center
-                                  ${isSavingYearly ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (hasYearlyDataChanged && initialDataForPerson ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
-                      aria-label={isSavingYearly ? "Jährliche Daten speichern..." : (hasYearlyDataChanged && initialDataForPerson ? "Jährliche Daten speichern" : "Keine Änderungen an jährlichen Daten")}
+                                  ${isSavingYearly ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (hasYearlyDataChanged ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
+                      aria-label={isSavingYearly ? "Jährliche Daten speichern..." : (hasYearlyDataChanged ? "Jährliche Daten speichern" : "Keine Änderungen an jährlichen Daten")}
                     >
                       {isSavingYearly ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    </button>
+                    <button
+                      onClick={() => handleResetYearlyData(person.id)}
+                      disabled={isSavingYearly || !hasYearlyDataChanged}
+                      className={`p-2 text-sm rounded flex items-center justify-center ml-2
+                                  ${isSavingYearly || !hasYearlyDataChanged 
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                    : 'bg-primary text-white hover:bg-primary'}`}
+                      aria-label="Änderungen zurücksetzen"
+                      title="Änderungen zurücksetzen"
+                    >
+                      <RotateCcw size={16} />
                     </button>
                   </div>
                 </div>
