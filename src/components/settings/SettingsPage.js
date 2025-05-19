@@ -191,13 +191,40 @@ const SettingsPage = () => {
   };
 
   const handleEditYearlyDataChange = (personId, field, value) => {
-    setYearlyPersonData(prev => ({
-      ...prev,
-      [personId]: {
-        ...prev[personId], // Apply existing edits for this person's yearly data
-        [field]: value,
+    setYearlyPersonData(prev => {
+      const newPersonDataForId = { ...(prev[personId] || {}) }; // Start with existing or empty object
+
+      if (field === 'employmentType') {
+        newPersonDataForId.employmentType = value;
+        if (value === 'full-time') {
+          newPersonDataForId.employmentPercentage = 100;
+        }
+        // If switching to part-time, percentage is not changed here.
+        // It will be validated/capped if the percentage input is then edited.
+      } else if (field === 'employmentPercentage') {
+        // This field is only visible/editable if employmentType is 'part-time'.
+        const parsedValue = parseInt(value, 10);
+        if (value === '') { // Allow clearing the field
+          newPersonDataForId.employmentPercentage = '';
+        } else if (!isNaN(parsedValue)) {
+          if (parsedValue > 100) {
+            newPersonDataForId.employmentPercentage = 100; // Cap at 100
+          } else if (parsedValue < 0) {
+            newPersonDataForId.employmentPercentage = 0;   // Cap at 0
+          } else {
+            newPersonDataForId.employmentPercentage = parsedValue;
+          }
+        }
+        // If value is not empty and not a valid number (e.g. "abc"),
+        // parsedValue is NaN. We don't update, input effectively rejects it.
+        // The input type="number" should mostly prevent this.
+      } else {
+        // For other fields like 'resturlaub'
+        newPersonDataForId[field] = value;
       }
-    }));
+
+      return { ...prev, [personId]: newPersonDataForId };
+    });
   };
 
   const handleSavePerson = async (personId) => {
@@ -245,9 +272,13 @@ const SettingsPage = () => {
       if (resturlaubResult.success) resturlaubSaved = true;
 
       // Save Employment Data
+      const employmentPercentageToSave = yearlyData.employmentType === 'part-time'
+        ? (parseInt(yearlyData.employmentPercentage, 10) || 0) // Default to 0 for part-time if empty/invalid
+        : 100; // Always 100 for full-time
+
       const employmentResult = await saveEmploymentData(personId, { 
-        percentage: parseInt(yearlyData.employmentPercentage, 10) || 100, 
-        type: yearlyData.employmentType || 'full-time' // Default type if not set
+        percentage: employmentPercentageToSave,
+        type: yearlyData.employmentType || 'full-time'
       }, selectedConfigYear);
       if (employmentResult.success) employmentSaved = true;
 
@@ -258,7 +289,7 @@ const SettingsPage = () => {
           ...prev,
           [personId]: {
             resturlaub: parseInt(yearlyData.resturlaub, 10) || 0,
-            employmentPercentage: parseInt(yearlyData.employmentPercentage, 10) || 100,
+            employmentPercentage: employmentPercentageToSave,
             employmentType: yearlyData.employmentType || 'full-time',
           }
         }));
@@ -621,9 +652,12 @@ const SettingsPage = () => {
                 const initialResturlaubStr = String(initialDataForPerson.resturlaub ?? '');
                 const currentEmploymentPercentageStr = String(currentDataForPerson.employmentPercentage ?? '');
                 const initialEmploymentPercentageStr = String(initialDataForPerson.employmentPercentage ?? '');
+                const currentEmploymentType = currentDataForPerson.employmentType ?? 'full-time';
+                const initialEmploymentType = initialDataForPerson.employmentType ?? 'full-time';
 
                 if (currentResturlaubStr !== initialResturlaubStr) hasYearlyDataChanged = true;
                 if (!hasYearlyDataChanged && currentEmploymentPercentageStr !== initialEmploymentPercentageStr) hasYearlyDataChanged = true;
+                if (!hasYearlyDataChanged && currentEmploymentType !== initialEmploymentType) hasYearlyDataChanged = true;
               } else if (currentDataForPerson) { // If user typed into a form that had no initial data (e.g. new person, year not yet saved)
                 if (String(currentDataForPerson.resturlaub ?? '') !== '' || String(currentDataForPerson.employmentPercentage ?? '') !== (initialDataForPerson?.employmentPercentage ?? '100')) hasYearlyDataChanged = true;
               }
@@ -632,7 +666,7 @@ const SettingsPage = () => {
                 <div key={person.id} className="flex flex-col p-3 border rounded-md md:flex-row md:items-center md:justify-between">
                   <div className="flex-grow mb-2 md:mb-0">
                     <p className="font-medium text-gray-700">{person.name}</p>
-                    <div className="mt-2 md:flex md:space-x-4"> {/* Increased space for better layout with labels */}
+                    <div className="mt-2 space-y-3 md:space-y-0 md:flex md:space-x-4 md:items-end"> {/* Adjusted for checkbox alignment */}
                       <div className="flex flex-col mb-2 md:mb-0">
                         <label 
                           htmlFor={`resturlaub-${person.id}-${selectedConfigYear}`} 
@@ -649,23 +683,48 @@ const SettingsPage = () => {
                           disabled={isSavingYearly}
                         />
                       </div>
-                      <div className="flex flex-col">
-                        <label 
-                          htmlFor={`employmentPercentage-${person.id}-${selectedConfigYear}`}
-                          className="mb-1 text-sm font-medium text-gray-600"
-                        >
-                          Arbeitszeit % {selectedConfigYear}
-                        </label>
+                      <div className="flex items-center"> {/* Checkbox Container */}
                         <input
-                          id={`employmentPercentage-${person.id}-${selectedConfigYear}`}
-                          type="number"
-                          value={yearlyPersonData[person.id]?.employmentPercentage ?? ''} 
-                          onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
-                          className="w-full px-2 py-1 border rounded-md md:w-auto"
+                          type="checkbox"
+                          id={`teilzeit-${person.id}-${selectedConfigYear}`}
+                          checked={yearlyPersonData[person.id]?.employmentType === 'part-time'}
+                          onChange={(e) => 
+                            handleEditYearlyDataChange(
+                              person.id, 
+                              'employmentType', 
+                              e.target.checked ? 'part-time' : 'full-time'
+                            )
+                          }
+                          className="w-4 h-4 mr-2 text-primary border-gray-300 rounded focus:ring-primary"
                           disabled={isSavingYearly}
                         />
+                        <label 
+                          htmlFor={`teilzeit-${person.id}-${selectedConfigYear}`} 
+                          className="text-sm font-medium text-gray-600"
+                        >
+                          Teilzeit
+                        </label>
                       </div>
-                      {/* Consider adding employmentType dropdown as well */}
+                      {yearlyPersonData[person.id]?.employmentType === 'part-time' && (
+                        <div className="flex flex-col">
+                          <label 
+                            htmlFor={`employmentPercentage-${person.id}-${selectedConfigYear}`}
+                            className="mb-1 text-sm font-medium text-gray-600"
+                          >
+                            Arbeitszeit % {selectedConfigYear}
+                          </label>
+                          <input
+                            id={`employmentPercentage-${person.id}-${selectedConfigYear}`}
+                            type="number"
+                            value={yearlyPersonData[person.id]?.employmentPercentage ?? ''} 
+                            onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
+                            className="w-full px-2 py-1 border rounded-md md:w-auto"
+                            max="100"
+                            min="0"
+                            disabled={isSavingYearly}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex-shrink-0 md:ml-4">
