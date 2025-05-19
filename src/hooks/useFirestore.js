@@ -504,6 +504,44 @@ export const useFirestore = () => {
     }
   };
 
+  // Batch set global day settings
+  const batchSetGlobalDaySettings = async (year, holidays, status) => {
+    if (!currentUser) throw new Error("Benutzer nicht authentifiziert für Batch-Setzen globaler Tage.");
+    if (!holidays || holidays.length === 0) return { success: true, message: "Keine Tage zum Setzen vorhanden." };
+
+    const batch = writeBatch(db);
+    const newGlobalEntriesForContext = {};
+
+    holidays.forEach(holiday => { // holiday = { day: D, month: M (0-indexed) }
+      const docId = `${currentUser.uid}_${year}-${holiday.month}-${holiday.day}`;
+      const entryRef = doc(db, 'globalDaySettings', docId);
+      const dataToSet = {
+        userId: currentUser.uid,
+        year: year,
+        month: holiday.month, // 0-indexed month
+        day: holiday.day,
+        status: status
+      };
+      batch.set(entryRef, dataToSet);
+      if (year === currentYear) { // Prepare for context update if it's the current global year
+        newGlobalEntriesForContext[`${year}-${holiday.month}-${holiday.day}`] = status;
+      }
+    });
+
+    try {
+      await batch.commit();
+      console.log(`[Firestore BatchGlobalDay SUCCESS] Batch set ${holidays.length} Tage für Jahr ${year} auf Status '${status}'.`);
+      if (year === currentYear && Object.keys(newGlobalEntriesForContext).length > 0) {
+        setGlobalTagDaten(prev => ({ ...prev, ...newGlobalEntriesForContext }));
+      }
+      return { success: true };
+    } catch (error) {
+      console.error("[Firestore BatchGlobalDay ERROR] Fehler beim Batch-Setzen globaler Tagesstatus: ", error);
+      setLoginError(`Fehler beim globalen Setzen der Status (Batch): ${error.message}.`);
+      throw error;
+    }
+  };
+
   return {
     isLoadingData,
     setTagStatus,
@@ -520,6 +558,7 @@ export const useFirestore = () => {
     fetchPersonSpecificDataForYear, // Expose placeholder
     setGlobalDaySetting,    // Neue Funktion zum Setzen globaler Tage
     deleteGlobalDaySetting, // Neue Funktion zum Löschen globaler Tage
+    batchSetGlobalDaySettings, // Neue Funktion für Batch-Import
     savePersonOrder: memoizedSavePersonOrder, // Expose new function
   };
 };

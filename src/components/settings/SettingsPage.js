@@ -5,6 +5,7 @@ import { db, doc, getDoc } from '../../firebase'; // For direct doc fetching
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Save, Trash2, Loader2, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react'; // Added RotateCcw
 import LoadingIndicator from '../common/LoadingIndicator'; // Import LoadingIndicator
+import { getHolidays } from 'feiertagejs'; // Importiere feiertagejs
 import ToggleSwitch from '../common/ToggleSwitch'; // Importiere den neuen ToggleSwitch
 
 const SettingsPage = () => {
@@ -20,6 +21,7 @@ const SettingsPage = () => {
     saveResturlaub, saveEmploymentData,
     fetchYearConfigurations, addYearConfiguration, deleteYearConfiguration,
     setGlobalDaySetting,    // Neue Funktion
+    batchSetGlobalDaySettings, // Importierte Funktion für Batch-Setzen
     deleteGlobalDaySetting, // Neue Funktion
     // updateYearConfiguration, // For future enhancement
   } = useFirestore();
@@ -36,6 +38,7 @@ const SettingsPage = () => {
   // State for prefilling global days
   const [prefillDate, setPrefillDate] = useState({ day: '', month: '' });
   const [isPrefilling, setIsPrefilling] = useState(false);
+  const [isImportingHolidays, setIsImportingHolidays] = useState(false); // State für Feiertagsimport
 
   // Fetch year configurations on mount and when currentUser is available
   useEffect(() => {
@@ -485,6 +488,43 @@ const SettingsPage = () => {
       setIsPrefilling(false);
     }
   };
+
+  const handleImportGermanHolidays = async () => {
+    if (!selectedConfigYear) {
+      alert("Bitte wählen Sie zuerst ein Jahr aus, für das die Feiertage importiert werden sollen.");
+      return;
+    }
+
+    if (!window.confirm(`Möchten Sie die bundesweiten deutschen Feiertage für ${selectedConfigYear} importieren? Bestehende globale Einstellungen für diese Tage werden als 'Feiertag' überschrieben.`)) {
+      return;
+    }
+
+    setIsImportingHolidays(true);
+    try {
+      // 'BUND' für bundesweite Feiertage. Man könnte hier auch ein Bundesland-Kürzel verwenden.
+      const holidaysFromLib = getHolidays(selectedConfigYear, 'BUND'); 
+
+      const holidaysToSet = holidaysFromLib.map(h => ({
+        day: h.date.getDate(),
+        month: h.date.getMonth(), // getMonth() ist 0-indiziert, passend für unsere Logik
+        // name: h.name // Name könnte optional mitgespeichert werden, wenn das Schema es zulässt
+      }));
+
+      if (holidaysToSet.length > 0) {
+        await batchSetGlobalDaySettings(selectedConfigYear, holidaysToSet, 'feiertag');
+        alert(`Bundesweite Feiertage für ${selectedConfigYear} wurden erfolgreich importiert und als 'Feiertag' gesetzt.`);
+      } else {
+        alert(`Keine bundesweiten Feiertage für ${selectedConfigYear} gefunden oder die Bibliothek konnte sie nicht bereitstellen.`);
+      }
+    } catch (error) {
+      console.error("Error importing German holidays:", error);
+      alert(`Fehler beim Importieren der Feiertage: ${error.message}`);
+    } finally {
+      setIsImportingHolidays(false);
+    }
+  };
+
+
 
   // Helper to get the definitive initial data for a person for the selected year
   // (either from loaded/saved data or application defaults if no data exists)
@@ -943,6 +983,15 @@ const SettingsPage = () => {
                 className="w-full px-4 py-2 text-white bg-gray-dark rounded-md md:w-auto hover:bg-gray-medium hover:text-gray-dark disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
               >
                 {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Feiertag
+              </button>
+              <button
+                onClick={handleImportGermanHolidays}
+                disabled={isImportingHolidays || !selectedConfigYear || personen.length === 0 || isPrefilling}
+                className="w-full px-4 py-2 text-white bg-blue-500 rounded-md md:w-auto hover:bg-blue-600 disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
+                title={!selectedConfigYear ? "Bitte zuerst ein Jahr auswählen" : (personen.length === 0 ? "Bitte zuerst Personen anlegen" : "Bundesweite Feiertage importieren")}
+              >
+                {isImportingHolidays ? <Loader2 size={20} className="animate-spin mr-2" /> : null}
+                Feiertage importieren
               </button>
             </div>
           </>
