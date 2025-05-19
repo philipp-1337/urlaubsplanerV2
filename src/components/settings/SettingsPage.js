@@ -464,6 +464,14 @@ const SettingsPage = () => {
       return;
     }
 
+    // Prüfen, ob der ausgewählte Tag ein Wochenende ist
+    const dateToCheck = new Date(selectedConfigYear, month, day);
+    if (dateToCheck.getDay() === 0 || dateToCheck.getDay() === 6) { // 0 = Sonntag, 6 = Samstag
+      alert("Globale Tage können nicht auf ein Wochenende gelegt werden.");
+      setIsPrefilling(false); // Wichtig, um den Button wieder freizugeben
+      return;
+    }
+
     setIsPrefilling(true);
     let actionConfirmedAndExecuted = false;
     try {
@@ -513,17 +521,29 @@ const SettingsPage = () => {
       // 'BUND' für bundesweite Feiertage. Man könnte hier auch ein Bundesland-Kürzel verwenden.
       const holidaysFromLib = getHolidays(selectedConfigYear, 'BUND'); 
 
-      const holidaysToSet = holidaysFromLib.map(h => ({
-        day: h.date.getDate(),
-        month: h.date.getMonth(), // getMonth() ist 0-indiziert, passend für unsere Logik
-        // name: h.name // Name könnte optional mitgespeichert werden, wenn das Schema es zulässt
-      }));
+      const holidaysToSet = [];
+      let skippedWeekendHolidays = 0;
+
+      holidaysFromLib.forEach(h => {
+        const dayOfWeek = h.date.getDay(); // 0 = Sonntag, 6 = Samstag
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          holidaysToSet.push({
+            day: h.date.getDate(),
+            month: h.date.getMonth(), // getMonth() ist 0-indiziert
+          });
+        } else {
+          skippedWeekendHolidays++;
+        }
+      });
 
       if (holidaysToSet.length > 0) {
         await batchSetGlobalDaySettings(selectedConfigYear, holidaysToSet, 'feiertag');
         alert(`Bundesweite Feiertage für ${selectedConfigYear} wurden erfolgreich importiert und als 'Feiertag' gesetzt.`);
       } else {
         alert(`Keine bundesweiten Feiertage für ${selectedConfigYear} gefunden oder die Bibliothek konnte sie nicht bereitstellen.`);
+      }
+      if (skippedWeekendHolidays > 0) {
+        alert(`${skippedWeekendHolidays} Feiertag(e) wurde(n) übersprungen, da sie auf ein Wochenende gefallen wären.`);
       }
     } catch (error) {
       console.error("Error importing German holidays:", error);

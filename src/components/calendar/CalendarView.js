@@ -40,8 +40,11 @@ const CalendarView = ({ navigateToView }) => {
       let neuerStatus = null;
 
       // Bestimme den nächsten Status basierend auf dem aktuell angezeigten Status
-      if (currentStatus === null || currentStatus === 'feiertag') {
-        // Wenn kein spezifischer/globaler Status oder ein globaler Feiertag angezeigt wird, starte mit 'urlaub'
+      if (currentStatus === null || currentStatus === 'feiertag' || currentStatus === 'interne teamtage') {
+        // Wenn kein Status, oder ein globaler Feiertag, oder ein (globaler oder personenspezifischer) Teamtag angezeigt wird,
+        // ist der nächste Status 'urlaub'.
+        // Dies überschreibt globale Feiertage/Teamtage und startet den Zyklus.
+        // Ein personenspezifischer Teamtag wird so auch zu 'urlaub'.
         neuerStatus = 'urlaub';
       } else if (currentStatus === 'urlaub') {
         neuerStatus = 'durchfuehrung';
@@ -49,10 +52,7 @@ const CalendarView = ({ navigateToView }) => {
         neuerStatus = 'fortbildung';
       } else if (currentStatus === 'fortbildung') {
         neuerStatus = 'interne teamtage';
-      } else if (currentStatus === 'interne teamtage') {
-        // Wenn der aktuelle Status 'interne teamtage' ist, geht es zurück zu null (löscht den personenspezifischen Eintrag)
-        neuerStatus = null; 
-      } // Wenn der aktuelle Status 'feiertag' war (und nicht null), wird er oben abgefangen und auf 'urlaub' gesetzt.
+      } // Wenn currentStatus 'interne teamtage' war, wird er durch die erste Bedingung abgefangen und zu 'urlaub'.
       
       setTagStatus(personIdStr, tagObject.tag, neuerStatus, currentMonth, currentYear);
     }

@@ -23,7 +23,7 @@ const DayCell = ({
       } else if (status === 'durchfuehrung') {
         cellClass += " bg-bold-mint text-white hover:bg-pastel-mint hover:text-bold-mint"; 
       } else if (status === 'fortbildung') {
-        cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-lavender"; 
+        cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-apricot"; 
       } else if (status === 'interne teamtage') {
         cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-lavender"; 
       } else if (status === 'feiertag') {
