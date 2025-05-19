@@ -35,17 +35,9 @@ const MonthlyView = () => {
   const handleDayCellClick = (personId, tagObject) => {
     const personIdStr = String(personId);
     if (!tagObject.istWochenende) {
-      // Hole den aktuell angezeigten Status (berücksichtigt globale Einstellungen)
       const currentStatus = getTagStatus(personIdStr, tagObject.tag);
-
       let neuerStatus = null;
-
-      // Bestimme den nächsten Status basierend auf dem aktuell angezeigten Status
-      if (currentStatus === null || currentStatus === 'feiertag' || currentStatus === 'interne teamtage') {
-        // Wenn kein Status, oder ein globaler Feiertag, oder ein (globaler oder personenspezifischer) Teamtag angezeigt wird,
-        // ist der nächste Status 'urlaub'.
-        // Dies überschreibt globale Feiertage/Teamtage und startet den Zyklus.
-        // Ein personenspezifischer Teamtag wird so auch zu 'urlaub'.
+      if (currentStatus === null) {
         neuerStatus = 'urlaub';
       } else if (currentStatus === 'urlaub') {
         neuerStatus = 'durchfuehrung';
@@ -53,8 +45,9 @@ const MonthlyView = () => {
         neuerStatus = 'fortbildung';
       } else if (currentStatus === 'fortbildung') {
         neuerStatus = 'interne teamtage';
-      } // Wenn currentStatus 'interne teamtage' war, wird er durch die erste Bedingung abgefangen und zu 'urlaub'.
-      
+      } else if (currentStatus === 'interne teamtage') {
+        neuerStatus = 'feiertag';
+      } // if currentStatus is 'feiertag', neuerStatus bleibt null (löschen)
       setTagStatus(personIdStr, tagObject.tag, neuerStatus, currentMonth, currentYear);
     }
   };
@@ -236,7 +229,7 @@ const MonthlyView = () => {
                       <td
                         key={`footer-total-${tag.tag}`}
                         className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
-                          tag.istWochenende ? "bg-gray-light" : "bg-gray-light"
+                          tag.istWochenende ? "bg-gray-medium" : "bg-gray-light"
                         }`}
                       >
                         {dailyTotals.urlaubCount > 0 && (
