@@ -21,7 +21,7 @@ function LoginForm() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center text-blue-600">Urlaubsplaner Login</h1>
+        <h1 className="mb-6 text-2xl font-bold text-center text-primary">Urlaubsplaner Login</h1>
         
         {loginError && (
           <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
@@ -40,7 +40,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           
@@ -54,21 +54,21 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           
           <button
             onClick={login}
-            className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
             Anmelden
           </button>
           
           <div className="mt-4 text-sm text-center text-gray-600">
             <p>Demo Zugangsdaten:</p>
-            <p>E-Mail: admin@example.com (oder dein Test-User)</p>
-            <p>Passwort: denkmodell! (oder dein Test-Passwort)</p>
+            <p>E-Mail: demo@example.com</p>
+            <p>Passwort: Demo!337#</p>
           </div>
         </div>
       </div>

@@ -14,7 +14,7 @@ const YearlyOverview = () => { // navigateToView prop removed
     getPersonJahresDurchfuehrung,
     getPersonJahresFortbildung,
     getPersonJahresInterneTeamtage,
-    getPersonJahresFeiertage,
+    // getPersonJahresFeiertage,
     getPersonResturlaub,
     setAusgewaehltePersonId,
     setAnsichtModus,
@@ -79,18 +79,18 @@ const YearlyOverview = () => { // navigateToView prop removed
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
+                  <th className="sticky left-0 z-10 p-3 text-left bg-white border">
                     Person
                   </th>
                   <th className="p-3 text-center border">Resturlaub</th>
                   <th className="p-3 text-center border">Urlaub</th>
                   <th className="p-3 text-center border">Gesamt</th>
-                  <th className="p-3 text-center border">Urlaubstage</th>
+                  <th className="p-3 text-center border">Verplant</th>
                   <th className="p-3 text-center border">Verbleibend</th>
                   <th className="p-3 text-center border">Durchführung</th>
                   <th className="p-3 text-center border">Fortbildung</th>
                   <th className="p-3 text-center border">Teamtage</th>
-                  <th className="p-3 text-center border">Feiertage</th>
+                  {/* <th className="p-3 text-center border">Feiertage</th> */}
                   <th className="p-3 text-center border">Details</th>
                 </tr>
               </thead>
@@ -100,7 +100,7 @@ const YearlyOverview = () => { // navigateToView prop removed
                   const jahresDurchfuehrung = getPersonJahresDurchfuehrung(person.id, currentYear);
                   const jahresFortbildung = getPersonJahresFortbildung(person.id, currentYear);
                   const jahresTeamtage = getPersonJahresInterneTeamtage(person.id, currentYear);
-                  const jahresFeiertage = getPersonJahresFeiertage(person.id, currentYear);
+                  // const jahresFeiertage = getPersonJahresFeiertage(person.id, currentYear);
                   const personResturlaub = getPersonResturlaub(person.id);
                   const urlaubsanspruchAktuell = getCurrentYearUrlaubsanspruch(currentYear);
                   const gesamtVerfuegbarerUrlaub = urlaubsanspruchAktuell + personResturlaub;
@@ -121,7 +121,7 @@ const YearlyOverview = () => { // navigateToView prop removed
                       <td className="p-3 text-center border">{jahresDurchfuehrung}</td>
                       <td className="p-3 text-center border">{jahresFortbildung}</td>
                       <td className="p-3 text-center border">{jahresTeamtage}</td>
-                      <td className="p-3 text-center border">{jahresFeiertage}</td>
+                      {/* <td className="p-3 text-center border">{jahresFeiertage}</td> */}
                       <td className="p-3 text-center border">
                         <button
                           onClick={() => {
@@ -129,7 +129,7 @@ const YearlyOverview = () => { // navigateToView prop removed
                             setAnsichtModus('jahresdetail');
                             navigate(`/monthly-detail/${person.id}`);
                           }}
-                          className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                          className="px-4 py-1 text-white bg-primary rounded hover:bg-accent hover:text-primary"
                         >
                           <GanttChartIcon size={16} />
                         </button>

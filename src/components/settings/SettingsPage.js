@@ -428,18 +428,18 @@ const SettingsPage = () => {
             placeholder="Jahr"
             value={newYearData.year}
             onChange={(e) => setNewYearData(prev => ({ ...prev, year: parseInt(e.target.value) || '' }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <input
             type="number"
             placeholder="Urlaubsanspruch (Tage)"
             value={newYearData.urlaubsanspruch}
             onChange={(e) => setNewYearData(prev => ({ ...prev, urlaubsanspruch: parseInt(e.target.value) || 0 }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button 
             onClick={handleAddYearConfig} 
-            className="w-full px-3 py-2 text-white bg-blue-600 rounded-md md:w-auto hover:bg-blue-700 flex items-center justify-center"
+            className="w-full px-3 py-2 text-white bg-primary rounded-md md:w-auto hover:bg-accent hover:text-primary flex items-center justify-center"
             aria-label="Jahr hinzufügen"
           >
             <Plus size={20} />
@@ -482,11 +482,11 @@ const SettingsPage = () => {
             value={newPersonName}
             onChange={(e) => setNewPersonName(e.target.value)}
             placeholder="Name der neuen Person"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md md:w-auto max-w-xs focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button 
             onClick={handleAddPerson} 
-            className="w-full px-3 py-2 text-white bg-blue-600 rounded-md md:w-auto hover:bg-blue-700 flex items-center justify-center"
+            className="w-full px-3 py-2 text-white bg-primary rounded-md md:w-auto hover:bg-accent hover:text-primary flex items-center justify-center"
             aria-label="Person hinzufügen"
           >
             <Plus size={20} />
@@ -498,7 +498,7 @@ const SettingsPage = () => {
             disabled={!isOrderChanged || isSavingOrder || isSavingOrder}
             className={`px-4 py-2 text-sm text-white rounded-md flex items-center justify-center
                         ${isSavingOrder ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' :
-                          (isOrderChanged ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed')}`}
+                          (isOrderChanged ? 'bg-primary hover:bg-accent hover:text-primary' : 'bg-gray-400 cursor-not-allowed')}`}
             aria-label={isSavingOrder ? "Reihenfolge wird gespeichert..." : (isOrderChanged ? "Reihenfolge speichern" : "Keine Änderungen an der Reihenfolge")}
           >
             {isSavingOrder ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
@@ -518,7 +518,7 @@ const SettingsPage = () => {
                       <button
                         onClick={() => handleMovePerson(person.id, 'up')}
                         disabled={index === 0 || isSavingOrder || isSavingName}
-                        className="p-1 text-gray-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-1 text-gray-600 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         aria-label="Nach oben verschieben"
                       >
                         <ArrowUp size={18} />
@@ -526,7 +526,7 @@ const SettingsPage = () => {
                       <button
                         onClick={() => handleMovePerson(person.id, 'down')}
                         disabled={index === orderedPersons.length - 1 || isSavingOrder || isSavingName}
-                        className="p-1 text-gray-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-1 text-gray-600 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         aria-label="Nach unten verschieben"
                       >
                         <ArrowDown size={18} />
@@ -583,7 +583,7 @@ const SettingsPage = () => {
                 onClick={() => setSelectedConfigYear(yc.year)}
                 className={`px-3 py-2 -mb-px text-sm font-medium leading-5 focus:outline-none transition-colors duration-150 ease-in-out ${
                   selectedConfigYear === yc.year
-                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    ? 'border-b-2 border-primary text-primary'
                     : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 border-transparent'
                 }`}
               >
@@ -697,7 +697,7 @@ const SettingsPage = () => {
                   value={prefillDate.day}
                   onChange={(e) => handlePrefillDateChange('day', e.target.value)}
                   placeholder="TT"
-                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-primary"
                   min="1"
                   max="31"
                 />
@@ -710,7 +710,7 @@ const SettingsPage = () => {
                   value={prefillDate.month}
                   onChange={(e) => handlePrefillDateChange('month', e.target.value)}
                   placeholder="MM"
-                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-primary"
                   min="1"
                   max="12"
                 />
@@ -718,14 +718,14 @@ const SettingsPage = () => {
               <button
                 onClick={() => handleApplyPrefill('interne teamtage')}
                 disabled={isPrefilling || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
-                className="w-full px-4 py-2 text-white bg-purple-600 rounded-md md:w-auto hover:bg-purple-700 disabled:bg-gray-400 flex items-center justify-center"
+                className="w-full px-4 py-2 text-white bg-bold-apricot rounded-md md:w-auto hover:bg-pastel-apricot hover:text-bold-apricot disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
               >
                 {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Teamtag
               </button>
               <button
                 onClick={() => handleApplyPrefill('feiertag')}
                 disabled={isPrefilling || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
-                className="w-full px-4 py-2 text-white bg-orange-600 rounded-md md:w-auto hover:bg-orange-700 disabled:bg-gray-400 flex items-center justify-center"
+                className="w-full px-4 py-2 text-white bg-gray-dark rounded-md md:w-auto hover:bg-gray-medium hover:text-gray-dark disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
               >
                 {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Feiertag
               </button>

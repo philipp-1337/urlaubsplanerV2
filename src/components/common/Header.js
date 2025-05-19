@@ -34,7 +34,7 @@ function Header() {
   };
   
   return (
-    <header className="bg-denkmodell text-white shadow-md">
+    <header className="bg-primary text-white shadow-md">
       <div className="container flex items-center justify-between px-4 py-4 mx-auto">
         <div className="flex items-center"> {/* Wrapper für Titel und Ladeindikator */}
           <h1 className="text-2xl font-bold">
@@ -68,7 +68,7 @@ function Header() {
               setAnsichtModus('liste');
               handleMonatWechsel('aktuell');
               navigate('/');
-            }} className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+            }} className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
           >
             Aktueller Monat
           </button>
@@ -77,7 +77,7 @@ function Header() {
               setAnsichtModus('jahresuebersicht');
               navigate('/yearly-overview');
             }}
-            className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+            className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
           >
             Jahresübersicht
           </button>
@@ -85,13 +85,13 @@ function Header() {
             onClick={() => {
               // setAnsichtModus might not be relevant for settings, or define a new mode
               navigate('/settings');
-            }} className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+            }} className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
           >
             Einstellungen
           </button>
           <button
             onClick={logout}
-            className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+            className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
           >
             Abmelden
           </button>
@@ -99,7 +99,7 @@ function Header() {
 
         {/* Mobile Drawer */}
         <div
-          className={`fixed inset-y-0 right-0 w-64 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-40 ${
+          className={`fixed inset-y-0 right-0 w-64 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-10 ${
             isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
           } lg:hidden`}
         >
@@ -113,25 +113,25 @@ function Header() {
           <nav className="flex flex-col p-4 space-y-4">
             <button
               onClick={() => handleNavClick('liste', 'aktuell')}
-              className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+              className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
             >
               Aktueller Monat
             </button>
             <button
               onClick={() => handleNavClick('jahresuebersicht')}
-              className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+              className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
             >
               Jahresübersicht
             </button>
             <button
               onClick={() => handleNavClick('einstellungen')} // Assuming 'einstellungen' could be a mode or just navigate
-              className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+              className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
             >
               Einstellungen
             </button>
             <button
             onClick={logout}
-            className="px-4 py-2 text-denkmodell bg-white rounded-md hover:bg-gray-100"
+            className="px-4 py-2 text-primary bg-white rounded-md hover:bg-gray-100"
           >
             Abmelden
           </button>

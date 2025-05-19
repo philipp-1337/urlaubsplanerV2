@@ -71,23 +71,23 @@ const CalendarView = ({ navigateToView }) => {
           <div className="mb-6">
             <div className="flex flex-wrap mb-2 space-x-2">
               <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-blue-500 rounded"></div>
+                <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
                 <span>Urlaub</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-green-500 rounded"></div>
+                <div className="w-4 h-4 mr-1 bg-bold-mint rounded"></div>
                 <span>Durchführung</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-yellow-500 rounded"></div>
+                <div className="w-4 h-4 mr-1 bg-bold-apricot rounded"></div>
                 <span>Fortbildung</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-purple-500 rounded"></div>
+                <div className="w-4 h-4 mr-1 bg-bold-lavender rounded"></div>
                 <span>Teamtag</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-orange-500 rounded"></div>
+                <div className="w-4 h-4 mr-1 bg-gray-dark rounded"></div>
                 <span>Feiertag</span>
               </div>
               {/* <div className="flex items-center">

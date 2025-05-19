@@ -50,7 +50,7 @@ const MonthlyDetail = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
+                <th className="sticky left-0 z-10 p-3 text-left bg-white border">
                   Monat
                 </th>
                 <th className="p-3 text-center border">Urlaubstage</th>
@@ -89,7 +89,7 @@ const MonthlyDetail = () => {
                         setAnsichtModus('kalender');
                         navigate(`/calendar/${ausgewaehltePersonId}`);
                       }}
-                      className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                      className="px-4 py-1 text-white bg-primary rounded hover:bg-accent hover:text-primary"
                     >
                       <CalendarDaysIcon size={16} />
                     </button>
@@ -99,7 +99,7 @@ const MonthlyDetail = () => {
             </tbody>
             <tfoot>
               <tr className="bg-gray-100 font-bold">
-                <td className="sticky left-0 z-10 p-3 bg-gray-100 border"> {/* z-10 wie Header für Konsistenz */}
+                <td className="sticky left-0 z-10 p-3 bg-white border"> {/* z-10 wie Header für Konsistenz */}
                   Gesamt
                 </td>
                 <td className="p-3 text-center border">
@@ -128,7 +128,7 @@ const MonthlyDetail = () => {
                 setAnsichtModus('jahresuebersicht');
                 navigate('/yearly-overview');
               }}
-              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary"
             >
               Jahresübersicht
             </button>

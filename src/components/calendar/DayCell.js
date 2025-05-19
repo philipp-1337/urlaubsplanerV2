@@ -12,43 +12,43 @@ const DayCell = ({
   
   if (isWeekend) {
     cellClass = view === 'calendar' 
-      ? "p-2 bg-gray-300 rounded" 
-      : "p-2 text-center border min-w-[50px] bg-gray-200";
+      ? "p-2 bg-gray-medium rounded" 
+      : "p-2 text-center border min-w-[50px] bg-gray-medium";
   } else {
     if (view === 'calendar') {
-      cellClass = "p-2 rounded cursor-pointer";
+      cellClass = "p-2 rounded cursor-pointer border";
       
       if (status === 'urlaub') {
-        cellClass += " bg-blue-500 text-white";
+        cellClass += " bg-bold-blue text-white hover:bg-pastel-blue hover:text-bold-blue";
       } else if (status === 'durchfuehrung') {
-        cellClass += " bg-green-500 text-white"; // Verwendung der benutzerdefinierten Farbe
+        cellClass += " bg-bold-mint text-white hover:bg-pastel-mint hover:text-bold-mint"; 
       } else if (status === 'fortbildung') {
-        cellClass += " bg-yellow-500 text-white"; // Gelb für Fortbildung
+        cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-lavender"; 
       } else if (status === 'interne teamtage') {
-        cellClass += " bg-purple-500 text-white"; // Lila für Interne Teamtage
+        cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-apricot"; 
       } else if (status === 'feiertag') {
-        cellClass += " bg-orange-500 text-white"; // Orange für Feiertag
+        cellClass += " bg-gray-dark text-white hover:bg-gray-medium hover:text-gray-dark"; 
       } else {
-        cellClass += " bg-white border border-gray-300 hover:bg-gray-100";
+        cellClass += " bg-white border border-gray-medium hover:bg-gray-medium hover:text-gray-dark";
       }
     } else {
-      cellClass = "p-2 text-center border min-w-[50px] cursor-pointer hover:bg-black-50";
+      cellClass = "p-2 text-center border min-w-[50px] cursor-pointer hover:bg-gray-medium";
       
       if (status === 'urlaub') {
-        cellClass += " bg-blue-500 text-white hover:bg-blue-600";
+        cellClass += " bg-bold-blue text-white hover:bg-pastel-blue hover:text-bold-blue";
         cellContent = "U";
       } else if (status === 'durchfuehrung') {
-        cellClass += " bg-green-500 text-white hover:bg-green-600";
+        cellClass += " bg-bold-mint text-white hover:bg-pastel-mint hover:text-bold-mint";
         cellContent = "D";
       } else if (status === 'fortbildung') {
-        cellClass += " bg-yellow-500 text-white hover:bg-yellow-600";
-        cellContent = "F"; // F für Fortbildung
+        cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-lavender";
+        cellContent = "F"; 
       } else if (status === 'interne teamtage') {
-        cellClass += " bg-purple-500 text-white hover:bg-purple-600";
-        cellContent = "T"; // T für Teamtag
+        cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-apricot";
+        cellContent = "T"; 
       } else if (status === 'feiertag') {
-        cellClass += " bg-orange-500 text-white hover:bg-orange-600";
-        cellContent = "X"; // X für Feiertag (oder FT)
+        cellClass += " bg-gray-dark text-white hover:bg-gray-medium hover:text-gray-dark";
+        cellContent = "X"; 
       }
     }
   }
