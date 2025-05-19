@@ -79,7 +79,7 @@ const YearlyOverview = () => { // navigateToView prop removed
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="sticky left-0 z-10 p-3 text-left bg-white border">
+                  <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
                     Person
                   </th>
                   <th className="p-3 text-center border">Resturlaub</th>

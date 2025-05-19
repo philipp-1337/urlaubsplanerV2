@@ -69,7 +69,7 @@ const CalendarView = ({ navigateToView }) => {
           </div>
           
           <div className="mb-6">
-            <div className="flex flex-wrap mb-2 space-x-2">
+            <div className="flex flex-wrap mb-2 gap-2">
               <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
                 <span>Urlaub</span>
@@ -100,14 +100,18 @@ const CalendarView = ({ navigateToView }) => {
           
           <div className="grid grid-cols-7 gap-2 text-center">
             {/* Wochentags-Header */}
-            {[0, 1, 2, 3, 4, 5, 6].map((wochentag) => (
+            {/* Reihenfolge geändert: Mo, Di, Mi, Do, Fr, Sa, So */}
+            {[1, 2, 3, 4, 5, 6, 0].map((wochentag) => (
               <div key={wochentag} className="p-2 font-bold bg-gray-100">
                 {getWochentagName(wochentag)}
               </div>
             ))}
             
             {/* Leere Felder für Tage vor dem 1. des Monats */}
-            {Array.from({ length: tageImMonat[0].wochentag }).map((_, index) => (
+            {/* Anpassung für Wochenstart am Montag: (wochentag + 6) % 7 */}
+            {/* tageImMonat[0].wochentag: 0=So, 1=Mo, ..., 6=Sa */}
+            {/* Wenn Mo (1): (1+6)%7 = 0 leere Zellen. Wenn So (0): (0+6)%7 = 6 leere Zellen. */}
+            {Array.from({ length: (tageImMonat[0].wochentag + 6) % 7 }).map((_, index) => (
               <div key={`leer-${index}`} className="p-2"></div>
             ))}
             

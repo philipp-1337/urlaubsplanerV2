@@ -99,7 +99,7 @@ function Header() {
 
         {/* Mobile Drawer */}
         <div
-          className={`fixed inset-y-0 right-0 w-64 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-10 ${
+          className={`fixed inset-y-0 right-0 w-64 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-40 ${
             isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
           } lg:hidden`}
         >

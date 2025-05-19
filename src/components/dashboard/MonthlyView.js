@@ -74,7 +74,7 @@ const MonthlyView = () => {
           </div>
 
           <div className="mb-6">
-            <div className="flex flex-wrap mb-2 space-x-2">
+            <div className="flex flex-wrap mb-2 gap-2">
              <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
                 <span>Urlaub</span>
@@ -208,7 +208,7 @@ const MonthlyView = () => {
                           setAnsichtModus("kalender");
                           navigate(`/calendar/${person.id}`);
                         }}
-                        className="px-3 py-1 text-sm text-white bg-bold-blue rounded hover:bg-pastel-blue hover:text-bold-blue"
+                        className="px-3 py-1 text-sm text-white bg-primary rounded hover:bg-accent hover:text-primary"
                       >
                         <CalendarDaysIcon size={16} />
                       </button>

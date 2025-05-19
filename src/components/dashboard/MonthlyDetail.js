@@ -18,12 +18,12 @@ const MonthlyDetail = () => {
     getPersonGesamtDurchfuehrung,
     getPersonGesamtFortbildung,
     getPersonGesamtInterneTeamtage,
-    getPersonGesamtFeiertage,
+    // getPersonGesamtFeiertage,
     getPersonJahresUrlaub,
     getPersonJahresDurchfuehrung,
     getPersonJahresFortbildung,
     getPersonJahresInterneTeamtage,
-    getPersonJahresFeiertage
+    // getPersonJahresFeiertage
   } = useCalendar();
 
   const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
@@ -50,14 +50,14 @@ const MonthlyDetail = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="sticky left-0 z-10 p-3 text-left bg-white border">
+                <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border">
                   Monat
                 </th>
                 <th className="p-3 text-center border">Urlaubstage</th>
                 <th className="p-3 text-center border">Durchführungstage</th>
                 <th className="p-3 text-center border">Fortbildungstage</th>
                 <th className="p-3 text-center border">Teamtage</th>
-                <th className="p-3 text-center border">Feiertage</th>
+                {/* <th className="p-3 text-center border">Feiertage</th> */}
                 <th className="p-3 text-center border">Aktionen</th>
               </tr>
             </thead>
@@ -79,9 +79,9 @@ const MonthlyDetail = () => {
                   <td className="p-3 text-center border">
                     {getPersonGesamtInterneTeamtage(ausgewaehltePersonId, monat, currentYear)}
                   </td>
-                  <td className="p-3 text-center border">
+                  {/* <td className="p-3 text-center border">
                     {getPersonGesamtFeiertage(ausgewaehltePersonId, monat, currentYear)}
-                  </td>
+                  </td> */}
                   <td className="p-3 text-center border">
                     <button
                       onClick={() => {
@@ -99,7 +99,7 @@ const MonthlyDetail = () => {
             </tbody>
             <tfoot>
               <tr className="bg-gray-100 font-bold">
-                <td className="sticky left-0 z-10 p-3 bg-white border"> {/* z-10 wie Header für Konsistenz */}
+                <td className="sticky left-0 z-10 p-3 bg-gray-100 border"> {/* z-10 wie Header für Konsistenz */}
                   Gesamt
                 </td>
                 <td className="p-3 text-center border">
@@ -114,9 +114,9 @@ const MonthlyDetail = () => {
                 <td className="p-3 text-center border">
                   {getPersonJahresInterneTeamtage(ausgewaehltePersonId, currentYear)}
                 </td>
-                <td className="p-3 text-center border">
+                {/* <td className="p-3 text-center border">
                   {getPersonJahresFeiertage(ausgewaehltePersonId, currentYear)}
-                </td>
+                </td> */}
                 <td className="p-3 text-center border"></td>
               </tr>
             </tfoot>
