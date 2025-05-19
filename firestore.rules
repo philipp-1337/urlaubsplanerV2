@@ -14,6 +14,18 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == request.resource.data.userId;
     }
 
+    // Funktion, um zu prüfen, ob der anfragende Benutzer der Besitzer des Dokuments ist
+    // Prüft sowohl die userId im Dokument als auch die UID im request.auth
+    function isOwnerOfGlobalSetting() {
+      return isSignedIn() 
+             && resource.data.userId == request.auth.uid;
+    }
+    
+    // Funktion, um zu prüfen, ob die eingehenden Daten dem anfragenden Benutzer gehören
+    function isSelfWriteGlobalSetting() {
+       return isSignedIn()
+              && request.resource.data.userId == request.auth.uid;
+    }
     // Beispiel: Pflichtfelder für Personen
     function validPerson() {
       return request.resource.data.keys().hasAll(['userId', 'name'])
@@ -94,7 +106,7 @@ service cloud.firestore {
           entryId.matches('^' + request.auth.uid + '_.*$') ||
           entryId.matches('^' + request.auth.uid + '-.*$')
         ))
-      );
+      ); 
       allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
       allow update: if isSignedIn()
@@ -103,7 +115,13 @@ service cloud.firestore {
     }
 
     match /globalDaySettings/{globalDayId} {
-      allow read, create, update, delete: if isSignedIn();
+      // Lesen erlauben, wenn der Benutzer angemeldet ist UND die userId im Dokument seiner UID entspricht
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Erstellen, Aktualisieren und Löschen erlauben, wenn der Benutzer der Besitzer ist
+      // Für create/update wird zusätzlich geprüft, ob die eingehenden Daten die korrekte userId haben
+      // Die ID-Prüfung in create/update ist optional, aber erhöht die Sicherheit
+      allow create, update, delete: if isOwnerOfGlobalSetting() && isSelfWriteGlobalSetting();
     }
   }
 }
