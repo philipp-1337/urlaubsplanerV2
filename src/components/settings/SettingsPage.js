@@ -72,7 +72,7 @@ const SettingsPage = () => {
 
   const [initialYearlyPersonData, setInitialYearlyPersonData] = useState({}); // Stores the initial yearly data for comparison
   // State for yearly person data
-  const [yearlyPersonData, setYearlyPersonData] = useState({}); // { personId: { resturlaub, employmentPercentage, employmentType } }
+  const [yearlyPersonData, setYearlyPersonData] = useState({}); // { personId: { resturlaub, employmentPercentage, employmentType, daysPerWeek } }
 
   // Effect to load person-specific data (Resturlaub, Employment) for the selectedConfigYear
   useEffect(() => {
@@ -99,7 +99,7 @@ const SettingsPage = () => {
       const employmentDocId = `${currentUser.uid}_${p.id}_${selectedConfigYear}`;
 
       let pResturlaub = 0;
-      let pEmpData = { percentage: 100, type: 'full-time' }; // Standardwerte
+      let pEmpData = { percentage: 100, type: 'full-time', daysPerWeek: null }; // Standardwerte, inkl. daysPerWeek
 
       try {
         console.log(`SettingsPage - Attempting to fetch resturlaubData with ID: ${resturlaubDocId}`);
@@ -123,9 +123,14 @@ const SettingsPage = () => {
         const employmentSnap = await getDoc(employmentRef);
         if (employmentSnap.exists()) {
           pEmpData = employmentSnap.data();
+          // Ensure daysPerWeek has a sensible default if missing from older DB entries
+          if (pEmpData.daysPerWeek === undefined) {
+            pEmpData.daysPerWeek = pEmpData.type === 'part-time' ? '' : null;
+          }
           console.log(`SettingsPage - EmploymentData for ${p.id} (${selectedConfigYear}) found:`, pEmpData);
         } else {
           console.log(`SettingsPage - No employmentData found for ${employmentDocId}`);
+          // pEmpData is already { percentage: 100, type: 'full-time', daysPerWeek: null }
         }
       } catch (error) {
         console.error(`SettingsPage - Error fetching employmentData for ID ${employmentDocId}:`, error);
@@ -137,6 +142,7 @@ const SettingsPage = () => {
         resturlaub: pResturlaub,
         employmentPercentage: pEmpData.percentage,
         employmentType: pEmpData.type,
+        daysPerWeek: pEmpData.daysPerWeek,
       };
     });
 
@@ -148,6 +154,7 @@ const SettingsPage = () => {
             resturlaub: personData.resturlaub,
             employmentPercentage: personData.employmentPercentage,
             employmentType: personData.employmentType,
+            daysPerWeek: personData.daysPerWeek,
           };
         });
         setYearlyPersonData(newYearlyData);
@@ -200,6 +207,9 @@ const SettingsPage = () => {
         if (value === 'full-time') {
           newPersonDataForId.employmentPercentage = 100;
         }
+        // When switching to full-time, daysPerWeek becomes irrelevant.
+        // It will be handled/nulled out during save or comparison.
+        // If switching to part-time, daysPerWeek might be '' initially.
         // If switching to part-time, percentage is not changed here.
         // It will be validated/capped if the percentage input is then edited.
       } else if (field === 'employmentPercentage') {
@@ -219,6 +229,20 @@ const SettingsPage = () => {
         // If value is not empty and not a valid number (e.g. "abc"),
         // parsedValue is NaN. We don't update, input effectively rejects it.
         // The input type="number" should mostly prevent this.
+      } else if (field === 'daysPerWeek') {
+        // This field is only visible/editable if employmentType is 'part-time'.
+        const parsedValue = parseInt(value, 10);
+        if (value === '') { // Allow clearing the field
+          newPersonDataForId.daysPerWeek = '';
+        } else if (!isNaN(parsedValue)) {
+          if (parsedValue > 5) {
+            newPersonDataForId.daysPerWeek = 5; // Cap at 5
+          } else if (parsedValue < 1) {
+            newPersonDataForId.daysPerWeek = 1;   // Cap at 1
+          } else {
+            newPersonDataForId.daysPerWeek = parsedValue;
+          }
+        }
       } else {
         // For other fields like 'resturlaub'
         newPersonDataForId[field] = value;
@@ -277,9 +301,23 @@ const SettingsPage = () => {
         ? (parseInt(yearlyData.employmentPercentage, 10) || 0) // Default to 0 for part-time if empty/invalid
         : 100; // Always 100 for full-time
 
+      let daysPerWeekToSave;
+      if (yearlyData.employmentType === 'part-time') {
+        const parsedDays = parseInt(yearlyData.daysPerWeek, 10);
+        if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 5) {
+          alert("Für Teilzeitbeschäftigung muss 'Tage pro Woche' eine Zahl zwischen 1 und 5 sein.");
+          setYearlyDataSavingStates(prev => ({ ...prev, [personId]: false })); // Reset saving state
+          return; // Prevent saving
+        }
+        daysPerWeekToSave = parsedDays;
+      } else {
+        daysPerWeekToSave = null; // Not applicable for full-time
+      }
+
       const employmentResult = await saveEmploymentData(personId, { 
         percentage: employmentPercentageToSave,
-        type: yearlyData.employmentType || 'full-time'
+        type: yearlyData.employmentType || 'full-time',
+        daysPerWeek: daysPerWeekToSave
       }, selectedConfigYear);
       if (employmentResult.success) employmentSaved = true;
 
@@ -292,6 +330,7 @@ const SettingsPage = () => {
             resturlaub: parseInt(yearlyData.resturlaub, 10) || 0,
             employmentPercentage: employmentPercentageToSave,
             employmentType: yearlyData.employmentType || 'full-time',
+            daysPerWeek: daysPerWeekToSave,
           }
         }));
       }
@@ -457,6 +496,7 @@ const SettingsPage = () => {
         resturlaub: initialDbState.resturlaub, 
         employmentType: initialDbState.employmentType,
         employmentPercentage: initialDbState.employmentPercentage,
+        daysPerWeek: initialDbState.daysPerWeek ?? (initialDbState.employmentType === 'part-time' ? '' : null),
       };
     }
     // Defaults for a person/year with no existing data in initialYearlyPersonData
@@ -465,6 +505,7 @@ const SettingsPage = () => {
       resturlaub: '', // Represents an empty input field
       employmentType: 'full-time',
       employmentPercentage: 100, // Corresponds to full-time type
+      daysPerWeek: null, // Not applicable for full-time default
     };
   };
 
@@ -477,6 +518,7 @@ const SettingsPage = () => {
         resturlaub: dataToResetTo.resturlaub,
         employmentType: dataToResetTo.employmentType,
         employmentPercentage: dataToResetTo.employmentPercentage,
+        daysPerWeek: dataToResetTo.daysPerWeek,
       };
       return {
         ...prev,
@@ -691,27 +733,41 @@ const SettingsPage = () => {
               const currentComparableData = {
                   resturlaub: currentDataFromState.resturlaub ?? '', 
                   employmentType: currentDataFromState.employmentType ?? 'full-time',
-                  // employmentPercentage needs to be derived based on type for comparison
-                  employmentPercentage: currentDataFromState.employmentPercentage 
+                  employmentPercentage: currentDataFromState.employmentPercentage,
+                  daysPerWeek: currentDataFromState.daysPerWeek ?? (currentDataFromState.employmentType === 'part-time' ? '' : null)
               };
+
               if (currentComparableData.employmentType === 'full-time') {
                   currentComparableData.employmentPercentage = 100;
+                  currentComparableData.daysPerWeek = null; 
               } else { // part-time
                   // If type is part-time, and percentage is undefined, treat as empty string for comparison
                   if (currentComparableData.employmentPercentage === undefined) {
                     currentComparableData.employmentPercentage = '';
                   }
+                  // daysPerWeek is already handled by the ?? in its construction for currentComparableData
               }
 
               let hasYearlyDataChanged = false;
+              // Compare resturlaub
               if (String(currentComparableData.resturlaub) !== String(initialComparableData.resturlaub)) {
                 hasYearlyDataChanged = true;
               }
+              // Compare employmentType
               if (!hasYearlyDataChanged && currentComparableData.employmentType !== initialComparableData.employmentType) {
                 hasYearlyDataChanged = true;
               }
               if (!hasYearlyDataChanged && String(currentComparableData.employmentPercentage) !== String(initialComparableData.employmentPercentage)) {
                 hasYearlyDataChanged = true;
+              }
+              // Compare daysPerWeek
+              if (!hasYearlyDataChanged) {
+                const initialDays = initialComparableData.daysPerWeek;
+                const currentDays = currentComparableData.daysPerWeek;
+                // String comparison handles numbers, empty strings, and null consistently for this check
+                if (String(currentDays) !== String(initialDays)) {
+                    hasYearlyDataChanged = true;
+                }
               }
 
               const isSavingYearly = yearlyDataSavingStates[person.id];
@@ -740,7 +796,7 @@ const SettingsPage = () => {
                       </div>
                     </div>
 
-                    {/* Reihe 2: Resturlaub und Arbeitszeit % */}
+                    {/* Reihe 2: Resturlaub und Arbeitszeit % und Tage/Woche */}
                     <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4 md:items-end">
                       <div className="flex flex-col"> {/* Resturlaub Input */}
                         <label
@@ -759,26 +815,47 @@ const SettingsPage = () => {
                         />
                       </div>
 
-                      {/* Arbeitszeit % Input (conditional) */}
+                      {/* Conditional inputs for part-time */}
                       {yearlyPersonData[person.id]?.employmentType === 'part-time' && (
-                        <div className="flex flex-col">
-                          <label
-                            htmlFor={`employmentPercentage-${person.id}-${selectedConfigYear}`}
-                            className="mb-1 text-sm font-medium text-gray-600"
-                          >
-                            Arbeitszeit % {selectedConfigYear}
-                          </label>
-                          <input
-                            id={`employmentPercentage-${person.id}-${selectedConfigYear}`}
-                            type="number"
-                            value={yearlyPersonData[person.id]?.employmentPercentage ?? ''}
-                            onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
-                            className="w-full px-2 py-1 border rounded-md md:w-auto"
-                            max="100"
-                            min="0"
-                            disabled={isSavingYearly}
-                          />
-                        </div>
+                        <>
+                          <div className="flex flex-col"> {/* Arbeitszeit % Input */}
+                            <label
+                              htmlFor={`employmentPercentage-${person.id}-${selectedConfigYear}`}
+                              className="mb-1 text-sm font-medium text-gray-600"
+                            >
+                              Arbeitszeit % {selectedConfigYear}
+                            </label>
+                            <input
+                              id={`employmentPercentage-${person.id}-${selectedConfigYear}`}
+                              type="number"
+                              value={yearlyPersonData[person.id]?.employmentPercentage ?? ''}
+                              onChange={(e) => handleEditYearlyDataChange(person.id, 'employmentPercentage', e.target.value)}
+                              className="w-full px-2 py-1 border rounded-md md:w-auto"
+                              max="100"
+                              min="0"
+                              disabled={isSavingYearly}
+                            />
+                          </div>
+                          <div className="flex flex-col"> {/* Tage pro Woche Input */}
+                            <label
+                              htmlFor={`daysPerWeek-${person.id}-${selectedConfigYear}`}
+                              className="mb-1 text-sm font-medium text-gray-600"
+                            >
+                              Tage/Woche {selectedConfigYear}
+                            </label>
+                            <input
+                              id={`daysPerWeek-${person.id}-${selectedConfigYear}`}
+                              type="number"
+                              value={yearlyPersonData[person.id]?.daysPerWeek ?? ''}
+                              onChange={(e) => handleEditYearlyDataChange(person.id, 'daysPerWeek', e.target.value)}
+                              className="w-full px-2 py-1 border rounded-md md:w-auto"
+                              max="5"
+                              min="1"
+                              placeholder="1-5"
+                              disabled={isSavingYearly}
+                            />
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

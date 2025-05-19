@@ -22,6 +22,7 @@ export const useCalendar = () => {
     tagDaten,
     globalTagDaten: contextGlobalTagDaten, // Get global tag data from context, alias to avoid conflict
     yearConfigurations, // Get from context
+    employmentData, // Get employmentData from context
     resturlaub,
     loginError
   } = context;
@@ -238,9 +239,32 @@ export const useCalendar = () => {
   };
   
   // Get Urlaubsanspruch for the current (or specified) year from configurations
-  const getCurrentYearUrlaubsanspruch = (jahr = currentYear) => {
+  // Updated to accept personId to calculate part-time adjustments
+  const getCurrentYearUrlaubsanspruch = (personId, jahr = currentYear) => {
     const config = yearConfigurations.find(yc => yc.year === jahr);
-    return config ? config.urlaubsanspruch : 0; // Default to 0 if no config for the year
+    const baseUrlaubsanspruch = config ? config.urlaubsanspruch : 0;
+
+    if (!personId) {
+      // This case should ideally not be hit if personId is always passed for accurate calculation.
+      // Returning baseUrlaubsanspruch if no personId is provided.
+      // console.warn("getCurrentYearUrlaubsanspruch called without personId. Returning base entitlement.");
+      return baseUrlaubsanspruch;
+    }
+
+    const personEmpRecord = employmentData[personId]; // employmentData from context is for the 'jahr'
+
+    if (personEmpRecord &&
+        personEmpRecord.type === 'part-time' &&
+        typeof personEmpRecord.daysPerWeek === 'number' &&
+        personEmpRecord.daysPerWeek >= 1 &&
+        personEmpRecord.daysPerWeek <= 5) {
+      
+      const adjustedUrlaubsanspruch = (personEmpRecord.daysPerWeek / 5) * baseUrlaubsanspruch;
+      return Math.round(adjustedUrlaubsanspruch); // Round to the nearest whole number
+    } else {
+      // Full-time, or part-time with missing/invalid daysPerWeek (should be caught by settings save)
+      return baseUrlaubsanspruch;
+    }
   };
 
   // Get a sorted list of configured year numbers
@@ -313,5 +337,6 @@ export const useCalendar = () => {
     // New functions based on yearConfigurations
     getCurrentYearUrlaubsanspruch,
     getConfiguredYears,
+    employmentData, // Make sure to return employmentData
   };
 };

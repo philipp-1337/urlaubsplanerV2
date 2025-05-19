@@ -32,7 +32,7 @@ export function CalendarProvider({ children }) {
   const [globalTagDaten, setGlobalTagDaten] = useState({});
 
   // Beschäftigungsdaten
-  // Format: { personId: { type: 'full-time' | 'part-time', percentage: 100, id: 'personId' } }
+  // Format: { personId: { type: 'full-time' | 'part-time', percentage: 100, daysPerWeek: 5|null, id: 'docId' } }
   const [employmentData, setEmploymentData] = useState({});
 
   // Jahreskonfigurationen

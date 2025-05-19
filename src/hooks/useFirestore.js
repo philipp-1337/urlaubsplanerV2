@@ -99,7 +99,12 @@ export const useFirestore = () => {
           // For the main app, employmentData in context is for the currentYear.
           // SettingsPage will fetch for other years separately.
           // Key by personId for easy lookup for the currentYear.
-          newEmploymentData[data.personId] = { type: data.type, percentage: data.percentage, id: doc.id };
+          newEmploymentData[data.personId] = { 
+            type: data.type, 
+            percentage: data.percentage, 
+            daysPerWeek: data.daysPerWeek, // This might be undefined/null if not set from DB
+            id: doc.id 
+          };
         });
         setEmploymentData(newEmploymentData);
 
@@ -335,8 +340,14 @@ export const useFirestore = () => {
     }
     const docId = `${currentUser.uid}_${personId}_${forYear}`;
     const entryRef = doc(db, 'employmentData', docId);
+    const dataToSave = { userId: currentUser.uid, personId, forYear, type: empData.type, percentage: empData.percentage };
+    if (empData.type === 'part-time') {
+      dataToSave.daysPerWeek = empData.daysPerWeek; // Should be a number 1-5, validated by SettingsPage
+    } else {
+      dataToSave.daysPerWeek = null; // Explicitly null for full-time
+    }
     try {
-      await setDoc(entryRef, { userId: currentUser.uid, personId, forYear, ...empData });
+      await setDoc(entryRef, dataToSave); // Overwrite with new structure
       // If the saved data is for the current global year, update the context.
       // Otherwise, SettingsPage will manage its own state for the selectedConfigYear.
       if (forYear === currentYear) {
