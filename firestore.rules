@@ -34,7 +34,13 @@ service cloud.firestore {
         (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
         (resource.data.userId == null && isSignedIn() && (
           resturlaubId.matches('^' + request.auth.uid + '_.*$') ||
-          // Support legacy IDs with dash as separator (for backward compatibility)
+          resturlaubId.matches('^' + request.auth.uid + '-.*$')
+        ))
+      );
+      allow get: if (
+        (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
+        (resource.data.userId == null && isSignedIn() && (
+          resturlaubId.matches('^' + request.auth.uid + '_.*$') ||
           resturlaubId.matches('^' + request.auth.uid + '-.*$')
         ))
       );
@@ -46,9 +52,24 @@ service cloud.firestore {
     }
 
     match /employmentData/{employmentId} {
-      allow read, delete: if isOwner();
-      allow create: if isSelfWrite();
-      allow update: if isOwner()
+      allow read: if (
+        (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
+        (resource.data.userId == null && isSignedIn() && (
+          employmentId.matches('^' + request.auth.uid + '_.*$') ||
+          employmentId.matches('^' + request.auth.uid + '-.*$')
+        ))
+      );
+      allow get: if (
+        (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
+        (resource.data.userId == null && isSignedIn() && (
+          employmentId.matches('^' + request.auth.uid + '_.*$') ||
+          employmentId.matches('^' + request.auth.uid + '-.*$')
+        ))
+      );
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.userId
         && request.resource.data.userId == resource.data.userId;
     }
 
@@ -62,7 +83,17 @@ service cloud.firestore {
     match /dayStatusEntries/{entryId} {
       allow read: if (
         (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
-        (resource.data.userId == null && isSignedIn() && entryId.matches('^' + request.auth.uid + '_.*$'))
+        (resource.data.userId == null && isSignedIn() && (
+          entryId.matches('^' + request.auth.uid + '_.*$') ||
+          entryId.matches('^' + request.auth.uid + '-.*$')
+        ))
+      );
+      allow get: if (
+        (resource.data.userId != null && isSignedIn() && request.auth.uid == resource.data.userId) ||
+        (resource.data.userId == null && isSignedIn() && (
+          entryId.matches('^' + request.auth.uid + '_.*$') ||
+          entryId.matches('^' + request.auth.uid + '-.*$')
+        ))
       );
       allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;

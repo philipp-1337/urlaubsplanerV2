@@ -112,12 +112,18 @@ const SettingsPage = () => {
           pResturlaub = resturlaubSnap.data().tage;
           console.log(`SettingsPage - Resturlaub for ${p.id} (${selectedConfigYear}) found: ${pResturlaub}`);
         } else {
+          // Kein Dokument vorhanden, kein Fehler, einfach 0 lassen
           console.log(`SettingsPage - No resturlaubData found for ${resturlaubDocId}`);
         }
       } catch (error) {
-        console.error(`SettingsPage - Error fetching resturlaubData for ID ${resturlaubDocId}:`, error);
-        // Fehler weiterwerfen, um ihn im Promise.all().catch() zu behandeln
-        throw error; 
+        if (error.code === 'permission-denied') {
+          // Nur echte Berechtigungsfehler loggen/melden
+          console.error(`SettingsPage - Permission denied fetching resturlaubData for ID ${resturlaubDocId}:`, error);
+          throw error;
+        } else {
+          // Andere Fehler ggf. anders behandeln oder ignorieren
+          console.error(`SettingsPage - Error fetching resturlaubData for ID ${resturlaubDocId}:`, error);
+        }
       }
 
       try {

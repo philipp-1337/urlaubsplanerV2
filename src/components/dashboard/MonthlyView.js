@@ -164,10 +164,10 @@ const MonthlyView = () => {
                           cellClass += " bg-bold-mint text-white hover:bg-pastel-mint hover:text-bold-mint";
                           cellContent = "D";
                         } else if (status === "fortbildung") {
-                          cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-lavender";
+                          cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-apricot";
                           cellContent = "F";
                         } else if (status === "interne teamtage") {
-                          cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-apricot";
+                          cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-lavender";
                           cellContent = "T";
                         } else if (status === "feiertag") {
                           cellClass += " bg-gray-dark text-white hover:bg-gray-medium hover:text-gray-dark";
