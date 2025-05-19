@@ -37,7 +37,7 @@ function Header() {
     <header className="bg-primary text-white shadow-md">
       <div className="container flex items-center justify-between px-4 py-4 mx-auto">
         <div className="flex items-center"> {/* Wrapper für Titel und Ladeindikator */}
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold flex items-center">
             <button
               onClick={() => {
                 setAnsichtModus('jahresuebersicht');
@@ -46,6 +46,9 @@ function Header() {
             >
               Urlaubsplaner
             </button>
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-accent text-primary rounded uppercase tracking-wide" style={{letterSpacing: '0.05em'}}>
+              beta
+            </span>
           </h1>
           {isLoadingData && <Loader2 size={24} className="ml-3 animate-spin" />}
         </div>

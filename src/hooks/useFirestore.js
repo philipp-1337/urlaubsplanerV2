@@ -12,7 +12,9 @@ import {
   writeBatch // Import writeBatch for saving order
 } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import CalendarContext from '../context/CalendarContext';
+import CalendarContext from '../context/CalendarContext'; // Nach oben verschoben
+
+const GLOBAL_PERSON_ID_MARKER = "___GLOBAL___"; // Neuer Marker
 export const useFirestore = () => {
   const { isLoggedIn, currentUser } = useAuth(); // Get currentUser from useAuth
   const {
@@ -68,28 +70,33 @@ export const useFirestore = () => {
       setLoginError(''); // Clear previous errors
       try {
         // 1. Fetch Persons
-        const personsQuery = query(collection(db, 'persons'), where('userId', '==', currentUser.uid));
+        // const personsQuery = query(collection(db, 'persons'), where('userId', '==', currentUser.uid));
+        const personsPath = collection(db, 'users', currentUser.uid, 'persons');
+        const personsQuery = query(personsPath); // No 'where' needed as path implies user
         const personsSnapshot = await getDocs(personsQuery);
         const fetchedPersonsData = personsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPersonen(fetchedPersonsData.sort(personSortFn));
 
         // 2. Fetch Resturlaub for the currentYear (dependent on fetchedPersons)
-        const resturlaubQuery = query(collection(db, 'resturlaubData'), 
-                                  where('userId', '==', currentUser.uid),
+        // const resturlaubQuery = query(collection(db, 'resturlaubData'), 
+        //                           where('userId', '==', currentUser.uid),
+        //                           where('forYear', '==', currentYear));
+        const resturlaubPath = collection(db, 'users', currentUser.uid, 'resturlaubData');
+        const resturlaubQuery = query(resturlaubPath,
                                   where('forYear', '==', currentYear));
         const resturlaubSnapshot = await getDocs(resturlaubQuery);
         const newResturlaub = {};
         fetchedPersonsData.forEach(p => newResturlaub[String(p.id)] = 0); // Initialize with 0 for all fetched persons
         resturlaubSnapshot.forEach((doc) => {
           const data = doc.data();
-          newResturlaub[data.personId] = data.tage;
+          // Assuming personId is still a field in resturlaubData documents
+          if (data.personId) newResturlaub[data.personId] = data.tage;
         });
         setResturlaub(newResturlaub);
 
         // 3. Fetch Employment Data for the currentYear (dependent on fetchedPersons)
-        const employmentQuery = query(
-          collection(db, 'employmentData'), 
-          where('userId', '==', currentUser.uid),
+        const employmentPath = collection(db, 'users', currentUser.uid, 'employmentData');
+        const employmentQuery = query(employmentPath,
           where('forYear', '==', currentYear) // Fetch only for the current global year
         );
         const employmentSnapshot = await getDocs(employmentQuery);
@@ -98,50 +105,50 @@ export const useFirestore = () => {
           const data = doc.data();
           // For the main app, employmentData in context is for the currentYear.
           // SettingsPage will fetch for other years separately.
-          // Key by personId for easy lookup for the currentYear.
-          newEmploymentData[data.personId] = { 
-            type: data.type, 
-            percentage: data.percentage, 
-            daysPerWeek: data.daysPerWeek, // This might be undefined/null if not set from DB
-            id: doc.id 
-          };
+          // Key by personId (which should be a field in employmentData documents)
+          if (data.personId) {
+            newEmploymentData[data.personId] = {
+              type: data.type,
+              percentage: data.percentage,
+              daysPerWeek: data.daysPerWeek, // This might be undefined/null if not set from DB
+              id: doc.id // Firestore document ID
+            };
+          }
         });
         setEmploymentData(newEmploymentData);
 
         // 4. Fetch Year Configurations
-        const yearConfigsQuery = query(collection(db, 'yearConfigurations'), where('userId', '==', currentUser.uid));
+        const yearConfigsPath = collection(db, 'users', currentUser.uid, 'yearConfigurations');
+        const yearConfigsQuery = query(yearConfigsPath);
         const yearConfigsSnapshot = await getDocs(yearConfigsQuery);
-        const fetchedYearConfigs = yearConfigsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => a.year - b.year);
+        const fetchedYearConfigs = yearConfigsSnapshot.docs.map(doc => ({ id: doc.id, year: parseInt(doc.id, 10), ...doc.data() })).sort((a,b) => a.year - b.year);
         setYearConfigurations(fetchedYearConfigs);
 
         // 5. Fetch TagDaten - IMMER FÜR DAS GESAMTE AKTUELLE JAHR
         // Die Unterscheidung nach ansichtModus oder currentMonth für das Laden der dayStatusEntries entfällt.
         // Wir laden immer alle Einträge für das currentYear des currentUser.
-        const dayStatusQuery = query(collection(db, 'dayStatusEntries'),
-                             where('userId', '==', currentUser.uid),
+        const dayStatusPath = collection(db, 'users', currentUser.uid, 'dayStatusEntries');
+        const dayStatusQuery = query(dayStatusPath,
                              where('year', '==', currentYear));
 
         const dayStatusSnapshot = await getDocs(dayStatusQuery);
         const newTagDaten = {};
+        const newGlobalTagDaten = {}; // newGlobalTagDaten hier initialisieren
         dayStatusSnapshot.forEach((doc) => {
           const data = doc.data();
-          const key = `${data.personId}-${data.year}-${data.month}-${data.day}`;
-          newTagDaten[key] = data.status;
+      if (data.personId === GLOBAL_PERSON_ID_MARKER) {
+        const globalKey = `${data.year}-${data.month}-${data.day}`;
+        // eslint-disable-next-line no-undef
+        newGlobalTagDaten[globalKey] = data.status;
+      } else {
+        const personSpecificKey = `${data.personId}-${data.year}-${data.month}-${data.day}`;
+        newTagDaten[personSpecificKey] = data.status;
+      }
         });
         setTagDaten(newTagDaten); // Speichert alle Einträge des Jahres
+    // eslint-disable-next-line no-undef
+    setGlobalTagDaten(newGlobalTagDaten); // Globale Einträge aus dayStatusEntries setzen
 
-        // 6. Fetch Global Day Settings for the currentYear
-        const globalDaySettingsQuery = query(collection(db, 'globalDaySettings'),
-                                     where('userId', '==', currentUser.uid),
-                                     where('year', '==', currentYear));
-        const globalDaySettingsSnapshot = await getDocs(globalDaySettingsQuery);
-        const newGlobalTagDaten = {};
-        globalDaySettingsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          const key = `${data.year}-${data.month}-${data.day}`; // Keyed by date for the current year
-          newGlobalTagDaten[key] = data.status;
-        });
-        setGlobalTagDaten(newGlobalTagDaten);
       } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
         setLoginError("Fehler beim Laden der Daten von Firestore.");
@@ -163,7 +170,13 @@ export const useFirestore = () => {
     const personIdStr = String(personId);
     const localKey = `${personIdStr}-${jahr}-${monat}-${tag}`;
     const timerKey = localKey; // Use the same key for the debounce timer
-    
+
+    // Defensive: Only allow writing to dayStatusEntries if personId is set and currentUser exists
+    if (!currentUser || !personIdStr) {
+      setLoginError("Fehler: Kein Benutzer oder keine Person ausgewählt.");
+      return;
+    }
+
     // Store the previous status for potential rollback
     const previousStatus = tagDaten[localKey] || null;
 
@@ -182,15 +195,17 @@ export const useFirestore = () => {
     if (debounceTimers.current[timerKey]) {
       clearTimeout(debounceTimers.current[timerKey]);
     }
-    
+
     // Set a new timer
     debounceTimers.current[timerKey] = setTimeout(async () => {
-      const docId = `${currentUser.uid}_${personIdStr}-${jahr}-${monat}-${tag}`; // User-specific doc ID
-      const entryRef = doc(db, 'dayStatusEntries', docId);
-      
+      // Document ID within the user's dayStatusEntries subcollection
+      const docId = `${personIdStr}-${jahr}-${monat}-${tag}`;
+      const entryRef = doc(db, 'users', currentUser.uid, 'dayStatusEntries', docId);
+
       setLoginError(''); // Clear previous errors
 
       console.log(`[Firestore POST] Attempting to save status for Person: ${personIdStr}, Date: ${tag}.${monat + 1}.${jahr}, New Status: ${status === null ? 'NONE (deleting)' : status}`);
+      console.log(`[Firestore POST] Writing to collection: dayStatusEntries, docId: ${docId}`);
 
       // Firestore update
       try {
@@ -200,7 +215,7 @@ export const useFirestore = () => {
         } else {
           await setDoc(entryRef, { 
             personId: personIdStr,
-            userId: currentUser.uid, // Store userId
+            // userId: currentUser.uid, // Redundant, path implies user
             year: jahr,
             month: monat,
             day: tag,
@@ -208,12 +223,19 @@ export const useFirestore = () => {
           });
           console.log(`[Firestore POST SUCCESS] Saved status for Person: ${personIdStr}, Date: ${tag}.${monat + 1}.${jahr}, Status: ${status}`);
         }
-        
+
         // Local state is already updated optimistically. No action needed on success.
       } catch (error) {
-        console.error("[Firestore POST ERROR] Error updating tag status in Firestore: ", error);
+        // Add more detailed error logging
+        console.error("[Firestore POST ERROR] Error updating tag status in Firestore: ", error, {
+          docId,
+          personIdStr,
+          // userId: currentUser.uid, // Redundant
+          collection: 'dayStatusEntries',
+          attemptedStatus: status
+        });
         setLoginError(`Fehler beim Speichern: ${error.message}. Bitte erneut versuchen.`);
-        
+
         // Rollback optimistic UI update on error
         setTagDaten(prev => {
           const revertedState = { ...prev };
@@ -235,12 +257,13 @@ export const useFirestore = () => {
       // Determine the next orderIndex using the 'personen' from context
       const newOrderIndex = personen.length > 0 ? Math.max(...personen.map(p => p.orderIndex ?? -1)) + 1 : 0;
 
-      const newPersonRef = await addDoc(collection(db, 'persons'), {
+      const personsCollectionRef = collection(db, 'users', currentUser.uid, 'persons');
+      const newPersonRef = await addDoc(personsCollectionRef, {
         name,
-        userId: currentUser.uid, // Associate person with the current user
+        // userId: currentUser.uid, // Redundant
         orderIndex: newOrderIndex // Add orderIndex
       });
-      const newPerson = { id: newPersonRef.id, name, userId: currentUser.uid, orderIndex: newOrderIndex };
+      const newPerson = { id: newPersonRef.id, name, /* userId: currentUser.uid, */ orderIndex: newOrderIndex };
       setPersonen(prev => [...prev, newPerson].sort(personSortFn)); // Keep sorted
       return { success: true, id: newPersonRef.id };
     } catch (error) {
@@ -252,7 +275,7 @@ export const useFirestore = () => {
   const memoizedAddPerson = useCallback(addPerson, [currentUser, setLoginError, setPersonen, personen, personSortFn]);
 
   const updatePersonName = async (personId, newName) => {
-    const personRef = doc(db, 'persons', personId);
+    const personRef = doc(db, 'users', currentUser.uid, 'persons', personId);
     try {
       await setDoc(personRef, { name: newName }, { merge: true });
       setPersonen(prev => prev.map(p => p.id === personId ? { ...p, name: newName } : p).sort(personSortFn));
@@ -268,7 +291,7 @@ export const useFirestore = () => {
     // Note: Consider deleting related data (dayStatusEntries, resturlaubData, employmentData) for this person.
     // This can be complex and might require batched writes or a Cloud Function.
     // For now, just deleting the person entry.
-    const personRef = doc(db, 'persons', personId);
+    const personRef = doc(db, 'users', currentUser.uid, 'persons', personId);
     try {
       await deleteDoc(personRef);
       setPersonen(prev => prev.filter(p => p.id !== personId)); // Filter preserves order, re-sort not strictly needed if prev was sorted
@@ -298,7 +321,7 @@ export const useFirestore = () => {
 
     const batch = writeBatch(db);
     orderedPersonsList.forEach((person, index) => {
-      const personRef = doc(db, 'persons', person.id);
+      const personRef = doc(db, 'users', currentUser.uid, 'persons', person.id);
       batch.update(personRef, { orderIndex: index });
     });
 
@@ -318,11 +341,11 @@ export const useFirestore = () => {
 
   // Save Resturlaub
   const saveResturlaub = async (personId, forYear, tage) => {
-    // Use a composite key for docId if resturlaub is per person per year, and user-specific
-    const docId = `${currentUser.uid}_${personId}_${forYear}`;
-    const entryRef = doc(db, 'resturlaubData', docId);
+    // Document ID is now just personId_forYear within the user's subcollection
+    const docId = `${personId}_${forYear}`;
+    const entryRef = doc(db, 'users', currentUser.uid, 'resturlaubData', docId);
     try {
-      await setDoc(entryRef, { userId: currentUser.uid, personId, forYear, tage });
+      await setDoc(entryRef, { personId, forYear, tage /*, userId: currentUser.uid Redundant */ });
       setResturlaub(prev => ({ ...prev, [personId]: tage }));
       return { success: true };
     } catch (error) {
@@ -338,9 +361,15 @@ export const useFirestore = () => {
       setLoginError("Fehler: Jahr nicht spezifiziert für Beschäftigungsdaten.");
       return { success: false, error: "forYear is required" };
     }
-    const docId = `${currentUser.uid}_${personId}_${forYear}`;
-    const entryRef = doc(db, 'employmentData', docId);
-    const dataToSave = { userId: currentUser.uid, personId, forYear, type: empData.type, percentage: empData.percentage };
+    const docId = `${personId}_${forYear}`;
+    const entryRef = doc(db, 'users', currentUser.uid, 'employmentData', docId);
+    const dataToSave = { 
+      personId, 
+      forYear, 
+      type: empData.type, 
+      percentage: empData.percentage 
+      // userId: currentUser.uid, // Redundant
+    };
     if (empData.type === 'part-time') {
       dataToSave.daysPerWeek = empData.daysPerWeek; // Should be a number 1-5, validated by SettingsPage
     } else {
@@ -368,9 +397,10 @@ export const useFirestore = () => {
   const fetchYearConfigurations = async () => {
     if (!currentUser) return [];    
     try {
-      const q = query(collection(db, 'yearConfigurations'), where('userId', '==', currentUser.uid)); // Removed setIsLoadingData(true)
+      const yearConfigsCollectionRef = collection(db, 'users', currentUser.uid, 'yearConfigurations');
+      const q = query(yearConfigsCollectionRef); // Removed setIsLoadingData(true)
       const snapshot = await getDocs(q);
-      const configs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const configs = snapshot.docs.map(doc => ({ id: doc.id, year: parseInt(doc.id, 10), ...doc.data() })); // doc.id is the year
       return configs.sort((a, b) => a.year - b.year); // Sort by year
     } catch (error) {
       console.error("Error fetching year configurations: ", error);
@@ -384,11 +414,11 @@ export const useFirestore = () => {
 
   const addYearConfiguration = async (year, urlaubsanspruch) => {
     if (!currentUser) return { success: false, error: "User not authenticated" };
-    const docId = `${currentUser.uid}_${year}`;
-    const entryRef = doc(db, 'yearConfigurations', docId);
+    const docId = String(year); // Document ID is the year itself
+    const entryRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', docId);
     try {
-      await setDoc(entryRef, { userId: currentUser.uid, year, urlaubsanspruch });      
-      setYearConfigurations(prev => [...prev, { id: docId, userId: currentUser.uid, year, urlaubsanspruch }].sort((a,b) => a.year - b.year));
+      await setDoc(entryRef, { urlaubsanspruch /*, userId: currentUser.uid, year Redundant */ });      
+      setYearConfigurations(prev => [...prev, { id: docId, year: parseInt(docId, 10), urlaubsanspruch }].sort((a,b) => a.year - b.year));
       return { success: true, id: docId }; // Return new config to update local state if needed
     } catch (error) {
       console.error("Error adding year configuration: ", error);
@@ -398,12 +428,12 @@ export const useFirestore = () => {
   };
   const memoizedAddYearConfiguration = useCallback(addYearConfiguration, [currentUser, setLoginError, setYearConfigurations]);
 
-  const updateYearConfiguration = async (docId, urlaubsanspruch) => {
-    // docId is already userId_year
-    const entryRef = doc(db, 'yearConfigurations', docId);
+  const updateYearConfiguration = async (yearStringId, urlaubsanspruch) => {
+    // yearStringId is the year as a string (e.g., "2024")
+    const entryRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', yearStringId);
     try {
-      await setDoc(entryRef, { urlaubsanspruch }, { merge: true });
-      setYearConfigurations(prev => prev.map(yc => yc.id === docId ? {...yc, urlaubsanspruch} : yc).sort((a,b) => a.year - b.year) );
+      await setDoc(entryRef, { urlaubsanspruch }, { merge: true }); // year and userId are implicit
+      setYearConfigurations(prev => prev.map(yc => yc.id === yearStringId ? {...yc, urlaubsanspruch} : yc).sort((a,b) => a.year - b.year) );
       return { success: true };
     } catch (error) {
       console.error("Error updating year configuration: ", error);
@@ -411,13 +441,13 @@ export const useFirestore = () => {
       return { success: false, error };
     }
   };
-  const memoizedUpdateYearConfiguration = useCallback(updateYearConfiguration, [setLoginError, setYearConfigurations]);
+  const memoizedUpdateYearConfiguration = useCallback(updateYearConfiguration, [currentUser?.uid, setLoginError, setYearConfigurations]);
 
-  const deleteYearConfiguration = async (docId) => {
-    const entryRef = doc(db, 'yearConfigurations', docId);
+  const deleteYearConfiguration = async (yearStringId) => {
+    const entryRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', yearStringId);
     try {
-      await deleteDoc(entryRef);
-      setYearConfigurations(prev => prev.filter(yc => yc.id !== docId).sort((a,b) => a.year - b.year));
+      await deleteDoc(entryRef); // yearStringId is the year string
+      setYearConfigurations(prev => prev.filter(yc => yc.id !== yearStringId).sort((a,b) => a.year - b.year));
       return { success: true };
     } catch (error) {
       console.error("Error deleting year configuration: ", error);
@@ -425,7 +455,7 @@ export const useFirestore = () => {
       return { success: false, error };
     }
   };
-  const memoizedDeleteYearConfiguration = useCallback(deleteYearConfiguration, [setLoginError, setYearConfigurations]);
+  const memoizedDeleteYearConfiguration = useCallback(deleteYearConfiguration, [currentUser?.uid, setLoginError, setYearConfigurations]);
 
   // --- Functions to fetch person-specific data for a given year (for SettingsPage) ---
   const fetchPersonSpecificDataForYear = async (personId, year) => {
@@ -452,14 +482,15 @@ export const useFirestore = () => {
     if (!currentUser) {
       throw new Error("Benutzer nicht authentifiziert für globale Tageseinstellung.");
     }
-    const docId = `${currentUser.uid}_${year}-${month}-${day}`; // Global key for the day
-    const entryRef = doc(db, 'globalDaySettings', docId);
+    const docId = `${GLOBAL_PERSON_ID_MARKER}_${year}-${month}-${day}`; // Marker in DocID, user implied by path
+    const entryRef = doc(db, 'users', currentUser.uid, 'dayStatusEntries', docId);
     const dataToSet = {
-      userId: currentUser.uid,
+      // userId: currentUser.uid, // Redundant
       year: year,
       month: month, // 0-indexed month
       day: day,
-      status: statusToSet
+      status: statusToSet,
+      personId: GLOBAL_PERSON_ID_MARKER // Setze den Marker als personId
     };
 
     try {
@@ -482,8 +513,8 @@ export const useFirestore = () => {
     if (!currentUser) {
       throw new Error("Benutzer nicht authentifiziert für Löschen globaler Tageseinstellung.");
     }
-    const docId = `${currentUser.uid}_${year}-${month}-${day}`;
-    const entryRef = doc(db, 'globalDaySettings', docId);
+    const docId = `${GLOBAL_PERSON_ID_MARKER}_${year}-${month}-${day}`; // Marker in DocID
+    const entryRef = doc(db, 'users', currentUser.uid, 'dayStatusEntries', docId);
 
     try {
       await deleteDoc(entryRef);
@@ -513,14 +544,15 @@ export const useFirestore = () => {
     const newGlobalEntriesForContext = {};
 
     holidays.forEach(holiday => { // holiday = { day: D, month: M (0-indexed) }
-      const docId = `${currentUser.uid}_${year}-${holiday.month}-${holiday.day}`;
-      const entryRef = doc(db, 'globalDaySettings', docId);
+      const docId = `${GLOBAL_PERSON_ID_MARKER}_${year}-${holiday.month}-${holiday.day}`; // Marker in DocID
+      const entryRef = doc(db, 'users', currentUser.uid, 'dayStatusEntries', docId);
       const dataToSet = {
-        userId: currentUser.uid,
+        // userId: currentUser.uid, // Redundant
         year: year,
         month: holiday.month, // 0-indexed month
         day: holiday.day,
-        status: status
+        status: status,
+        personId: GLOBAL_PERSON_ID_MARKER // Setze den Marker als personId
       };
       batch.set(entryRef, dataToSet);
       if (year === currentYear) { // Prepare for context update if it's the current global year
@@ -562,3 +594,11 @@ export const useFirestore = () => {
     savePersonOrder: memoizedSavePersonOrder, // Expose new function
   };
 };
+
+// NOTE: If you get "Missing or insufficient permissions" when writing to dayStatusEntries,
+// check your Firestore security rules. You must allow the current user to write documents
+// to dayStatusEntries where userId == currentUser.uid and personId is valid.
+// Example rule (pseudo):
+// match /dayStatusEntries/{docId} {
+//   allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+// }

@@ -98,15 +98,17 @@ const SettingsPage = () => {
         throw new Error(`Missing critical data for person ${p?.id} in year ${selectedConfigYear}`);
       }
 
-      const resturlaubDocId = `${currentUser.uid}_${p.id}_${selectedConfigYear}`;
-      const employmentDocId = `${currentUser.uid}_${p.id}_${selectedConfigYear}`;
+      // Verwende die neue ID-Struktur innerhalb der User-Subkollektion
+      const resturlaubDocId = `${p.id}_${selectedConfigYear}`;
+      const employmentDocId = `${p.id}_${selectedConfigYear}`;
 
       let pResturlaub = 0;
       let pEmpData = { percentage: 100, type: 'full-time', daysPerWeek: null }; // Standardwerte, inkl. daysPerWeek
 
       try {
-        console.log(`SettingsPage - Attempting to fetch resturlaubData with ID: ${resturlaubDocId}`);
-        const resturlaubRef = doc(db, 'resturlaubData', resturlaubDocId);
+        // Pfad an die neue Struktur anpassen: users/{userId}/resturlaubData/{docId}
+        console.log(`SettingsPage - Attempting to fetch resturlaubData from users/${currentUser.uid}/resturlaubData/${resturlaubDocId}`);
+        const resturlaubRef = doc(db, 'users', currentUser.uid, 'resturlaubData', resturlaubDocId);
         const resturlaubSnap = await getDoc(resturlaubRef);
         if (resturlaubSnap.exists()) {
           pResturlaub = resturlaubSnap.data().tage;
@@ -127,8 +129,9 @@ const SettingsPage = () => {
       }
 
       try {
-        console.log(`SettingsPage - Attempting to fetch employmentData with ID: ${employmentDocId}`);
-        const employmentRef = doc(db, 'employmentData', employmentDocId);
+        // Pfad an die neue Struktur anpassen: users/{userId}/employmentData/{docId}
+        console.log(`SettingsPage - Attempting to fetch employmentData from users/${currentUser.uid}/employmentData/${employmentDocId}`);
+        const employmentRef = doc(db, 'users', currentUser.uid, 'employmentData', employmentDocId);
         const employmentSnap = await getDoc(employmentRef);
         if (employmentSnap.exists()) {
           pEmpData = employmentSnap.data();
@@ -979,7 +982,7 @@ const SettingsPage = () => {
               <button
                 onClick={() => handleApplyPrefill('interne teamtage')}
                 disabled={isPrefilling || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
-                className="w-full px-4 py-2 text-white bg-bold-lavender rounded-md md:w-auto hover:bg-lavender-apricot hover:text-bold-lavender disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
+                className="w-full px-4 py-2 text-white bg-bold-lavender rounded-md md:w-auto hover:bg-pastel-lavender hover:text-bold-lavender disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
               >
                 {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Teamtag
               </button>

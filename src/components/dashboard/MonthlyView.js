@@ -11,7 +11,7 @@ const MonthlyView = () => {
     currentMonth,
     currentYear,
     handleMonatWechsel,
-    getTageImMonat,
+    getTageImMonat, // Keep getTageImMonat
     personen,
     getTagStatus,
     setTagStatus,
@@ -31,11 +31,18 @@ const MonthlyView = () => {
   } = useCalendar();
 
   // Helper function for handling clicks on day cells
+  // This function determines the *next* status based on the *currently displayed* status
   const handleDayCellClick = (personId, tagObject) => {
+    const personIdStr = String(personId);
     if (!tagObject.istWochenende) {
-      const currentStatus = getTagStatus(String(personId), tagObject.tag);
+      // Hole den aktuell angezeigten Status (berücksichtigt globale Einstellungen)
+      const currentStatus = getTagStatus(personIdStr, tagObject.tag);
+
       let neuerStatus = null;
-      if (currentStatus === null) {
+
+      // Bestimme den nächsten Status basierend auf dem aktuell angezeigten Status
+      if (currentStatus === null || currentStatus === 'feiertag') {
+        // Wenn kein spezifischer/globaler Status oder ein globaler Feiertag angezeigt wird, starte mit 'urlaub'
         neuerStatus = 'urlaub';
       } else if (currentStatus === 'urlaub') {
         neuerStatus = 'durchfuehrung';
@@ -44,9 +51,11 @@ const MonthlyView = () => {
       } else if (currentStatus === 'fortbildung') {
         neuerStatus = 'interne teamtage';
       } else if (currentStatus === 'interne teamtage') {
-        neuerStatus = 'feiertag';
-      } // if currentStatus is 'feiertag', neuerStatus remains null, deleting the entry.
-      setTagStatus(String(personId), tagObject.tag, neuerStatus, currentMonth, currentYear);
+        // Wenn der aktuelle Status 'interne teamtage' ist, geht es zurück zu null (löscht den personenspezifischen Eintrag)
+        neuerStatus = null; 
+      } // Wenn der aktuelle Status 'feiertag' war, wird er oben abgefangen und auf 'urlaub' gesetzt.
+      
+      setTagStatus(personIdStr, tagObject.tag, neuerStatus, currentMonth, currentYear);
     }
   };
 

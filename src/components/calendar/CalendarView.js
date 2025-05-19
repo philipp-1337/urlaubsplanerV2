@@ -28,17 +28,33 @@ const CalendarView = ({ navigateToView }) => {
   const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
   const tageImMonat = getTageImMonat();
   
+  // to person-specific data. The handleDayCellClick below uses getTagStatus for its logic.
+  // const tagDaten = rawTagDaten || {}; // This line is fine, but not directly used by the corrected click handler
+  
   const handleDayCellClick = (tagObject) => {
     if (!tagObject.istWochenende) {
-      const status = getTagStatus(String(ausgewaehltePersonId), tagObject.tag);
+      const personIdStr = String(ausgewaehltePersonId);
+      // Hole den aktuell angezeigten Status (berücksichtigt globale Einstellungen)
+      const currentStatus = getTagStatus(personIdStr, tagObject.tag);
+
       let neuerStatus = null;
-      if (status === null) neuerStatus = 'urlaub';
-      else if (status === 'urlaub') neuerStatus = 'durchfuehrung';
-      else if (status === 'durchfuehrung') neuerStatus = 'fortbildung';
-      else if (status === 'fortbildung') neuerStatus = 'interne teamtage';
-      else if (status === 'interne teamtage') neuerStatus = 'feiertag';
-      // Wenn 'feiertag', dann wird neuerStatus null und der Eintrag gelöscht
-      setTagStatus(String(ausgewaehltePersonId), tagObject.tag, neuerStatus, currentMonth, currentYear);
+
+      // Bestimme den nächsten Status basierend auf dem aktuell angezeigten Status
+      if (currentStatus === null || currentStatus === 'feiertag') {
+        // Wenn kein spezifischer/globaler Status oder ein globaler Feiertag angezeigt wird, starte mit 'urlaub'
+        neuerStatus = 'urlaub';
+      } else if (currentStatus === 'urlaub') {
+        neuerStatus = 'durchfuehrung';
+      } else if (currentStatus === 'durchfuehrung') {
+        neuerStatus = 'fortbildung';
+      } else if (currentStatus === 'fortbildung') {
+        neuerStatus = 'interne teamtage';
+      } else if (currentStatus === 'interne teamtage') {
+        // Wenn der aktuelle Status 'interne teamtage' ist, geht es zurück zu null (löscht den personenspezifischen Eintrag)
+        neuerStatus = null; 
+      } // Wenn der aktuelle Status 'feiertag' war (und nicht null), wird er oben abgefangen und auf 'urlaub' gesetzt.
+      
+      setTagStatus(personIdStr, tagObject.tag, neuerStatus, currentMonth, currentYear);
     }
   };
   

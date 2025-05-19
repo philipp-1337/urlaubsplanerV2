@@ -25,7 +25,7 @@ const DayCell = ({
       } else if (status === 'fortbildung') {
         cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-lavender"; 
       } else if (status === 'interne teamtage') {
-        cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-apricot"; 
+        cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-lavender"; 
       } else if (status === 'feiertag') {
         cellClass += " bg-gray-dark text-white hover:bg-gray-medium hover:text-gray-dark"; 
       } else {

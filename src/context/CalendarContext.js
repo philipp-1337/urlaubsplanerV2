@@ -14,8 +14,8 @@ export function CalendarProvider({ children }) {
   const getInitialCurrentDate = () => new Date(); // Function to get fresh date
   const initialCurrentMonth = getInitialCurrentDate().getMonth();
   const initialCurrentYear = getInitialCurrentDate().getFullYear();
-  const initialPersonen = [];
-  const initialResturlaub = {};
+  // const initialPersonen = []; // ESLint: no-unused-vars
+  // const initialResturlaub = {}; // ESLint: no-unused-vars
   const initialTagDaten = {};
   const initialGlobalTagDaten = {};
   const initialEmploymentData = {};
