@@ -964,7 +964,7 @@ const SettingsPage = () => {
         {/* Globale Tage vorbefüllen */}
 
         <h2 className="mb-4 mt-8 text-2xl font-semibold text-gray-700">
-          Globale Tage vorbefüllen {selectedConfigYear ? `(für Jahr ${selectedConfigYear})` : ''}
+          Globale Tage vorbefüllen {(selectedConfigYear && yearConfigs.length > 0) ? `(für Jahr ${selectedConfigYear})` : ''}
         </h2>
         {yearConfigs.length > 0 && selectedConfigYear && personen.length > 0 ? (
           <>
