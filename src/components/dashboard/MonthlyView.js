@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import ErrorMessage from '../common/ErrorMessage';
-import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon } from 'lucide-react';
+import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon, DownloadIcon } from 'lucide-react';
+import { exportToCsv } from '../../services/exportUtils';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -52,12 +53,68 @@ const MonthlyView = () => {
     }
   };
 
+  const statusToLetter = (status) => {
+    if (status === "urlaub") return "U";
+    if (status === "durchfuehrung") return "D";
+    if (status === "fortbildung") return "F";
+    if (status === "interne teamtage") return "T";
+    if (status === "feiertag") return "X";
+    return "";
+  };
+
+  const handleExportCsv = () => {
+    const tageDesMonats = getTageImMonat();
+    const headers = [
+      "Person",
+      ...tageDesMonats.map(tag => {
+        const day = String(tag.tag).padStart(2, '0');
+        const month = String(currentMonth + 1).padStart(2, '0'); // currentMonth is 0-indexed
+        return `${day}.${month}.${currentYear}`;
+      }),
+      "Gesamt Urlaub",
+      "Gesamt Durchführung",
+      "Gesamt Fortbildung",
+      "Gesamt Teamtage",
+      "Gesamt Feiertage"
+    ];
+
+    const dataRows = personen.map(person => {
+      const dailyStatuses = tageDesMonats.map(tag => {
+        const status = getTagStatus(String(person.id), tag.tag);
+        return statusToLetter(status);
+      });
+      return [
+        person.name,
+        ...dailyStatuses,
+        getPersonGesamtUrlaub(String(person.id)),
+        getPersonGesamtDurchfuehrung(String(person.id)),
+        getPersonGesamtFortbildung(String(person.id)),
+        getPersonGesamtInterneTeamtage(String(person.id)),
+        getPersonGesamtFeiertage(String(person.id))
+      ];
+    });
+
+    // Add overall total row (footer)
+    const dailyPlaceholders = tageDesMonats.map(() => ""); // Empty cells for daily totals in CSV
+    dataRows.push([
+      "Gesamt",
+      ...dailyPlaceholders,
+      getGesamtUrlaub(),
+      getGesamtDurchfuehrung(),
+      getGesamtFortbildung(),
+      getGesamtInterneTeamtage(),
+      getGesamtFeiertage()
+    ]);
+
+    exportToCsv(`Monatsansicht_${getMonatsName(currentMonth)}_${currentYear}.csv`, headers, dataRows);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="container px-4 py-8 mx-auto">
         <ErrorMessage message={loginError} />
         <div className="p-6 bg-white rounded-lg shadow-md">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
             <button
               onClick={() => handleMonatWechsel("zurueck")}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
@@ -72,6 +129,12 @@ const MonthlyView = () => {
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
             >
               <ArrowLeftIcon className="w-4 h-4 mr-1 transform rotate-180" />
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"
+            >
+              <DownloadIcon size={16} className="mr-2" /> CSV Export
             </button>
           </div>
 

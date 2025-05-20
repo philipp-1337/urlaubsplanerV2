@@ -1,8 +1,8 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorMessage from '../common/ErrorMessage';
 import { useCalendar } from '../../hooks/useCalendar';
-import { CalendarDaysIcon } from 'lucide-react';
+import { CalendarDaysIcon, DownloadIcon } from 'lucide-react';
+import { exportToCsv } from '../../services/exportUtils';
 
 const MonthlyDetail = () => {
   const navigate = useNavigate();
@@ -31,19 +31,51 @@ const MonthlyDetail = () => {
   if (!ausgewaehltePerson) {
     return <div>Person nicht gefunden</div>;
   }
+  
+  const handleExportCsv = () => {
+    const headers = ["Monat", "Urlaub", "Durchführung", "Fortbildung", "Teamtage"];
+    const dataRows = [];
+
+    Array.from({ length: 12 }, (_, i) => i).forEach((monat) => {
+      dataRows.push([
+        getMonatsName(monat),
+        getPersonGesamtUrlaub(ausgewaehltePersonId, monat, currentYear),
+        getPersonGesamtDurchfuehrung(ausgewaehltePersonId, monat, currentYear),
+        getPersonGesamtFortbildung(ausgewaehltePersonId, monat, currentYear),
+        getPersonGesamtInterneTeamtage(ausgewaehltePersonId, monat, currentYear),
+      ]);
+    });
+
+    // Add total row
+    dataRows.push([
+      "Gesamt",
+      getPersonJahresUrlaub(ausgewaehltePersonId, currentYear),
+      getPersonJahresDurchfuehrung(ausgewaehltePersonId, currentYear),
+      getPersonJahresFortbildung(ausgewaehltePersonId, currentYear),
+      getPersonJahresInterneTeamtage(ausgewaehltePersonId, currentYear),
+    ]);
+
+    exportToCsv(`Jahresdetail_${ausgewaehltePerson.name}_${currentYear}.csv`, headers, dataRows);
+  };
 
   return (
     <main className="container px-4 py-8 mx-auto">
       {loginError && <ErrorMessage message={loginError} />}
       
       <div className="p-6 bg-white rounded-lg shadow-md">
-        <div className="relative flex items-center justify-center mb-6"> {/* Geändert: justify-between zu justify-center, relative hinzugefügt */}
+        <div className="flex flex-wrap items-center justify-between mb-6 gap-2"> {/* Adjusted for export button */}
           
-          <h2 className="text-xl font-bold"> {/* Wird nun zentriert */}
+          <h2 className="text-xl font-bold">
             {ausgewaehltePerson.name} - {currentYear}
           </h2>
           
-          {/* Spacer entfernt, da der Titel durch justify-center auf dem Elternelement zentriert wird */}
+          <button
+            onClick={handleExportCsv}
+            className="px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"
+          >
+            <DownloadIcon size={16} className="mr-2" /> CSV Export
+          </button>
+          {/* Spacer might be needed if title should be centered and button on the right, or adjust flex properties */}
         </div>
         
         <div className="overflow-x-auto">

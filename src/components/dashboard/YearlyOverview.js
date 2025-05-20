@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import ErrorMessage from '../common/ErrorMessage';
-import { GanttChartIcon } from 'lucide-react';
+import { GanttChartIcon, DownloadIcon } from 'lucide-react';
+import { exportToCsv } from '../../services/exportUtils';
 
 const YearlyOverview = () => { // navigateToView prop removed
   const navigate = useNavigate();
@@ -46,6 +47,37 @@ const YearlyOverview = () => { // navigateToView prop removed
     const nextYear = currentYear + 1;
     return configuredYears.includes(nextYear);
   };
+
+  const handleExportCsv = () => {
+    const headers = [
+      "Person", 
+      "Resturlaub Vorjahr", 
+      "Urlaubsanspruch Aktuell", 
+      "Gesamt Verfügbar", 
+      "Urlaubstage Verplant", 
+      "Urlaubstage Verbleibend", 
+      "Durchführungstage", 
+      "Fortbildungstage", 
+      "Teamtage"
+    ];
+
+    const dataRows = personen.map(person => {
+      const urlaubstageDiesesJahr = getPersonJahresUrlaub(person.id, currentYear);
+      const jahresDurchfuehrung = getPersonJahresDurchfuehrung(person.id, currentYear);
+      const jahresFortbildung = getPersonJahresFortbildung(person.id, currentYear);
+      const jahresTeamtage = getPersonJahresInterneTeamtage(person.id, currentYear);
+      const personResturlaub = getPersonResturlaub(person.id);
+      const urlaubsanspruchAktuell = getCurrentYearUrlaubsanspruch(person.id, currentYear);
+      const gesamtVerfuegbarerUrlaub = urlaubsanspruchAktuell + personResturlaub;
+      const verbleibenderUrlaub = gesamtVerfuegbarerUrlaub - urlaubstageDiesesJahr;
+
+      return [
+        person.name, personResturlaub, urlaubsanspruchAktuell, gesamtVerfuegbarerUrlaub, 
+        urlaubstageDiesesJahr, verbleibenderUrlaub, jahresDurchfuehrung, jahresFortbildung, jahresTeamtage
+      ];
+    });
+    exportToCsv(`Jahresuebersicht_${currentYear}.csv`, headers, dataRows);
+  };
   
   return (
     <div className="min-h-screen bg-gray-100">
@@ -54,7 +86,7 @@ const YearlyOverview = () => { // navigateToView prop removed
         {loginError && <ErrorMessage message={loginError} />}
         
         <div className="p-6 bg-white rounded-lg shadow-md">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
             <button
               onClick={() => handleYearChange('previous')}
               disabled={!canGoToPreviousYear()}
@@ -73,6 +105,12 @@ const YearlyOverview = () => { // navigateToView prop removed
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               &rarr;
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"
+            >
+              <DownloadIcon size={16} className="mr-2" /> CSV Export
             </button>
           </div>
           
