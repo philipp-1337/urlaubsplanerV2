@@ -13,7 +13,7 @@ import { exportToCsv } from '../../services/exportUtils';
 import { useState, useRef, useEffect } from 'react';
 import InfoOverlayButton from '../common/InfoOverlayButton';
 import KebabMenu from '../common/KebabMenu';
-import { animateHorizontalScroll, easeInOutCubic, easeInOutCubicInverted } from '../../services/scrollUtils';
+import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -68,14 +68,12 @@ const MonthlyView = () => {
 
   // Simulate horizontal scroll to hint scrollability on small screens
   useEffect(() => {
-    const scrollContainer = document.getElementById('monthly-table-scroll');
-    if (!scrollContainer) return;
-    if (scrollContainer.scrollWidth <= scrollContainer.clientWidth) return;
-    const originalScroll = scrollContainer.scrollLeft;
-    const maxScroll = Math.min(90, scrollContainer.scrollWidth - scrollContainer.clientWidth);
-
-    animateHorizontalScroll(scrollContainer, originalScroll, maxScroll, 500, easeInOutCubic, () => {
-      animateHorizontalScroll(scrollContainer, maxScroll, originalScroll, 400, easeInOutCubicInverted);
+    triggerHorizontalScrollHint({
+      selector: '#monthly-table-scroll',
+      breakpoint: 9999,
+      scrollDistance: 90,
+      duration: 500,
+      returnDuration: 400
     });
   }, []);
 
@@ -249,15 +247,15 @@ const MonthlyView = () => {
           <div className="overflow-x-auto" id="monthly-table-scroll">
             <table className="w-full border-separate border-spacing-0">
               <thead>
-                <tr className="bg-gray-light">
-                  <th className="sticky left-0 z-10 p-2 text-left bg-white border-l border-t border-r min-w-[100px]">
+                <tr className="bg-gray-100">
+                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border-l border-t border-r min-w-[100px]">
                     Person
                   </th>
                   {getTageImMonat().map((tag) => (
                     <th
                       key={`header-${tag.tag}`}
                       className={`p-1 text-center border-t border-r min-w-[50px] ${
-                        tag.istWochenende ? "bg-gray-medium" : "bg-gray-light" // Consistent background for header
+                        tag.istWochenende ? "bg-gray-medium" : "bg-gray-100" // Consistent background for header
                       }`}
                     >
                       <div>{tag.tag}</div>
@@ -373,8 +371,8 @@ const MonthlyView = () => {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-gray-light font-bold">
-                  <td className="sticky left-0 z-10 p-2 bg-white border">
+                <tr className="font-bold">
+                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border">
                     <SigmaIcon size={20} />
                   </td>
                   {getTageImMonat().map((tag) => {
@@ -383,7 +381,7 @@ const MonthlyView = () => {
                       <td
                         key={`footer-total-${tag.tag}`}
                         className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
-                          tag.istWochenende ? "bg-gray-medium" : "bg-gray-light"
+                          tag.istWochenende ? "bg-gray-medium" : "bg-white"
                         }`}
                       >
                         {dailyTotals.urlaubCount > 0 && (

@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import ErrorMessage from '../common/ErrorMessage';
-import { 
-  TableIcon, 
+import {  
   DownloadIcon, 
   ArrowLeftIcon, 
   ArrowRightIcon, 
@@ -14,7 +13,7 @@ import { exportToCsv } from '../../services/exportUtils';
 import { useRef, useEffect, useState } from 'react';
 import KebabMenu from '../common/KebabMenu';
 import InfoOverlayButton from '../common/InfoOverlayButton';
-import { animateHorizontalScroll, easeInOutCubic, easeInOutCubicInverted } from '../../services/scrollUtils';
+import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
 
 const YearlyOverview = () => {
   const navigate = useNavigate();
@@ -114,18 +113,16 @@ const YearlyOverview = () => {
     exportToCsv(`Jahresuebersicht_${currentYear}.csv`, headers, dataRows);
   };
   
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.innerWidth >= 1280) return;
-    const scrollContainer = document.getElementById('yearly-overview-table-scroll');
-    if (!scrollContainer) return;
-    if (scrollContainer.scrollWidth <= scrollContainer.clientWidth) return;
-    const originalScroll = scrollContainer.scrollLeft;
-    const maxScroll = Math.min(90, scrollContainer.scrollWidth - scrollContainer.clientWidth);
-    animateHorizontalScroll(scrollContainer, originalScroll, maxScroll, 500, easeInOutCubic, () => {
-      animateHorizontalScroll(scrollContainer, maxScroll, originalScroll, 400, easeInOutCubicInverted);
-    });
-  }, []);
+  // Simulate horizontal scroll to hint scrollability on small screens
+    useEffect(() => {
+      triggerHorizontalScrollHint({
+        selector: '#monthly-table-scroll',
+        breakpoint: 1280,
+        scrollDistance: 90,
+        duration: 500,
+        returnDuration: 400
+      });
+    }, []);
   
   return (
     <div className="min-h-screen bg-gray-100">
@@ -187,7 +184,7 @@ const YearlyOverview = () => {
                   <th className="p-3 text-center border-t border-l">Fortbildung</th>
                   <th className="p-3 text-center border-t border-l">Teamtage</th>
                   {/* <th className="p-3 text-center border-t border-l">Feiertage</th> */}
-                  <th className="p-3 text-center border-t border-l">Aktionen</th>
+                  <th className="p-3 text-center border-t border-l border-r">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,7 +222,7 @@ const YearlyOverview = () => {
                       <td className="p-3 text-center border-t border-l">{jahresFortbildung}</td>
                       <td className="p-3 text-center border-t border-l">{jahresTeamtage}</td>
                       {/* <td className="p-3 text-center border-t border-l">{jahresFeiertage}</td> */}
-                      <td className="p-3 text-center border-t border-l">
+                      <td className="p-3 text-center border-t border-l border-r">
                         <button
                           onClick={() => {
                             setAusgewaehltePersonId(person.id);
@@ -273,7 +270,7 @@ const YearlyOverview = () => {
                   {/* <td className="p-3 text-center border-t border-l border-b">-
                     {personen.reduce((acc, person) => acc + getPersonJahresFeiertage(person.id, currentYear), 0)}
                   </td> */}
-                  <td className="p-3 text-center border-t border-l border-b"></td>
+                  <td className="p-3 text-center border-t border-l border-b border-r"></td>
                 </tr>
                 <tr>
                 </tr>
