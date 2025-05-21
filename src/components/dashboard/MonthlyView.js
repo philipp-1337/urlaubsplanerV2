@@ -206,11 +206,11 @@ const MonthlyView = () => {
                       setMenuOpen(false);
                       handleExportCsv();
                     }}
-                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    className="flex items-center w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     role="menuitem"
                   >
-                    <DownloadIcon size={16} className="mr-2" />
                     CSV Export
+                    <DownloadIcon size={16} className="ml-2" />
                   </button>
                 </div>
               )}
