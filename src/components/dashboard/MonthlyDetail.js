@@ -1,13 +1,19 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import ErrorMessage from '../common/ErrorMessage';
 import { useCalendar } from '../../hooks/useCalendar';
-import { CalendarDaysIcon, DownloadIcon, EllipsisVerticalIcon } from 'lucide-react';
+import { 
+  CornerDownRightIcon, 
+  DownloadIcon, 
+  SheetIcon 
+} from 'lucide-react';
 import { exportToCsv } from '../../services/exportUtils';
 import { useRef, useEffect, useState } from 'react';
+import KebabMenu from '../common/KebabMenu';
+import InfoOverlayButton from '../common/InfoOverlayButton';
 
 const MonthlyDetail = () => {
   const navigate = useNavigate();
-  const { 
+  const {
     currentYear, 
     setCurrentMonth, 
     setAnsichtModus,
@@ -24,8 +30,11 @@ const MonthlyDetail = () => {
     getPersonJahresDurchfuehrung,
     getPersonJahresFortbildung,
     getPersonJahresInterneTeamtage,
+    setAusgewaehltePersonId, // Need setter to sync context state
     // getPersonJahresFeiertage
   } = useCalendar();
+
+  const { personId: personIdFromUrl } = useParams(); // Get personId from URL
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -51,12 +60,20 @@ const MonthlyDetail = () => {
     };
   }, [menuOpen]);
 
-  const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
-  
+  // Find the person based on the ID from the URL
+  const ausgewaehltePerson = personen.find(p => p.id === personIdFromUrl);
+
+  // Sync the context state with the URL parameter when the component mounts or URL changes
+  useEffect(() => {
+    if (personIdFromUrl) {
+      setAusgewaehltePersonId(personIdFromUrl);
+    }
+  }, [personIdFromUrl, setAusgewaehltePersonId]);
+
   if (!ausgewaehltePerson) {
-    return <div>Person nicht gefunden</div>;
+    return <Navigate to="/" replace />; // Redirect if person not found
   }
-  
+
   const handleExportCsv = () => {
     const headers = ["Monat", "Urlaub", "Durchführung", "Fortbildung", "Teamtage"];
     const dataRows = [];
@@ -64,10 +81,10 @@ const MonthlyDetail = () => {
     Array.from({ length: 12 }, (_, i) => i).forEach((monat) => {
       dataRows.push([
         getMonatsName(monat),
-        getPersonGesamtUrlaub(ausgewaehltePersonId, monat, currentYear),
-        getPersonGesamtDurchfuehrung(ausgewaehltePersonId, monat, currentYear),
-        getPersonGesamtFortbildung(ausgewaehltePersonId, monat, currentYear),
-        getPersonGesamtInterneTeamtage(ausgewaehltePersonId, monat, currentYear),
+        getPersonGesamtUrlaub(ausgewaehltePerson.id, monat, currentYear), // Use person.id
+        getPersonGesamtDurchfuehrung(ausgewaehltePerson.id, monat, currentYear), // Use person.id
+        getPersonGesamtFortbildung(ausgewaehltePerson.id, monat, currentYear), // Use person.id
+        getPersonGesamtInterneTeamtage(ausgewaehltePerson.id, monat, currentYear), // Use person.id
       ]);
     });
 
@@ -75,9 +92,9 @@ const MonthlyDetail = () => {
     dataRows.push([
       "Gesamt",
       getPersonJahresUrlaub(ausgewaehltePersonId, currentYear),
-      getPersonJahresDurchfuehrung(ausgewaehltePersonId, currentYear),
-      getPersonJahresFortbildung(ausgewaehltePersonId, currentYear),
-      getPersonJahresInterneTeamtage(ausgewaehltePersonId, currentYear),
+      getPersonJahresDurchfuehrung(ausgewaehltePerson.id, currentYear), // Use person.id
+      getPersonJahresFortbildung(ausgewaehltePerson.id, currentYear), // Use person.id
+      getPersonJahresInterneTeamtage(ausgewaehltePerson.id, currentYear), // Use person.id
     ]);
 
     exportToCsv(`Jahresdetail_${ausgewaehltePerson.name}_${currentYear}.csv`, headers, dataRows);
@@ -88,43 +105,25 @@ const MonthlyDetail = () => {
       {loginError && <ErrorMessage message={loginError} />}
       <div className="p-6 bg-white rounded-lg shadow-md">
         <div className="relative mb-6 flex flex-row items-center justify-between">
+          <div className="flex items-center">
+              <InfoOverlayButton
+                text={"Das Jahresdetail zeigt die Urlaubstage, Durchführungstage, Fortbildungstage und Teamtage für jeden Monat an. Die Gesamtwerte werden am Ende der Tabelle angezeigt."}
+                className=""
+              />
+            </div>
           <div className="flex items-center flex-1 justify-center space-x-2">
             <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
-              {ausgewaehltePerson.name} - {currentYear}
+              {ausgewaehltePerson.name} - {currentYear} {/* Use person.name */}
             </h2>
           </div>
           <div className="relative">
-            <button
-              ref={buttonRef}
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-              title="Weitere Aktionen"
-              aria-expanded={menuOpen}
-              aria-haspopup="true"
-            >
-              <EllipsisVerticalIcon className="w-4 h-4" />
-            </button>
-            {menuOpen && (
-              <div
-                ref={menuRef}
-                className="absolute right-0 z-10 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all"
-                role="menu"
-                aria-orientation="vertical"
-                aria-labelledby="options-menu"
-              >
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    handleExportCsv();
-                  }}
-                  className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  role="menuitem"
-                >
-                  CSV Export
-                  <DownloadIcon size={16} className="ml-2" />
-                </button>
-              </div>
-            )}
+            <KebabMenu
+              items={[{
+                label: 'CSV Export',
+                icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
+                onClick: handleExportCsv
+              }]}
+            />
           </div>
         </div>
         
@@ -150,16 +149,16 @@ const MonthlyDetail = () => {
                     {getMonatsName(monat)}
                   </td>
                   <td className="p-3 text-center border-t border-r">
-                    {getPersonGesamtUrlaub(ausgewaehltePersonId, monat, currentYear)}
+                    {getPersonGesamtUrlaub(ausgewaehltePerson.id, monat, currentYear)} {/* Use person.id */}
                   </td>
                   <td className="p-3 text-center border-t border-r">
-                    {getPersonGesamtDurchfuehrung(ausgewaehltePersonId, monat, currentYear)}
+                    {getPersonGesamtDurchfuehrung(ausgewaehltePerson.id, monat, currentYear)} {/* Use person.id */}
                   </td>
                   <td className="p-3 text-center border-t border-r">
-                    {getPersonGesamtFortbildung(ausgewaehltePersonId, monat, currentYear)}
+                    {getPersonGesamtFortbildung(ausgewaehltePerson.id, monat, currentYear)} {/* Use person.id */}
                   </td>
                   <td className="p-3 text-center border-t border-r">
-                    {getPersonGesamtInterneTeamtage(ausgewaehltePersonId, monat, currentYear)}
+                    {getPersonGesamtInterneTeamtage(ausgewaehltePerson.id, monat, currentYear)} {/* Use person.id */}
                   </td>
                   {/* <td className="p-3 text-center border">
                     {getPersonGesamtFeiertage(ausgewaehltePersonId, monat, currentYear)}
@@ -168,12 +167,12 @@ const MonthlyDetail = () => {
                     <button
                       onClick={() => {
                         setCurrentMonth(monat);
-                        setAnsichtModus('kalender');
+                        setAnsichtModus('kalender'); // Set mode for CalendarView
                         navigate(`/calendar/${ausgewaehltePersonId}`);
                       }}
-                      className="px-4 py-1 text-white bg-primary rounded hover:bg-accent hover:text-primary"
+                      className="rounded-full rounded-md text-primary bg-accent hover:bg-gray-100 transition-colors p-2"
                     >
-                      <CalendarDaysIcon size={16} />
+                      <CornerDownRightIcon size={16} />
                     </button>
                   </td>
                 </tr>
@@ -185,16 +184,16 @@ const MonthlyDetail = () => {
                   Gesamt
                 </td>
                 <td className="p-3 text-center border-t border-r border-b">
-                  {getPersonJahresUrlaub(ausgewaehltePersonId, currentYear)}
+                  {getPersonJahresUrlaub(ausgewaehltePerson.id, currentYear)} {/* Use person.id */}
                 </td>
                 <td className="p-3 text-center border-t border-r border-b">
-                  {getPersonJahresDurchfuehrung(ausgewaehltePersonId, currentYear)}
+                  {getPersonJahresDurchfuehrung(ausgewaehltePerson.id, currentYear)} {/* Use person.id */}
                 </td>
                 <td className="p-3 text-center border-t border-r border-b">
-                  {getPersonJahresFortbildung(ausgewaehltePersonId, currentYear)}
+                  {getPersonJahresFortbildung(ausgewaehltePerson.id, currentYear)} {/* Use person.id */}
                 </td>
                 <td className="p-3 text-center border-t border-r border-b">
-                  {getPersonJahresInterneTeamtage(ausgewaehltePersonId, currentYear)}
+                  {getPersonJahresInterneTeamtage(ausgewaehltePerson.id, currentYear)} {/* Use person.id */}
                 </td>
                 {/* <td className="p-3 text-center border">
                   {getPersonJahresFeiertage(ausgewaehltePersonId, currentYear)}
@@ -204,15 +203,15 @@ const MonthlyDetail = () => {
             </tfoot>
           </table>
         </div>
-          <div className="mt-6 text-center">
+          <div className="mt-8 flex flex-row justify-between items-center gap-4">
             <button
               onClick={() => {
                 setAnsichtModus('jahresuebersicht');
                 navigate('/yearly-overview');
               }}
-              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary"
+              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
             >
-              Jahresübersicht
+              <SheetIcon className="w-4 h-4" />
             </button>
           </div>
       </div>

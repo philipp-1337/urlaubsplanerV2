@@ -2,9 +2,17 @@ import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import ErrorMessage from '../common/ErrorMessage';
-import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon, DownloadIcon, EllipsisVerticalIcon } from 'lucide-react';
+import { 
+  ArrowLeftIcon, 
+  CornerDownRightIcon, 
+  SigmaIcon, 
+  DownloadIcon,
+  SheetIcon
+ } from 'lucide-react';
 import { exportToCsv } from '../../services/exportUtils';
 import { useState, useRef, useEffect } from 'react';
+import InfoOverlayButton from '../common/InfoOverlayButton';
+import KebabMenu from '../common/KebabMenu';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -163,6 +171,12 @@ const MonthlyView = () => {
         <ErrorMessage message={loginError} />
         <div className="p-6 bg-white rounded-lg shadow-md">
           <div className="relative mb-6 flex flex-row items-center justify-between">
+            <div className="flex items-center">
+              <InfoOverlayButton
+                text={"In dieser Monatsübersicht sehen Sie für jede Person den Status jedes Tages: Urlaub (U), Durchführung (D), Fortbildung (F), Teamtag (T) oder Feiertag. Klicken Sie auf einen Tag, um den Status für die jeweilige Person zu ändern. Globale Einträge sind mit einem Punkt markiert und können überschrieben, aber nicht gelöscht werden. Die Summenspalten zeigen die Gesamtanzahl der jeweiligen Status pro Person im Monat."}
+                className=""
+              />
+            </div>
             <div className="flex items-center flex-1 justify-center space-x-2">
               <button
                 onClick={() => handleMonatWechsel('zurueck')}
@@ -183,42 +197,18 @@ const MonthlyView = () => {
               </button>
             </div>
             <div className="relative">
-              <button
-                ref={buttonRef}
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-                title="Weitere Aktionen"
-                aria-expanded={menuOpen}
-                aria-haspopup="true"
-              >
-                <EllipsisVerticalIcon className="w-4 h-4" />
-              </button>
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  className="absolute right-0 z-10 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all"
-                  role="menu"
-                  aria-orientation="vertical"
-                  aria-labelledby="options-menu"
-                >
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleExportCsv();
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    role="menuitem"
-                  >
-                    CSV Export
-                    <DownloadIcon size={16} className="ml-2" />
-                  </button>
-                </div>
-              )}
+              <KebabMenu
+                items={[{
+                  label: 'CSV Export',
+                  icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
+                  onClick: handleExportCsv
+                }]}
+              />
             </div>
           </div>
 
           <div className="mb-6">
-            <div className="flex flex-wrap mb-2 gap-2">
+            <div className="flex flex-wrap mb-2 gap-2 items-center">
              <div className="flex items-center">
                 <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
                 <span>Urlaub</span>
@@ -240,9 +230,6 @@ const MonthlyView = () => {
                 <span>Feiertag</span>
               </div>
             </div>
-            <p className="text-sm text-gray-600">
-              Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben, jedoch nicht gelöscht werden.
-            </p>
           </div>
 
           <div className="overflow-x-auto">
@@ -363,9 +350,9 @@ const MonthlyView = () => {
                           setAnsichtModus("kalender");
                           navigate(`/calendar/${person.id}`);
                         }}
-                        className="px-3 py-1 text-sm text-white bg-primary rounded hover:bg-accent hover:text-primary"
+                        className="rounded-full rounded-md text-primary bg-accent hover:bg-gray-100 transition-colors p-2"
                       >
-                        <CalendarDaysIcon size={16} />
+                        <CornerDownRightIcon size={16} />
                       </button>
                     </td>
                   </tr>
@@ -432,6 +419,17 @@ const MonthlyView = () => {
                 </tr>
               </tfoot>
             </table>
+          </div>
+          {/* Navigation Buttons */}
+          <div className="mt-8 flex flex-row justify-between items-center gap-4">
+            <button
+              onClick={() => {
+                navigate('/yearly-overview'); // Navigate to the route that renders MonthlyView.js
+              }}
+              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+            >
+              <SheetIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </main>

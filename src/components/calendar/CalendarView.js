@@ -1,14 +1,17 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import DayCell from './DayCell';
 import ErrorMessage from '../common/ErrorMessage';
 import { 
   ArrowLeftIcon, 
-  // DownloadIcon, 
-  // EllipsisVerticalIcon
+  PenOffIcon,
+  TableIcon,
+  Table2Icon
 } from 'lucide-react';
-// import { useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import InfoOverlayButton from '../common/InfoOverlayButton';
+import KebabMenu from '../common/KebabMenu';
 
 const CalendarView = ({ navigateToView }) => {
   const navigate = useNavigate();
@@ -29,13 +32,47 @@ const CalendarView = ({ navigateToView }) => {
     getPersonGesamtInterneTeamtage,
     getPersonGesamtFeiertage,
     setAnsichtModus, // Added for navigation
+    setAusgewaehltePersonId, // Need setter to sync context state
   } = useCalendar(); // Destructure directly from the hook's return value
 
-  // const [menuOpen, setMenuOpen] = useState(false);
-
-  const ausgewaehltePerson = personen.find(p => p.id === ausgewaehltePersonId);
-  const tageImMonat = getTageImMonat();
+  const { personId: personIdFromUrl } = useParams(); // Get personId from URL
   
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  // Find the person based on the ID from the URL
+  const ausgewaehltePerson = personen.find(p => p.id === personIdFromUrl);
+
+  // Sync the context state with the URL parameter when the component mounts or URL changes
+  useEffect(() => {
+    if (personIdFromUrl) {
+      setAusgewaehltePersonId(personIdFromUrl);
+    }
+  }, [personIdFromUrl, setAusgewaehltePersonId]);
+
+  const tageImMonat = getTageImMonat(); // This uses currentMonth/Year from context
+
   // to person-specific data. The handleDayCellClick below uses getTagStatus for its logic.
   // const tagDaten = rawTagDaten || {}; // This line is fine, but not directly used by the corrected click handler
   
@@ -78,7 +115,11 @@ const CalendarView = ({ navigateToView }) => {
         }
       }
       setTagStatus(personIdStr, tagObject.tag, neuerStatus, currentMonth, currentYear);
-    }
+    } 
+  };
+
+  if (!ausgewaehltePerson) {
+    return <Navigate to="/" replace />; // Redirect if person not found
   };
   
   if (!ausgewaehltePerson) return null;
@@ -91,6 +132,12 @@ const CalendarView = ({ navigateToView }) => {
         
         <div className="p-6 mb-6 bg-white rounded-lg shadow-md">
           <div className="relative mb-6 flex flex-row items-center justify-between">
+            <div className="flex items-center">
+              <InfoOverlayButton
+                text={"Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben, jedoch nicht gelöscht werden."}
+                className=""
+              />
+            </div>
             <div className="flex items-center flex-1 justify-center space-x-2">
               <button
                 onClick={() => handleMonatWechsel('zurueck')}
@@ -100,7 +147,7 @@ const CalendarView = ({ navigateToView }) => {
                 <ArrowLeftIcon className="w-4 h-4" />
               </button>
               <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
-                {ausgewaehltePerson.name} – {getMonatsName(currentMonth)} {currentYear}
+                {ausgewaehltePerson.name} - {getMonatsName(currentMonth)} {currentYear}
               </h2>
               <button
                 onClick={() => handleMonatWechsel('vor')}
@@ -110,38 +157,16 @@ const CalendarView = ({ navigateToView }) => {
                 <ArrowLeftIcon className="w-4 h-4 transform rotate-180" />
               </button>
             </div>
-            {/* <div className="relative">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-                title="Weitere Aktionen"
-                aria-expanded={menuOpen}
-                aria-haspopup="true"
-              >
-                <EllipsisVerticalIcon className="w-4 h-4" />
-              </button>
-              {menuOpen && (
-                <div 
-                  className="absolute right-0 z-10 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all"
-                  role="menu"
-                  aria-orientation="vertical"
-                  aria-labelledby="options-menu"
-                >
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      alert('CSV Export ausgeführt');
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    role="menuitem"
-                  >
-                    <DownloadIcon size={16} className="mr-2" />
-                    CSV Export
-                  </button>
-                </div>
-              )}
-            </div> */}
+             <div className="relative">
+            <KebabMenu
+              disabled={true}
+              items={[{
+                label: 'N/A',
+                icon: <PenOffIcon size={16} className="ml-2" />, // importiert oben
+              }]}
+            />
           </div>
+          </div> 
           
           <div className="mb-6">
             <div className="flex flex-wrap mb-2 gap-2">
@@ -170,7 +195,6 @@ const CalendarView = ({ navigateToView }) => {
                 <span>Wochenende</span>
               </div> */}
             </div>
-            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben, jedoch nicht gelöscht werden.</p>
           </div>
           
           <div className="grid grid-cols-7 gap-2 text-center">
@@ -192,7 +216,7 @@ const CalendarView = ({ navigateToView }) => {
             
             {/* Tage des Monats */}
             {tageImMonat.map((tag) => {
-              const status = getTagStatus(String(ausgewaehltePersonId), tag.tag);
+              const status = getTagStatus(String(ausgewaehltePerson.id), tag.tag); // Use person.id from found person
               
               // Determine if the status is global for the selected person
               const personIdStr = String(ausgewaehltePersonId);
@@ -207,7 +231,7 @@ const CalendarView = ({ navigateToView }) => {
                   status={status}
                   isWeekend={tag.istWochenende}
                   onClick={() => handleDayCellClick(tag)}
-                  view="calendar"
+                  view="calendar" // Pass view prop
                   isGlobal={isGlobal} // Pass the new prop
                 />
               );
@@ -216,41 +240,41 @@ const CalendarView = ({ navigateToView }) => {
           
           <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-3">
             <div className="text-lg">
-              <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(String(ausgewaehltePersonId))}
+              <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(String(ausgewaehltePerson.id))}
             </div>
             <div className="text-lg">
-              <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(String(ausgewaehltePersonId))}
+              <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(String(ausgewaehltePerson.id))}
             </div>
             <div className="text-lg">
-              <strong>Fortbildungstage:</strong> {getPersonGesamtFortbildung(String(ausgewaehltePersonId))}
+              <strong>Fortbildungstage:</strong> {getPersonGesamtFortbildung(String(ausgewaehltePerson.id))}
             </div>
             <div className="text-lg">
-              <strong>Teamtage:</strong> {getPersonGesamtInterneTeamtage(String(ausgewaehltePersonId))}
+              <strong>Teamtage:</strong> {getPersonGesamtInterneTeamtage(String(ausgewaehltePerson.id))}
             </div>
             <div className="text-lg">
-              <strong>Feiertage:</strong> {getPersonGesamtFeiertage(String(ausgewaehltePersonId))}
+              <strong>Feiertage:</strong> {getPersonGesamtFeiertage(String(ausgewaehltePerson.id))}
             </div>
           </div>
           
           {/* Navigation Buttons */}
-          <div className="mt-8 flex flex-col items-center gap-4">
-            <button
-              onClick={() => {
-                setAnsichtModus('jahresdetail'); // This is the mode for MonthlyDetail view
-                navigate(`/monthly-detail/${ausgewaehltePersonId}`);
-              }}
-              className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
-            >
-              {ausgewaehltePerson.name} - {currentYear}
-            </button>
+          <div className="mt-8 flex flex-row justify-between items-center gap-4">
             <button
               onClick={() => {
                 setAnsichtModus('liste'); // Set mode for MonthlyView (all users table)
                 navigate('/'); // Navigate to the route that renders MonthlyView.js
               }}
-              className="w-full px-4 py-2 text-white bg-primary rounded-md sm:w-auto hover:bg-accent hover:text-primary"
+              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
             >
-              {getMonatsName(currentMonth)} - {currentYear}
+              <Table2Icon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                setAnsichtModus('jahresdetail'); // This is the mode for MonthlyDetail view
+                navigate(`/monthly-detail/${ausgewaehltePerson.id}`); // Use person.id from found person
+              }}
+              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+            >
+              <TableIcon className="w-4 h-4" />
             </button>
           </div>
 
