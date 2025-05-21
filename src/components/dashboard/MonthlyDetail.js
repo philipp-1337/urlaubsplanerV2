@@ -10,6 +10,7 @@ import { exportToCsv } from '../../services/exportUtils';
 import { useRef, useEffect, useState } from 'react';
 import KebabMenu from '../common/KebabMenu';
 import InfoOverlayButton from '../common/InfoOverlayButton';
+import { animateHorizontalScroll, easeInOutCubic, easeInOutCubicInverted } from '../../services/scrollUtils';
 
 const MonthlyDetail = () => {
   const navigate = useNavigate();
@@ -70,6 +71,19 @@ const MonthlyDetail = () => {
     }
   }, [personIdFromUrl, setAusgewaehltePersonId]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth >= 768) return;
+    const scrollContainer = document.getElementById('monthly-detail-table-scroll');
+    if (!scrollContainer) return;
+    if (scrollContainer.scrollWidth <= scrollContainer.clientWidth) return;
+    const originalScroll = scrollContainer.scrollLeft;
+    const maxScroll = Math.min(90, scrollContainer.scrollWidth - scrollContainer.clientWidth);
+    animateHorizontalScroll(scrollContainer, originalScroll, maxScroll, 500, easeInOutCubic, () => {
+      animateHorizontalScroll(scrollContainer, maxScroll, originalScroll, 400, easeInOutCubicInverted);
+    });
+  });
+
   if (!ausgewaehltePerson) {
     return <Navigate to="/" replace />; // Redirect if person not found
   }
@@ -127,7 +141,7 @@ const MonthlyDetail = () => {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" id="monthly-detail-table-scroll">
           <table className="w-full border-separate border-spacing-0">
             <thead>
               <tr className="bg-gray-100">

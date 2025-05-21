@@ -7,12 +7,14 @@ import {
   ArrowLeftIcon, 
   ArrowRightIcon, 
   SigmaIcon,
-  Table2Icon
+  Table2Icon,
+  CornerDownRightIcon
 } from 'lucide-react';
 import { exportToCsv } from '../../services/exportUtils';
 import { useRef, useEffect, useState } from 'react';
 import KebabMenu from '../common/KebabMenu';
 import InfoOverlayButton from '../common/InfoOverlayButton';
+import { animateHorizontalScroll, easeInOutCubic, easeInOutCubicInverted } from '../../services/scrollUtils';
 
 const YearlyOverview = () => {
   const navigate = useNavigate();
@@ -112,6 +114,19 @@ const YearlyOverview = () => {
     exportToCsv(`Jahresuebersicht_${currentYear}.csv`, headers, dataRows);
   };
   
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth >= 1280) return;
+    const scrollContainer = document.getElementById('yearly-overview-table-scroll');
+    if (!scrollContainer) return;
+    if (scrollContainer.scrollWidth <= scrollContainer.clientWidth) return;
+    const originalScroll = scrollContainer.scrollLeft;
+    const maxScroll = Math.min(90, scrollContainer.scrollWidth - scrollContainer.clientWidth);
+    animateHorizontalScroll(scrollContainer, originalScroll, maxScroll, 500, easeInOutCubic, () => {
+      animateHorizontalScroll(scrollContainer, maxScroll, originalScroll, 400, easeInOutCubicInverted);
+    });
+  }, []);
+  
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="container px-4 py-8 mx-auto">
@@ -120,7 +135,7 @@ const YearlyOverview = () => {
           <div className="relative mb-6 flex flex-row items-center justify-between">
             <div className="flex items-center">
               <InfoOverlayButton
-                text={"Diese Übersicht zeigt für jede Person den Resturlaub, aktuellen Urlaubsanspruch, die insgesamt verfügbaren Urlaubstage, bereits verplante und verbleibende Urlaubstage sowie die Anzahl der durchgeführten Tage, Fortbildungstage und Teamtage im gewählten Jahr. Über die Details-Schaltfläche gelangen Sie zur Monatsübersicht der jeweiligen Person."}
+                text={"Diese Übersicht zeigt für jede Person den Resturlaub, aktuellen Urlaubsanspruch, die insgesamt verfügbaren Urlaubstage, bereits verplante und verbleibende Urlaubstage sowie die Anzahl der durchgeführten Tage, Fortbildungstage und Teamtage im gewählten Jahr. Über die Aktion-Schaltfläche gelangen Sie zur Monatsübersicht der jeweiligen Person."}
                 className=""
               />
             </div>
@@ -156,7 +171,7 @@ const YearlyOverview = () => {
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" id="yearly-overview-table-scroll">
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-100">
@@ -172,7 +187,7 @@ const YearlyOverview = () => {
                   <th className="p-3 text-center border-t border-l">Fortbildung</th>
                   <th className="p-3 text-center border-t border-l">Teamtage</th>
                   {/* <th className="p-3 text-center border-t border-l">Feiertage</th> */}
-                  <th className="p-3 text-center border-t border-l">Details</th>
+                  <th className="p-3 text-center border-t border-l">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,9 +232,9 @@ const YearlyOverview = () => {
                             setAnsichtModus('jahresdetail');
                             navigate(`/monthly-detail/${person.id}`);
                           }}
-                          className="px-4 py-1 text-white bg-primary rounded hover:bg-accent hover:text-primary"
+                          className="rounded-full rounded-md text-primary bg-accent hover:bg-gray-100 transition-colors p-2"
                         >
-                          <TableIcon size={16} />
+                          <CornerDownRightIcon size={16} />
                         </button>
                       </td>
                     </tr>

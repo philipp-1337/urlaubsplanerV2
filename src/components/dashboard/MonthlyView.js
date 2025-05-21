@@ -13,6 +13,7 @@ import { exportToCsv } from '../../services/exportUtils';
 import { useState, useRef, useEffect } from 'react';
 import InfoOverlayButton from '../common/InfoOverlayButton';
 import KebabMenu from '../common/KebabMenu';
+import { animateHorizontalScroll, easeInOutCubic, easeInOutCubicInverted } from '../../services/scrollUtils';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -64,6 +65,19 @@ const MonthlyView = () => {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [menuOpen]);
+
+  // Simulate horizontal scroll to hint scrollability on small screens
+  useEffect(() => {
+    const scrollContainer = document.getElementById('monthly-table-scroll');
+    if (!scrollContainer) return;
+    if (scrollContainer.scrollWidth <= scrollContainer.clientWidth) return;
+    const originalScroll = scrollContainer.scrollLeft;
+    const maxScroll = Math.min(90, scrollContainer.scrollWidth - scrollContainer.clientWidth);
+
+    animateHorizontalScroll(scrollContainer, originalScroll, maxScroll, 500, easeInOutCubic, () => {
+      animateHorizontalScroll(scrollContainer, maxScroll, originalScroll, 400, easeInOutCubicInverted);
+    });
+  }, []);
 
   // Helper function for handling clicks on day cells
   // This function determines the *next* status based on the *currently displayed* status
@@ -232,7 +246,7 @@ const MonthlyView = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" id="monthly-table-scroll">
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-light">
