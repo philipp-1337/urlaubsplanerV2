@@ -185,8 +185,7 @@ const MonthlyView = () => {
               </div>
             </div>
             <p className="text-sm text-gray-600">
-              Klicken Sie auf einen Tag (außer Wochenende) in der Tabelle, um
-              zwischen den Status-Typen zu wechseln.
+              Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben werden, jedoch nicht gelöscht werden.
             </p>
           </div>
 
@@ -238,8 +237,14 @@ const MonthlyView = () => {
                     </td>
                     {getTageImMonat().map((tag) => {
                       const status = getTagStatus(String(person.id), tag.tag);
-                      let cellClass = "p-2 text-center border-t border-r min-w-[50px]";
+                      // Add relative positioning for the marker
+                      let cellClass = "relative p-2 text-center border-t border-r min-w-[50px]";
                       let cellContent = "";
+
+                      const personIdStr = String(person.id);
+                      const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tag.tag}`;
+                      const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
+                      const isGlobal = status !== null && !hasPersonSpecificEntry;
 
                       if (tag.istWochenende) {
                         cellClass += " bg-gray-medium";
@@ -271,6 +276,12 @@ const MonthlyView = () => {
                           onClick={() => handleDayCellClick(person.id, tag)}
                         >
                           {cellContent}
+                          {isGlobal && (
+                            <span
+                              title="Globaler Status"
+                              className="absolute bottom-1 left-1 w-2 h-2 bg-gray-medium hover:bg-gray-dark rounded-full"
+                            ></span>
+                          )}
                         </td>
                       );
                     })}

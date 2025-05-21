@@ -5,18 +5,20 @@ const DayCell = ({
   status, 
   isWeekend, 
   onClick, 
-  view = 'monthly' // monthly or calendar
+  view = 'monthly', // monthly or calendar
+  isGlobal // Added prop for global status
 }) => {
-  let cellClass = '';
+  let cellClass = ''; // Initialize cellClass
   let cellContent = '';
+  
   
   if (isWeekend) {
     cellClass = view === 'calendar' 
-      ? "p-2 bg-gray-medium rounded" 
-      : "p-2 text-center border min-w-[50px] bg-gray-medium";
+      ? "relative p-2 bg-gray-medium rounded" // Ensure 'relative' is present
+      : "relative p-2 text-center border min-w-[50px] bg-gray-medium"; // Ensure 'relative' is present
   } else {
     if (view === 'calendar') {
-      cellClass = "p-2 rounded cursor-pointer border";
+      cellClass = "relative p-2 rounded cursor-pointer border"; // Ensure 'relative' is present
       
       if (status === 'urlaub') {
         cellClass += " bg-bold-blue text-white hover:bg-pastel-blue hover:text-bold-blue";
@@ -32,7 +34,7 @@ const DayCell = ({
         cellClass += " bg-white border border-gray-medium hover:bg-gray-medium hover:text-gray-dark";
       }
     } else {
-      cellClass = "p-2 text-center border min-w-[50px] cursor-pointer hover:bg-gray-medium";
+      cellClass = "relative p-2 text-center border min-w-[50px] cursor-pointer hover:bg-gray-medium"; // Ensure 'relative' is present
       
       if (status === 'urlaub') {
         cellClass += " bg-bold-blue text-white hover:bg-pastel-blue hover:text-bold-blue";
@@ -62,6 +64,13 @@ const DayCell = ({
   return (
     <div className={cellClass} onClick={handleClick}>
       {view === 'calendar' ? day.tag : cellContent}
+      {/* Marker for global status */}
+      {isGlobal && (
+        <span
+          title="Globaler Status"
+          className="absolute bottom-1 left-1 w-2 h-2 bg-gray-medium rounded-full"
+        ></span>
+      )}
     </div>
   );
 };

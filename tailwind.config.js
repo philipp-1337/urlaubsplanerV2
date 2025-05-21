@@ -21,7 +21,7 @@ module.exports = {
         'bold-lavender': '#9b6ddd',
         'bold-blue': '#47a9ff',
         // Grautöne
-        'gray-medium': '#f2e9ee',
+        'gray-light': '#f2e9ee',
         'gray-medium': '#d8d0d4',
         'gray-dark': '#806a74',
       },

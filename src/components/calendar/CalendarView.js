@@ -130,7 +130,7 @@ const CalendarView = ({ navigateToView }) => {
                 <span>Wochenende</span>
               </div> */}
             </div>
-            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln.</p>
+            <p className="text-sm text-gray-600">Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben werden, jedoch nicht gelöscht werden.</p>
           </div>
           
           <div className="grid grid-cols-7 gap-2 text-center">
@@ -153,6 +153,13 @@ const CalendarView = ({ navigateToView }) => {
             {/* Tage des Monats */}
             {tageImMonat.map((tag) => {
               const status = getTagStatus(String(ausgewaehltePersonId), tag.tag);
+              
+              // Determine if the status is global for the selected person
+              const personIdStr = String(ausgewaehltePersonId);
+              const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tag.tag}`;
+              const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
+              const isGlobal = status !== null && !hasPersonSpecificEntry;
+
               return (
                 <DayCell 
                   key={tag.tag}
@@ -161,6 +168,7 @@ const CalendarView = ({ navigateToView }) => {
                   isWeekend={tag.istWochenende}
                   onClick={() => handleDayCellClick(tag)}
                   view="calendar"
+                  isGlobal={isGlobal} // Pass the new prop
                 />
               );
             })}
