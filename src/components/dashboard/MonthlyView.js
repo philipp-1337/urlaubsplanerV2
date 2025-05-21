@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import ErrorMessage from '../common/ErrorMessage';
-import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon, DownloadIcon } from 'lucide-react';
+import { ArrowLeftIcon, CalendarDaysIcon, SigmaIcon, DownloadIcon, EllipsisVerticalIcon } from 'lucide-react';
 import { exportToCsv } from '../../services/exportUtils';
+import { useState, useRef, useEffect } from 'react';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -31,6 +32,30 @@ const MonthlyView = () => {
     setAusgewaehltePersonId,
     setAnsichtModus
   } = useCalendar();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   // Helper function for handling clicks on day cells
   // This function determines the *next* status based on the *currently displayed* status
@@ -137,28 +162,59 @@ const MonthlyView = () => {
       <main className="container px-4 py-8 mx-auto">
         <ErrorMessage message={loginError} />
         <div className="p-6 bg-white rounded-lg shadow-md">
-          <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
-            <button
-              onClick={() => handleMonatWechsel("zurueck")}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
-            >
-              <ArrowLeftIcon className="w-4 h-4 mr-1" />
-            </button>
-            <h2 className="text-xl font-bold">
-              {getMonatsName(currentMonth)} {currentYear}
-            </h2>
-            <button
-              onClick={() => handleMonatWechsel("vor")}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
-            >
-              <ArrowLeftIcon className="w-4 h-4 mr-1 transform rotate-180" />
-            </button>
-            <button
-              onClick={handleExportCsv}
-              className="px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"
-            >
-              <DownloadIcon size={16} className="mr-2" /> CSV Export
-            </button>
+          <div className="relative mb-6 flex flex-row items-center justify-between">
+            <div className="flex items-center flex-1 justify-center space-x-2">
+              <button
+                onClick={() => handleMonatWechsel('zurueck')}
+                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+                aria-label="Vorheriger Monat"
+              >
+                <ArrowLeftIcon className="w-4 h-4" />
+              </button>
+              <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
+                {getMonatsName(currentMonth)} {currentYear}
+              </h2>
+              <button
+                onClick={() => handleMonatWechsel('vor')}
+                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+                aria-label="Nächster Monat"
+              >
+                <ArrowLeftIcon className="w-4 h-4 transform rotate-180" />
+              </button>
+            </div>
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+                title="Weitere Aktionen"
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                <EllipsisVerticalIcon className="w-4 h-4" />
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 z-10 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all"
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="options-menu"
+                >
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handleExportCsv();
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    role="menuitem"
+                  >
+                    <DownloadIcon size={16} className="mr-2" />
+                    CSV Export
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mb-6">
@@ -185,7 +241,7 @@ const MonthlyView = () => {
               </div>
             </div>
             <p className="text-sm text-gray-600">
-              Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben werden, jedoch nicht gelöscht werden.
+              Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben, jedoch nicht gelöscht werden.
             </p>
           </div>
 

@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../../hooks/useCalendar';
 import ErrorMessage from '../common/ErrorMessage';
-import { GanttChartIcon, DownloadIcon } from 'lucide-react';
+import { GanttChartIcon, DownloadIcon, EllipsisVerticalIcon } from 'lucide-react';
 import { exportToCsv } from '../../services/exportUtils';
+import { useRef, useEffect, useState } from 'react';
 
-const YearlyOverview = () => { // navigateToView prop removed
+const YearlyOverview = () => {
   const navigate = useNavigate();
   const {
     loginError,
@@ -25,6 +26,29 @@ const YearlyOverview = () => { // navigateToView prop removed
   } = useCalendar();
 
   const configuredYears = getConfiguredYears();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const handleYearChange = (direction) => {
     const newYear = direction === 'next' ? currentYear + 1 : currentYear - 1;
@@ -81,37 +105,64 @@ const YearlyOverview = () => { // navigateToView prop removed
   
   return (
     <div className="min-h-screen bg-gray-100">
-      
       <main className="container px-4 py-8 mx-auto">
         {loginError && <ErrorMessage message={loginError} />}
-        
         <div className="p-6 bg-white rounded-lg shadow-md">
-          <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
-            <button
-              onClick={() => handleYearChange('previous')}
-              disabled={!canGoToPreviousYear()}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              &larr;
-            </button>
-            
-            <h2 className="text-xl font-bold">
-              Übersicht {configuredYears.length > 0 && !configuredYears.includes(currentYear) ? `(Jahr ${currentYear} nicht konfiguriert)` : currentYear}
-            </h2>
-            
-            <button
-              onClick={() => handleYearChange('next')}
-              disabled={!canGoToNextYear()}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              &rarr;
-            </button>
-            <button
-              onClick={handleExportCsv}
-              className="px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"
-            >
-              <DownloadIcon size={16} className="mr-2" /> CSV Export
-            </button>
+          <div className="relative mb-6 flex flex-row items-center justify-between">
+            <div className="flex items-center flex-1 justify-center space-x-2">
+              <button
+                onClick={() => handleYearChange('previous')}
+                disabled={!canGoToPreviousYear()}
+                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Vorheriges Jahr"
+              >
+                &larr;
+              </button>
+              <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
+                Übersicht {configuredYears.length > 0 && !configuredYears.includes(currentYear) ? `(Jahr ${currentYear} nicht konfiguriert)` : currentYear}
+              </h2>
+              <button
+                onClick={() => handleYearChange('next')}
+                disabled={!canGoToNextYear()}
+                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Nächstes Jahr"
+              >
+                &rarr;
+              </button>
+            </div>
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+                title="Weitere Aktionen"
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                <EllipsisVerticalIcon className="w-4 h-4" />
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 z-10 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all"
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="options-menu"
+                >
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handleExportCsv();
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    role="menuitem"
+                  >
+                    <DownloadIcon size={16} className="mr-2" />
+                    CSV Export
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="overflow-x-auto">
