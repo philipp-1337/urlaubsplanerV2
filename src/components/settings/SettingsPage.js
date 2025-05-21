@@ -600,7 +600,15 @@ const SettingsPage = () => {
 
   return (
     <main className="container px-4 py-8 mx-auto">
-      <h1 className="mb-6 text-3xl font-bold text-gray-800">Einstellungen</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Einstellungen</h1>
+        {currentUser && currentUser.email && (
+          <span className="text-sm text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-lg shadow-sm" title="Eingeloggt als">
+            Eingeloggt als: {currentUser.email}
+          </span>
+        )}
+      </div>
+
 
       {/* Jahreskonfiguration verwalten */}
       <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
@@ -628,12 +636,11 @@ const SettingsPage = () => {
               className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          <div> {/* Zusätzlicher Div, um den Button korrekt auszurichten, wenn Labels vorhanden sind */}
-            <button 
-              onClick={handleAddYearConfig} 
+          <div className="flex items-end">
+            <button
+              onClick={handleAddYearConfig}
               className="w-full px-3 py-2 text-white bg-primary rounded-md md:w-auto hover:bg-accent hover:text-primary flex items-center justify-center"
               aria-label="Jahr hinzufügen"
-              // Optional: Füge mt-1 hinzu, wenn der Button nicht perfekt mit den Inputs ausgerichtet ist, oder passe md:items-end an
             >
               <Plus size={20} />
             </button>
