@@ -14,6 +14,8 @@ import { useState, useRef, useEffect } from 'react';
 import InfoOverlayButton from '../common/InfoOverlayButton';
 import KebabMenu from '../common/KebabMenu';
 import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
+import ToggleSwitch from '../common/ToggleSwitch';
+import { isScrollHintEnabled, setScrollHintEnabled } from '../../services/scrollEffectToggle';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ const MonthlyView = () => {
   } = useCalendar();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrollHintEnabled, setScrollHintEnabledState] = useState(isScrollHintEnabled());
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -68,14 +71,16 @@ const MonthlyView = () => {
 
   // Simulate horizontal scroll to hint scrollability on small screens
   useEffect(() => {
-    triggerHorizontalScrollHint({
-      selector: '#monthly-table-scroll',
-      breakpoint: 9999,
-      scrollDistance: 90,
-      duration: 500,
-      returnDuration: 400
-    });
-  }, []);
+    if (scrollHintEnabled) {
+      triggerHorizontalScrollHint({
+        selector: '#monthly-table-scroll',
+        breakpoint: 9999,
+        scrollDistance: 90,
+        duration: 500,
+        returnDuration: 400
+      });
+    }
+  }, [scrollHintEnabled]);
 
   // Helper function for handling clicks on day cells
   // This function determines the *next* status based on the *currently displayed* status
@@ -214,7 +219,23 @@ const MonthlyView = () => {
                   label: 'CSV Export',
                   icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
                   onClick: handleExportCsv
-                }]}
+                },
+                {
+                  label: 'Scroll-Effekt',
+                  icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
+                    setScrollHintEnabledState((prev) => {
+                      setScrollHintEnabled(!prev);
+                      return !prev;
+                    });
+                  }} label="" id="scroll-toggle" />, // no label in menu
+                  onClick: () => {
+                    setScrollHintEnabledState((prev) => {
+                      setScrollHintEnabled(!prev);
+                      return !prev;
+                    });
+                  }
+                }
+                ]}
               />
             </div>
           </div>

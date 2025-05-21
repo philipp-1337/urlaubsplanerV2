@@ -14,6 +14,8 @@ import { useRef, useEffect, useState } from 'react';
 import KebabMenu from '../common/KebabMenu';
 import InfoOverlayButton from '../common/InfoOverlayButton';
 import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
+import { isScrollHintEnabled, setScrollHintEnabled } from '../../services/scrollEffectToggle';
+import ToggleSwitch from '../common/ToggleSwitch';
 
 const YearlyOverview = () => {
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ const YearlyOverview = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+  const [scrollHintEnabled, setScrollHintEnabledState] = useState(isScrollHintEnabled());
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -115,14 +118,16 @@ const YearlyOverview = () => {
   
   // Simulate horizontal scroll to hint scrollability on small screens
     useEffect(() => {
-      triggerHorizontalScrollHint({
-        selector: '#monthly-table-scroll',
-        breakpoint: 1280,
-        scrollDistance: 90,
-        duration: 500,
-        returnDuration: 400
-      });
-    }, []);
+      if (scrollHintEnabled) {
+        triggerHorizontalScrollHint({
+          selector: '#yearly-overview-table-scroll',
+          breakpoint: 1280,
+          scrollDistance: 90,
+          duration: 500,
+          returnDuration: 400
+        });
+      }
+    }, [scrollHintEnabled]);
   
   return (
     <div className="min-h-screen bg-gray-100">
@@ -163,7 +168,23 @@ const YearlyOverview = () => {
                   label: 'CSV Export',
                   icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
                   onClick: handleExportCsv
-                }]}
+                },
+                {
+                  label: 'Scroll-Effekt',
+                  icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
+                    setScrollHintEnabledState((prev) => {
+                      setScrollHintEnabled(!prev);
+                      return !prev;
+                    });
+                  }} label="" id="scroll-toggle-year" />,
+                  onClick: () => {
+                    setScrollHintEnabledState((prev) => {
+                      setScrollHintEnabled(!prev);
+                      return !prev;
+                    });
+                  }
+                }
+                ]}
               />
             </div>
           </div>

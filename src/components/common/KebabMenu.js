@@ -56,7 +56,7 @@ const KebabMenu = ({ items, buttonAriaLabel = 'Weitere Aktionen', align = 'right
       {open && !disabled && (
         <div
           ref={menuRef}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-10 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-10 mt-1 w-40 min-w-[180px] bg-white border border-gray-200 rounded-md shadow-lg origin-top-right transition-all`}
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="options-menu"
@@ -68,12 +68,12 @@ const KebabMenu = ({ items, buttonAriaLabel = 'Weitere Aktionen', align = 'right
                 setOpen(false);
                 if (item.onClick) item.onClick();
               }}
-              className={`flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`min-h-[41px] flex justify-between items-center items-center w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 transition-colors ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               role="menuitem"
               disabled={item.disabled}
             >
-              {item.icon && <span className="mr-2">{item.icon}</span>}
               {item.label}
+              {item.icon && <span className="flex items-center ml-4 text-primary">{item.icon}</span>}
             </button>
           ))}
         </div>

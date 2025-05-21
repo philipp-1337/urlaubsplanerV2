@@ -11,6 +11,8 @@ import { useRef, useEffect, useState } from 'react';
 import KebabMenu from '../common/KebabMenu';
 import InfoOverlayButton from '../common/InfoOverlayButton';
 import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
+import ToggleSwitch from '../common/ToggleSwitch';
+import { isScrollHintEnabled, setScrollHintEnabled } from '../../services/scrollEffectToggle';
 
 const MonthlyDetail = () => {
   const navigate = useNavigate();
@@ -38,6 +40,7 @@ const MonthlyDetail = () => {
   const { personId: personIdFromUrl } = useParams(); // Get personId from URL
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrollHintEnabled, setScrollHintEnabledState] = useState(isScrollHintEnabled());
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -72,14 +75,16 @@ const MonthlyDetail = () => {
   }, [personIdFromUrl, setAusgewaehltePersonId]);
 
   useEffect(() => {
-    triggerHorizontalScrollHint({
-      selector: '#monthly-detail-table-scroll',
-      breakpoint: 768,
-      scrollDistance: 90,
-      duration: 500,
-      returnDuration: 400
-    });
-  }, []);
+    if (scrollHintEnabled) {
+      triggerHorizontalScrollHint({
+        selector: '#monthly-detail-table-scroll',
+        breakpoint: 768,
+        scrollDistance: 90,
+        duration: 500,
+        returnDuration: 400
+      });
+    }
+  }, [scrollHintEnabled]);
 
   if (!ausgewaehltePerson) {
     return <Navigate to="/" replace />; // Redirect if person not found
@@ -133,7 +138,23 @@ const MonthlyDetail = () => {
                 label: 'CSV Export',
                 icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
                 onClick: handleExportCsv
-              }]}
+              },
+              {
+                label: 'Scroll-Effekt',
+                icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
+                  setScrollHintEnabledState((prev) => {
+                    setScrollHintEnabled(!prev);
+                    return !prev;
+                  });
+                }} label="" id="scroll-toggle-detail" />,
+                onClick: () => {
+                  setScrollHintEnabledState((prev) => {
+                    setScrollHintEnabled(!prev);
+                    return !prev;
+                  });
+                }
+              }
+              ]}
             />
           </div>
         </div>
