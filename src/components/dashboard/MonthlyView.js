@@ -11,6 +11,7 @@ const MonthlyView = () => {
     loginError,
     currentMonth,
     currentYear,
+    tagDaten, // Destructure tagDaten for checking person-specific entries
     handleMonatWechsel,
     getTageImMonat, // Keep getTageImMonat
     personen,
@@ -36,8 +37,14 @@ const MonthlyView = () => {
   const handleDayCellClick = (personId, tagObject) => {
     const personIdStr = String(personId);
     if (!tagObject.istWochenende) {
-      const currentStatus = getTagStatus(personIdStr, tagObject.tag);
+      const currentStatus = getTagStatus(personIdStr, tagObject.tag, currentMonth, currentYear);
+
+      // Check if there's an explicit person-specific entry for this day
+      const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tagObject.tag}`;
+      const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
+
       let neuerStatus = null;
+
       if (currentStatus === null) {
         neuerStatus = 'urlaub';
       } else if (currentStatus === 'urlaub') {
@@ -45,10 +52,26 @@ const MonthlyView = () => {
       } else if (currentStatus === 'durchfuehrung') {
         neuerStatus = 'fortbildung';
       } else if (currentStatus === 'fortbildung') {
-        neuerStatus = 'interne teamtage';
+        // If it was a global 'fortbildung' (unlikely, but for completeness) or no specific entry, override with 'interne teamtage'
+        // If it was person-specific 'fortbildung', cycle to 'interne teamtage'
+        neuerStatus = 'interne teamtage'; 
       } else if (currentStatus === 'interne teamtage') {
-        neuerStatus = 'feiertag';
-      } // if currentStatus is 'feiertag', neuerStatus bleibt null (löschen)
+        // If it was a person-specific 'interne teamtage', next is 'feiertag' (person-specific)
+        // If it was a global 'interne teamtage', next should be 'urlaub' (person-specific override)
+        if (hasPersonSpecificEntry && tagDaten[personSpecificKey] === 'interne teamtage') {
+          neuerStatus = 'feiertag'; // Cycle to person-specific feiertag
+        } else { // Global 'interne teamtage' or no specific entry, start override with 'urlaub'
+          neuerStatus = 'urlaub';
+        }
+      } else if (currentStatus === 'feiertag') {
+        // If it was a person-specific 'feiertag', next is to clear it (null)
+        // If it was a global 'feiertag', next should be 'urlaub' (person-specific override)
+        if (hasPersonSpecificEntry && tagDaten[personSpecificKey] === 'feiertag') {
+          neuerStatus = null; // Clear person-specific feiertag
+        } else { // Global 'feiertag' or no specific entry, start override with 'urlaub'
+          neuerStatus = 'urlaub';
+        }
+      }
       setTagStatus(personIdStr, tagObject.tag, neuerStatus, currentMonth, currentYear);
     }
   };

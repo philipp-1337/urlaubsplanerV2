@@ -338,5 +338,6 @@ export const useCalendar = () => {
     getCurrentYearUrlaubsanspruch,
     getConfiguredYears,
     employmentData, // Make sure to return employmentData
+    tagDaten, // tagDaten explizit zurückgeben
   };
 };
