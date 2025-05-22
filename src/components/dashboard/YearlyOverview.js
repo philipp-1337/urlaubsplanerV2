@@ -194,20 +194,25 @@ const YearlyOverview = () => {
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r">
+                  <th rowspan="2" className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r">
                     Person
                   </th>
-                  <th className="p-3 text-center border-t border-l">Resturlaub</th>
-                  <th className="p-3 text-center border-t border-l">Urlaub</th>
+                  <th colspan="5" className="p-3 text-center border-t">Urlaub</th>
+                  <th colspan="3" className="p-3 text-center border-t border-l">Sonstiges</th>
+                  <th rowspan="2" className="left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r">
+                    Aktionen
+                  </th>
+                </tr>
+                <tr className="bg-gray-100">
+                  <th className="p-3 text-center border-t">Übertrag</th>
+                  <th className="p-3 text-center border-t border-l">Anspruch</th>
                   <th className="p-3 text-center border-t border-l">Gesamt</th>
                   <th className="p-3 text-center border-t border-l">Verplant</th>
                   <th className="p-3 text-center border-t border-l">Verbleibend</th>
                   <th className="p-3 text-center border-t border-l">Durchführung</th>
                   <th className="p-3 text-center border-t border-l">Fortbildung</th>
                   <th className="p-3 text-center border-t border-l">Teamtage</th>
-                  {/* <th className="p-3 text-center border-t border-l">Feiertage</th> */}
-                  <th className="p-3 text-center border-t border-l border-r">Aktionen</th>
-                </tr>
+                  {/* <th className="p-3 text-center border-t border-l">Feiertage</th> */}                </tr>
               </thead>
               <tbody>
                 {personen.map((person) => {
@@ -227,19 +232,19 @@ const YearlyOverview = () => {
 
                   return (
                     <tr key={person.id}>
-                      <td className="sticky left-0 z-10 p-3 bg-white border-t border-l">
+                      <td className="sticky left-0 z-10 p-3 bg-white border-t border-l border-r">
                         {person.name}
                         {isPartTime && (
                           <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-sky-700 bg-sky-100 rounded-full">TZ</span>
                         )}
                       </td>
-                      <td className="p-3 text-center border-t border-l">
+                      <td className="p-3 text-center border-t">
                         {personResturlaub}
                       </td>
                       <td className="p-3 text-center border-t border-l">{urlaubsanspruchAktuell}</td>
                       <td className="p-3 text-center border-t border-l">{gesamtVerfuegbarerUrlaub}</td>
                       <td className="p-3 text-center border-t border-l">{urlaubstageDiesesJahr}</td>
-                      <td className="p-3 text-center border-t border-l">{verbleibenderUrlaub}</td>
+                      <td className="p-3 text-center border-t border-l bg-gray-50 font-bold">{verbleibenderUrlaub}</td>
                       <td className="p-3 text-center border-t border-l">{jahresDurchfuehrung}</td>
                       <td className="p-3 text-center border-t border-l">{jahresFortbildung}</td>
                       <td className="p-3 text-center border-t border-l">{jahresTeamtage}</td>
@@ -260,10 +265,10 @@ const YearlyOverview = () => {
                   );
                 })}
                 <tr>
-                  <td className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-b">
+                  <td className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-b border-r">
                     <SigmaIcon className="inline-block mr-2" />
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-b">-
                     {/* {personen.reduce((acc, person) => acc + getPersonResturlaub(person.id), 0)} */}
                   </td>
                   <td className="p-3 text-center border-t border-l border-b">-
@@ -275,7 +280,7 @@ const YearlyOverview = () => {
                   <td className="p-3 text-center border-t border-l border-b">-
                     {/* {personen.reduce((acc, person) => acc + getPersonJahresUrlaub(person.id, currentYear), 0)} */}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-l border-b bg-gray-50">-
                     {/* {personen.reduce((acc, person) => acc + getPersonResturlaub(person.id), 0) +
                       personen.reduce((acc, person) => acc + getCurrentYearUrlaubsanspruch(person.id, currentYear), 0) -
                       personen.reduce((acc, person) => acc + getPersonJahresUrlaub(person.id, currentYear), 0)} */}
