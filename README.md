@@ -14,7 +14,7 @@ Ein webbasierter Urlaubsplaner zur Verwaltung von Abwesenheiten (Urlaub, Durchf�
 
 ## Funktionen
 
-- **Benutzerauthentifizierung**: Einfaches Login-System (aktuell mit festen Demo-Zugangsdaten).
+- **Benutzerauthentifizierung**: Einfaches Login-System.
 - **Monatsübersicht (Listenansicht)**:
   - Anzeige aller Mitarbeiter und ihrer markierten Tage (Urlaub, Durchführung, Fortbildung, Teamtage, Feiertag) für den ausgewählten Monat.
   - Direktes Ändern des Status per Klick (Status-Reihenfolge: Urlaub → Durchführung → Fortbildung → Teamtage → Feiertag → leer).
