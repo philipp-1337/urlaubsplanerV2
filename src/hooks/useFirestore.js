@@ -286,12 +286,46 @@ export const useFirestore = () => {
   };
 
   const deletePersonFirebase = async (personId) => {
-    // Note: Consider deleting related data (dayStatusEntries, resturlaubData, employmentData) for this person.
-    // This can be complex and might require batched writes or a Cloud Function.
-    // For now, just deleting the person entry.
-    const personRef = doc(db, 'users', currentUser.uid, 'persons', personId);
+    if (!currentUser) {
+      setLoginError("Fehler: Benutzer nicht authentifiziert zum Löschen der Person.");
+      return { success: false, error: "User not authenticated" };
+    }
+
+    const batch = writeBatch(db);
+    const personDocRef = doc(db, 'users', currentUser.uid, 'persons', personId);
+
     try {
-      await deleteDoc(personRef);
+      // 1. Finde und füge alle zugehörigen resturlaubData-Dokumente zum Batch hinzu
+      const resturlaubQuery = query(collection(db, 'users', currentUser.uid, 'resturlaubData'), where('personId', '==', personId));
+      const resturlaubSnapshot = await getDocs(resturlaubQuery);
+      resturlaubSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      console.log(`[Firestore Delete] Added ${resturlaubSnapshot.size} resturlaubData docs to batch for person ${personId}.`);
+
+      // 2. Finde und füge alle zugehörigen employmentData-Dokumente zum Batch hinzu
+      const employmentQuery = query(collection(db, 'users', currentUser.uid, 'employmentData'), where('personId', '==', personId));
+      const employmentSnapshot = await getDocs(employmentQuery);
+      employmentSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      console.log(`[Firestore Delete] Added ${employmentSnapshot.size} employmentData docs to batch for person ${personId}.`);
+
+      // 3. Finde und füge alle zugehörigen dayStatusEntries-Dokumente zum Batch hinzu
+      const dayStatusQuery = query(collection(db, 'users', currentUser.uid, 'dayStatusEntries'), where('personId', '==', personId));
+      const dayStatusSnapshot = await getDocs(dayStatusQuery);
+      dayStatusSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      console.log(`[Firestore Delete] Added ${dayStatusSnapshot.size} dayStatusEntries docs to batch for person ${personId}.`);
+
+      // 4. Füge das Person-Dokument selbst zum Batch hinzu
+      batch.delete(personDocRef);
+
+      // 5. Führe den Batch aus
+      await batch.commit();
+      console.log(`[Firestore Delete] Successfully committed batch for deleting person ${personId} and related data.`);
+
       setPersonen(prev => prev.filter(p => p.id !== personId)); // Filter preserves order, re-sort not strictly needed if prev was sorted
       // Also clear related data from local context state if necessary
       setTagDaten(prev => {
@@ -307,7 +341,7 @@ export const useFirestore = () => {
       setEmploymentData(prev => { const newState = {...prev}; delete newState[personId]; return newState; });
       return { success: true };
     } catch (error) {
-      console.error("Error deleting person: ", error);
+      console.error(`[Firestore Delete ERROR] Error deleting person ${personId} or related data: `, error);
       setLoginError("Fehler beim Löschen der Person.");
       return { success: false, error };
     }
@@ -398,7 +432,12 @@ export const useFirestore = () => {
       const yearConfigsCollectionRef = collection(db, 'users', currentUser.uid, 'yearConfigurations');
       const q = query(yearConfigsCollectionRef); // Removed setIsLoadingData(true)
       const snapshot = await getDocs(q);
-      const configs = snapshot.docs.map(doc => ({ id: doc.id, year: parseInt(doc.id, 10), ...doc.data() })); // doc.id is the year
+      const configs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        year: parseInt(doc.id, 10),
+        holidaysImported: doc.data().holidaysImported || false, // Lade den Status, default false
+        ...doc.data()
+      })); // doc.id is the year
       return configs.sort((a, b) => a.year - b.year); // Sort by year
     } catch (error) {
       console.error("Error fetching year configurations: ", error);
@@ -415,8 +454,16 @@ export const useFirestore = () => {
     const docId = String(year); // Document ID is the year itself
     const entryRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', docId);
     try {
-      await setDoc(entryRef, { urlaubsanspruch /*, userId: currentUser.uid, year Redundant */ });      
-      setYearConfigurations(prev => [...prev, { id: docId, year: parseInt(docId, 10), urlaubsanspruch }].sort((a,b) => a.year - b.year));
+      await setDoc(entryRef, {
+        urlaubsanspruch,
+        holidaysImported: false // Initialisiere mit false
+        /*, userId: currentUser.uid, year Redundant */
+      });
+      setYearConfigurations(prev => [...prev, {
+        id: docId,
+        year: parseInt(docId, 10),
+        urlaubsanspruch,
+        holidaysImported: false }].sort((a,b) => a.year - b.year));
       return { success: true, id: docId }; // Return new config to update local state if needed
     } catch (error) {
       console.error("Error adding year configuration: ", error);
@@ -426,12 +473,12 @@ export const useFirestore = () => {
   };
   const memoizedAddYearConfiguration = useCallback(addYearConfiguration, [currentUser, setLoginError, setYearConfigurations]);
 
-  const updateYearConfiguration = async (yearStringId, urlaubsanspruch) => {
+  const updateYearConfiguration = async (yearStringId, dataToUpdate) => { // dataToUpdate kann { urlaubsanspruch } oder { holidaysImported } sein
     // yearStringId is the year as a string (e.g., "2024")
     const entryRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', yearStringId);
     try {
-      await setDoc(entryRef, { urlaubsanspruch }, { merge: true }); // year and userId are implicit
-      setYearConfigurations(prev => prev.map(yc => yc.id === yearStringId ? {...yc, urlaubsanspruch} : yc).sort((a,b) => a.year - b.year) );
+      await setDoc(entryRef, dataToUpdate, { merge: true }); // year and userId are implicit
+      setYearConfigurations(prev => prev.map(yc => yc.id === yearStringId ? {...yc, ...dataToUpdate} : yc).sort((a,b) => a.year - b.year) );
       return { success: true };
     } catch (error) {
       console.error("Error updating year configuration: ", error);
@@ -439,21 +486,78 @@ export const useFirestore = () => {
       return { success: false, error };
     }
   };
-  const memoizedUpdateYearConfiguration = useCallback(updateYearConfiguration, [currentUser?.uid, setLoginError, setYearConfigurations]);
-
-  const deleteYearConfiguration = async (yearStringId) => {
+  // Spezifische Funktion, um nur den Importstatus zu aktualisieren
+  const updateYearConfigurationImportStatus = async (yearStringId, importedStatus) => {
+    if (!currentUser) return { success: false, error: "User not authenticated" };
     const entryRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', yearStringId);
     try {
-      await deleteDoc(entryRef); // yearStringId is the year string
-      setYearConfigurations(prev => prev.filter(yc => yc.id !== yearStringId).sort((a,b) => a.year - b.year));
+      await setDoc(entryRef, { holidaysImported: importedStatus }, { merge: true });
+      // Update local context state
+      setYearConfigurations(prev => prev.map(yc => yc.id === yearStringId ? { ...yc, holidaysImported: importedStatus } : yc).sort((a, b) => a.year - b.year));
       return { success: true };
     } catch (error) {
-      console.error("Error deleting year configuration: ", error);
-      setLoginError("Fehler beim Löschen der Jahreskonfiguration.");
+      console.error("Error updating year configuration import status: ", error);
+      setLoginError("Fehler beim Aktualisieren des Feiertagsimport-Status.");
       return { success: false, error };
     }
   };
-  const memoizedDeleteYearConfiguration = useCallback(deleteYearConfiguration, [currentUser?.uid, setLoginError, setYearConfigurations]);
+  const memoizedUpdateYearConfiguration = useCallback(updateYearConfiguration, [currentUser?.uid, setLoginError, setYearConfigurations]);
+
+  const deleteYearConfiguration = async (yearStringId) => {
+    if (!currentUser) {
+      setLoginError("Benutzer nicht authentifiziert.");
+      return { success: false, error: "User not authenticated" };
+    }
+    if (!yearStringId) {
+      setLoginError("Kein Jahr zum Löschen angegeben.");
+      return { success: false, error: "Year ID not provided" };
+    }
+
+    const yearToDelete = parseInt(yearStringId, 10);
+    if (isNaN(yearToDelete)) {
+      setLoginError("Ungültige Jahres-ID.");
+      return { success: false, error: "Invalid year ID" };
+    }
+
+    const batch = writeBatch(db);
+
+    // 1. Delete YearConfiguration document
+    const yearConfigRef = doc(db, 'users', currentUser.uid, 'yearConfigurations', yearStringId);
+    batch.delete(yearConfigRef);
+
+    // 2. Query and delete associated resturlaubData
+    const resturlaubPath = collection(db, 'users', currentUser.uid, 'resturlaubData');
+    const resturlaubQuery = query(resturlaubPath, where('forYear', '==', yearToDelete));
+    const resturlaubSnapshot = await getDocs(resturlaubQuery);
+    resturlaubSnapshot.forEach(doc => batch.delete(doc.ref));
+    console.log(`[Firestore Delete] Added ${resturlaubSnapshot.size} resturlaubData docs for year ${yearToDelete} to batch.`);
+
+    // 3. Query and delete associated employmentData
+    const employmentPath = collection(db, 'users', currentUser.uid, 'employmentData');
+    const employmentQuery = query(employmentPath, where('forYear', '==', yearToDelete));
+    const employmentSnapshot = await getDocs(employmentQuery);
+    employmentSnapshot.forEach(doc => batch.delete(doc.ref));
+    console.log(`[Firestore Delete] Added ${employmentSnapshot.size} employmentData docs for year ${yearToDelete} to batch.`);
+
+    // 4. Query and delete associated dayStatusEntries (person-specific and global)
+    const dayStatusPath = collection(db, 'users', currentUser.uid, 'dayStatusEntries');
+    const dayStatusQuery = query(dayStatusPath, where('year', '==', yearToDelete));
+    const dayStatusSnapshot = await getDocs(dayStatusQuery);
+    dayStatusSnapshot.forEach(doc => batch.delete(doc.ref));
+    console.log(`[Firestore Delete] Added ${dayStatusSnapshot.size} dayStatusEntries docs for year ${yearToDelete} to batch.`);
+
+    try {
+      await batch.commit();
+      console.log(`[Firestore Delete SUCCESS] Successfully deleted year configuration ${yearStringId} and all associated data.`);
+      setYearConfigurations(prev => prev.filter(yc => yc.id !== yearStringId).sort((a,b) => a.year - b.year));
+      return { success: true };
+    } catch (error) {
+      console.error(`Error deleting year configuration ${yearStringId} and associated data: `, error);
+      setLoginError("Fehler beim Löschen der Jahreskonfiguration und zugehöriger Daten.");
+      return { success: false, error };
+    }
+  };
+  const memoizedDeleteYearConfiguration = useCallback(deleteYearConfiguration, [currentUser, setLoginError, setYearConfigurations]);
 
   // --- Functions to fetch person-specific data for a given year (for SettingsPage) ---
   const fetchPersonSpecificDataForYear = async (personId, year) => {
@@ -585,6 +689,7 @@ export const useFirestore = () => {
     addYearConfiguration: memoizedAddYearConfiguration,
     updateYearConfiguration: memoizedUpdateYearConfiguration,
     deleteYearConfiguration: memoizedDeleteYearConfiguration,
+    updateYearConfigurationImportStatus, // Neue Funktion exportieren
     fetchPersonSpecificDataForYear, // Expose placeholder
     setGlobalDaySetting,    // Neue Funktion zum Setzen globaler Tage
     deleteGlobalDaySetting, // Neue Funktion zum Löschen globaler Tage

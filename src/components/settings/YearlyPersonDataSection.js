@@ -22,6 +22,7 @@ const YearlyPersonDataSection = ({
   globalTagDaten,
   onApplyPrefill,
   onImportHolidays,
+  onSetHolidaysImportedStatus, // Neuer Prop
   getMonatsName,
 }) => {
 
@@ -236,6 +237,7 @@ const YearlyPersonDataSection = ({
           globalTagDaten={globalTagDaten}
           onApplyPrefill={onApplyPrefill}
           onImportHolidays={onImportHolidays}
+          onSetHolidaysImportedStatus={onSetHolidaysImportedStatus} // Weiterleiten
           getMonatsName={getMonatsName}
           // isPrefilling and isImportingHolidays state are managed internally by GlobalDaySettingsSection
         />

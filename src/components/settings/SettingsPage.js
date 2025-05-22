@@ -22,7 +22,8 @@ const SettingsPage = () => {
     addPerson, updatePersonName, deletePersonFirebase, savePersonOrder,
     saveResturlaub, saveEmploymentData,
     fetchYearConfigurations, addYearConfiguration, deleteYearConfiguration,
-    setGlobalDaySetting,    // Neue Funktion
+    updateYearConfigurationImportStatus, // Für Feiertagsimport-Status
+    setGlobalDaySetting, // Fehlende Destrukturierung hinzugefügt
     batchSetGlobalDaySettings, // Importierte Funktion für Batch-Setzen
     deleteGlobalDaySetting, // Neue Funktion
     // updateYearConfiguration, // For future enhancement
@@ -44,20 +45,33 @@ const SettingsPage = () => {
       const loadYearConfigs = async () => {
         setIsLoadingYearConfigs(true);
         const configs = await fetchYearConfigurations();
-        setYearConfigs(configs); // Update yearConfigs state
-        // Set selectedConfigYear based on fetched configs or globalCurrentYear
-        const configForCurrentYear = configs.find(c => c.year === globalCurrentYear);
-        if (configForCurrentYear) {
-             setSelectedConfigYear(globalCurrentYear);
-        } else if (configs.length === 0) {
-          // If no configs, default to global current year, allowing user to add it.
+        setYearConfigs(configs);
+
+        // Logic to set/update selectedConfigYear after configs are loaded
+        if (configs.length > 0) {
+          const isCurrentSelectedYearValid = configs.some(c => c.year === selectedConfigYear);
+          if (!isCurrentSelectedYearValid) {
+            // If the current selectedConfigYear is not in the new list of configs
+            // (e.g., it was deleted, or on initial load selectedConfigYear was default but not configured)
+            // then select the globalCurrentYear if available, otherwise the first in the list.
+            const configForGlobalCurrentYear = configs.find(c => c.year === globalCurrentYear);
+            if (configForGlobalCurrentYear) {
+              setSelectedConfigYear(globalCurrentYear);
+            } else {
+              setSelectedConfigYear(configs[0].year); // Default to the first available configured year
+            }
+          }
+          // If isCurrentSelectedYearValid is true, we keep the user's selection or the valid initial state.
+        } else {
+          // No configs available, default to globalCurrentYear.
+          // The user can then add this year via the UI.
           setSelectedConfigYear(globalCurrentYear);
-        } // If globalCurrentYear is not configured but others are, keep the current selectedConfigYear or default to the first one if selectedConfigYear was null/undefined. The initial state handles the null/undefined case.
+        }
         setIsLoadingYearConfigs(false);
       };
       loadYearConfigs();
     }
-  }, [fetchYearConfigurations, globalCurrentYear, currentUser, selectedConfigYear]); // Added selectedConfigYear to re-evaluate if it's valid
+  }, [fetchYearConfigurations, globalCurrentYear, currentUser, selectedConfigYear]); // Added selectedConfigYear to dependencies
 
   // States for person management are now mostly in PersonManagementSection
   const [yearlyDataSavingStates, setYearlyDataSavingStates] = useState({}); // Tracks saving state for yearly data { [personId]: boolean }
@@ -420,10 +434,7 @@ const SettingsPage = () => {
     try {
       if (holidaysToSet.length > 0) {
         await batchSetGlobalDaySettings(selectedConfigYear, holidaysToSet, 'feiertag');
-        alert(`Bundesweite Feiertage für ${selectedConfigYear} wurden erfolgreich importiert und als 'Feiertag' gesetzt.`);
-      } else {
-      }
-      // Skipped weekend holidays message is now handled in GlobalDaySettingsSection
+      } // Success/Error messages and skipped weekend holidays message are now handled in GlobalDaySettingsSection
       return true; // Return success status
     } catch (error) {
       console.error("Error importing German holidays:", error);
@@ -432,6 +443,17 @@ const SettingsPage = () => {
     }
   };
 
+  // Handler for setting the holiday import status for a year
+  const handleSetHolidaysImportedStatusProp = async (year, status) => {
+    if (!year) return;
+    const result = await updateYearConfigurationImportStatus(String(year), status);
+    if (result.success) {
+      // Die yearConfigs im Context werden durch updateYearConfigurationImportStatus aktualisiert,
+      // was zu einem Re-Render und Aktualisierung der Props für GlobalDaySettingsSection führt.
+    } else {
+      alert("Fehler beim Speichern des Feiertagsimport-Status.");
+    }
+  };
 
 
   // Helper to get the definitive initial data for a person for the selected year
@@ -528,6 +550,7 @@ const SettingsPage = () => {
             globalTagDaten={globalTagDaten}
             onApplyPrefill={handleApplyPrefillProp} // Pass the handler
             onImportHolidays={handleImportGermanHolidaysProp} // Pass the handler
+            onSetHolidaysImportedStatus={handleSetHolidaysImportedStatusProp} // Neuer Handler
             getMonatsName={getMonatsName} // Pass getMonatsName
           />
         );

@@ -35,13 +35,8 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            echo "Deploying to production..."
-            firebase deploy --only hosting:production --token ${{ secrets.FIREBASE_TOKEN }}
-          elif contains(github.event.head_commit.message, '[preview]'); then
-            echo "Deploying to preview channel..."
-            firebase deploy --only hosting:preview --token ${{ secrets.FIREBASE_TOKEN }}
+            firebase deploy
           else
             BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
-            echo "Deploying to preview channel: preview-${BRANCH_NAME}..."
-            firebase hosting:channel:deploy preview-${BRANCH_NAME} --token ${{ secrets.FIREBASE_TOKEN }}
+            firebase hosting:channel:deploy alpha-${BRANCH_NAME} --only production
           fi

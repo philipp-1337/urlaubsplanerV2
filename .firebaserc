@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "projekt-paddelboot"
+  },
+  "targets": {
+    "projekt-paddelboot": {
+      "hosting": {
+        "production": [
+          "projekt-paddelboot"
+        ]
+      }
+    }
   }
 }
