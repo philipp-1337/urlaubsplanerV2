@@ -5,7 +5,7 @@ import { EllipsisVerticalIcon } from 'lucide-react';
  * KebabMenu
  * Einheitliches Drei-Punkte-Menü für die Dashboard-Container.
  * Props:
- *   items: Array<{ label: string, icon?: ReactNode, onClick?: () => void, disabled?: boolean }>
+ *   items: Array<{ label: string, icon?: ReactNode, onClick?: () => void, disabled?: boolean, keepOpenOnClick?: boolean }>
  *   buttonAriaLabel?: string
  *   align?: 'right' | 'left' (default: 'right')
  */
@@ -65,8 +65,10 @@ const KebabMenu = ({ items, buttonAriaLabel = 'Weitere Aktionen', align = 'right
             <button
               key={idx}
               onClick={() => {
-                setOpen(false);
-                if (item.onClick) item.onClick();
+                if (!item.keepOpenOnClick) {
+                  setOpen(false);
+                }
+                item.onClick?.();
               }}
               className={`min-h-[41px] flex justify-between items-center items-center w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 transition-colors ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               role="menuitem"

@@ -147,6 +147,7 @@ const MonthlyDetail = () => {
                     return !prev;
                   });
                 }} label="" id="scroll-toggle-detail" />,
+                keepOpenOnClick: true, // Menü bleibt offen
                 onClick: () => {
                   setScrollHintEnabledState((prev) => {
                     setScrollHintEnabled(!prev);

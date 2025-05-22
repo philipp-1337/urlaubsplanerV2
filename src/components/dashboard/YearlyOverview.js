@@ -177,6 +177,7 @@ const YearlyOverview = () => {
                       return !prev;
                     });
                   }} label="" id="scroll-toggle-year" />,
+                  keepOpenOnClick: true, // Menü bleibt offen
                   onClick: () => {
                     setScrollHintEnabledState((prev) => {
                       setScrollHintEnabled(!prev);

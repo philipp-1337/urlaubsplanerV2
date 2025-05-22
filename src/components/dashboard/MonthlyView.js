@@ -227,7 +227,8 @@ const MonthlyView = () => {
                       setScrollHintEnabled(!prev);
                       return !prev;
                     });
-                  }} label="" id="scroll-toggle" />, // no label in menu
+                  }} label="" id="scroll-toggle" />,
+                  keepOpenOnClick: true, // Menü bleibt offen
                   onClick: () => {
                     setScrollHintEnabledState((prev) => {
                       setScrollHintEnabled(!prev);
