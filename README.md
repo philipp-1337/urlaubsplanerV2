@@ -1,6 +1,6 @@
 # Urlaubsplaner
 
-Ein webbasierter Urlaubsplaner zur Verwaltung von Abwesenheiten (Urlaub, Durchführung) für ein Team von Mitarbeitern. Die Anwendung ermöglicht eine übersichtliche Darstellung und einfache Bearbeitung von Einträgen.
+Ein webbasierter Urlaubsplaner zur Verwaltung von Abwesenheiten (Urlaub, Durchführung, Fortbildung, Teamtage, Feiertage) für ein Team von Mitarbeitern. Die Anwendung ermöglicht eine übersichtliche Darstellung und einfache Bearbeitung von Einträgen.
 
 ## Inhaltsverzeichnis
 
@@ -16,24 +16,34 @@ Ein webbasierter Urlaubsplaner zur Verwaltung von Abwesenheiten (Urlaub, Durchf�
 
 - **Benutzerauthentifizierung**: Einfaches Login-System (aktuell mit festen Demo-Zugangsdaten).
 - **Monatsübersicht (Listenansicht)**:
-  - Anzeige aller Mitarbeiter und ihrer markierten Tage (Urlaub/Durchführung) für den ausgewählten Monat.
-  - Direktes Ändern des Status (Urlaub/Durchführung/Frei) per Klick.
+  - Anzeige aller Mitarbeiter und ihrer markierten Tage (Urlaub, Durchführung, Fortbildung, Teamtage, Feiertag) für den ausgewählten Monat.
+  - Direktes Ändern des Status per Klick (Status-Reihenfolge: Urlaub → Durchführung → Fortbildung → Teamtage → Feiertag → leer).
   - Navigation zwischen Monaten und Jahren.
   - Summenanzeige pro Mitarbeiter und pro Tag.
 - **Jahresübersicht**:
   - Tabellarische Übersicht aller Mitarbeiter für das ausgewählte Jahr.
-  - Anzeige von Resturlaub (Vorjahr), Urlaubsanspruch, genommenen Urlaubstagen, verbleibenden Urlaubstagen und Durchführungstagen.
+  - Anzeige von Resturlaub (Vorjahr), Urlaubsanspruch (pro Jahr und Person, inkl. Teilzeitregelung), genommenen Urlaubstagen, verbleibenden Urlaubstagen, Durchführungstagen, Fortbildungstagen und Teamtagen.
   - Navigation zu Jahresdetails pro Mitarbeiter.
 - **Jahresdetailansicht**:
-  - Monatliche Aufschlüsselung der Urlaubs- und Durchführungstage für eine ausgewählte Person.
+  - Monatliche Aufschlüsselung der Urlaubs-, Durchführungs-, Fortbildungs- und Teamtage für eine ausgewählte Person.
   - Navigation zum persönlichen Kalender für einen Monat.
+  - CSV-Export der Jahresdaten.
 - **Persönliche Kalenderansicht**:
   - Detaillierte Monatsansicht für eine ausgewählte Person.
-  - Markieren von Tagen als Urlaub oder Durchführung.
+  - Markieren von Tagen als Urlaub, Durchführung, Fortbildung, Teamtage oder Feiertag.
   - Navigation zwischen Monaten.
-- **Datenpersistenz**: Urlaubs-, Durchführungs- und Resturlaubsdaten werden in Firebase Firestore gespeichert.
+  - Übersichtliche Legende für alle Status-Typen.
+- **Globale Tage & Feiertage**:
+  - Setzen von globalen Teamtagen und Feiertagen für alle Personen eines Jahres.
+  - Import bundesweiter deutscher Feiertage (Feiertage werden automatisch für alle Personen gesetzt, Wochenenden werden übersprungen).
+- **Datenpersistenz**: Urlaubs-, Durchführungs-, Fortbildungs-, Teamtage-, Feiertags- und Resturlaubsdaten werden in Firebase Firestore gespeichert.
 - **Optimistische Updates**: Für eine flüssige Benutzererfahrung beim Ändern von Tagesstatus.
-- **Responsive Design-Ansätze**: Durch Tailwind CSS für verschiedene Bildschirmgrößen geeignet.
+- **Verwaltung von Beschäftigungsdaten**:
+  - Verwaltung von Teilzeit (Prozentsatz, Arbeitstage/Woche) und Urlaubsanspruch pro Jahr und Person.
+- **Jahreskonfiguration**:
+  - Verwaltung des Urlaubsanspruchs pro Jahr (z.B. gesetzliche Änderungen).
+- **Exportfunktion**: Export der Jahresdaten als CSV-Datei.
+- **Responsive Design**: Durch Tailwind CSS für verschiedene Bildschirmgrößen geeignet.
 
 ## Technologie-Stack
 
@@ -107,16 +117,16 @@ Das `src`-Verzeichnis enthält den gesamten Quellcode der React-Anwendung:
 
 ## Datenmodell (Firestore)
 
-Die Anwendung verwendet zwei Haupt-Collections in Firestore:
+Die Anwendung verwendet mehrere Collections in Firestore:
 
-- **`dayStatusEntries`**: Speichert den Status (Urlaub/Durchführung) für jeden Tag, jede Person, Monat und Jahr.
+- **`dayStatusEntries`**: Speichert den Status für jeden Tag, jede Person, Monat und Jahr.
   - Dokument-ID-Format: `${personId}-${year}-${month}-${day}`
   - Felder:
     - `personId`: (String) ID der Person
     - `year`: (Number) Jahr
     - `month`: (Number) Monat (0-basiert, d.h. Januar = 0)
     - `day`: (Number) Tag des Monats
-    - `status`: (String) 'urlaub' oder 'durchfuehrung'
+    - `status`: (String) Einer der Werte: 'urlaub', 'durchfuehrung', 'fortbildung', 'interne teamtage', 'feiertag'
 
 - **`resturlaubData`**: Speichert den Resturlaub vom Vorjahr für jede Person.
   - Dokument-ID-Format: `${personId}-${forYear}`
@@ -124,6 +134,25 @@ Die Anwendung verwendet zwei Haupt-Collections in Firestore:
     - `personId`: (String) ID der Person
     - `forYear`: (Number) Das Jahr, für das dieser Resturlaub gilt
     - `tage`: (Number) Anzahl der Resturlaubstage
+
+- **`yearConfigurations`**: Speichert den Urlaubsanspruch pro Jahr (und ggf. weitere jahresspezifische Einstellungen).
+  - Dokument-ID-Format: `${year}`
+  - Felder:
+    - `year`: (Number) Jahr
+    - `urlaubsanspruch`: (Number) Standard-Urlaubsanspruch für das Jahr
+
+- **`employmentData`**: Speichert Beschäftigungsdaten pro Person und Jahr (Teilzeit, Arbeitstage/Woche).
+  - Dokument-ID-Format: `${personId}_${year}`
+  - Felder:
+    - `personId`: (String) ID der Person
+    - `year`: (Number) Jahr
+    - `percentage`: (Number) Beschäftigungsumfang in Prozent
+    - `type`: (String) 'full-time' oder 'part-time'
+    - `daysPerWeek`: (Number|null) Arbeitstage pro Woche (bei Teilzeit)
+
+- **`globalDaySettings`**: (Virtuell, abgebildet als Subcollection oder Map) Globale Einstellungen für bestimmte Tage (z.B. Feiertage, Teamtage für alle Personen).
+  - Key-Format: `${year}-${month}-${day}`
+  - Value: (String) 'feiertag' oder 'interne teamtage'
 
 ## Screenshots (Optional)
 
