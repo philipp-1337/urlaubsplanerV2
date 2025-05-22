@@ -199,7 +199,7 @@ const YearlyOverview = () => {
                   </th>
                   <th colspan="5" className="p-3 text-center border-t">Urlaub</th>
                   <th colspan="3" className="p-3 text-center border-t border-l">Sonstiges</th>
-                  <th rowspan="2" className="left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r">
+                  <th rowspan="2" className="left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r text-center">
                     Aktionen
                   </th>
                 </tr>
