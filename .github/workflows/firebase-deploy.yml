@@ -13,25 +13,48 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache node modules
-        uses: actions/cache@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
+      - name: Setup Firebase CLI
+        uses: w9jds/firebase-action@master
+        with:
+          args: --version
 
       - name: Build Project
         run: npm run build
 
-      - name: Deploy to Firebase
+
+      - name: Deploy to Firebase Preview Channel
+        if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[preview]')
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting:preview
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-            firebase deploy
+
+      - name: Deploy to Firebase Production
+        if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[preview]')
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Comment PR with Preview URL
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Preview deployed! Check it out at your Firebase preview URL.'
+            })
