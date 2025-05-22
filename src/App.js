@@ -11,6 +11,7 @@ import CalendarView from './components/calendar/CalendarView';
 import YearlyOverview from './components/dashboard/YearlyOverview';
 import MonthlyDetail from './components/dashboard/MonthlyDetail';
 import SettingsPage from './components/settings/SettingsPage';
+import ActionHandlerPage from './components/auth/ActionHandlerPage'; // Import der neuen Seite
 
 function AppRoutes() {
   const { isLoggedIn, loadingAuth } = useAuth();
@@ -22,6 +23,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <LoginForm />} />
+      {/* Öffentliche Route für Firebase Auth Actions (z.B. Passwort Reset) */}
+      <Route path="/auth/action" element={<ActionHandlerPage />} />
       <Route path="/*" element={
         isLoggedIn ? (
           <div className="min-h-screen bg-gray-100">
