@@ -137,16 +137,14 @@ export const useFirestore = () => {
         dayStatusSnapshot.forEach((doc) => {
           const data = doc.data();
       if (data.personId === GLOBAL_PERSON_ID_MARKER) {
-        const globalKey = `${data.year}-${data.month}-${data.day}`;
-        // eslint-disable-next-line no-undef
-        newGlobalTagDaten[globalKey] = data.status;
+        const globalKey = `${data.year}-${data.month}-${data.day}`;        
+        newGlobalTagDaten[globalKey] = data.status; // ESLint-disable nicht mehr nötig
       } else {
         const personSpecificKey = `${data.personId}-${data.year}-${data.month}-${data.day}`;
         newTagDaten[personSpecificKey] = data.status;
       }
         });
         setTagDaten(newTagDaten); // Speichert alle Einträge des Jahres
-    // eslint-disable-next-line no-undef
     setGlobalTagDaten(newGlobalTagDaten); // Globale Einträge aus dayStatusEntries setzen
 
       } catch (error) {

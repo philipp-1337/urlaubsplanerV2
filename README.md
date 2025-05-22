@@ -143,7 +143,3 @@ Hier könnten Screenshots der verschiedenen Ansichten der Anwendung eingefügt w
 - Benachrichtigungen.
 - Verbesserte UI/UX und mehr Anpassungsmöglichkeiten.
 - Umfassendere Testabdeckung.
-
----
-
-Diese `README.md` ist ein guter Startpunkt. Du kannst sie natürlich nach Bedarf anpassen und erweitern!

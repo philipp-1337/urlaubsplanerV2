@@ -10,21 +10,7 @@ import MonthlyView from './components/dashboard/MonthlyView';
 import CalendarView from './components/calendar/CalendarView';
 import YearlyOverview from './components/dashboard/YearlyOverview';
 import MonthlyDetail from './components/dashboard/MonthlyDetail';
-import SettingsPage from './components/settings/SettingsPage'; // Import SettingsPage
-
-// const ProtectedRoute = ({ children }) => {
-//   const { isLoggedIn, loadingAuth } = useAuth();
-  
-//   if (loadingAuth) {
-//     return <div>Lade Authentifizierung...</div>; // Or a proper loading spinner
-//   }
-  
-//   if (!isLoggedIn) {
-//     return <Navigate to="/login" replace />;
-//   }
-  
-//   return children;
-// };
+import SettingsPage from './components/settings/SettingsPage';
 
 function AppRoutes() {
   const { isLoggedIn, loadingAuth } = useAuth();
