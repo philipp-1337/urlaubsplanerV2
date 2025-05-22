@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import YearConfigurationSection from './YearConfigurationSection'; // Import YearConfigurationSection
 import PersonManagementSection from './PersonManagementSection'; // Import PersonManagementSection
 import YearlyPersonDataSection from './YearlyPersonDataSection'; // Import YearlyPersonDataSection
+import UserDataManagementSection from './UserDataManagementSection'; // Import der neuen Komponente
 // GlobalDaySettingsSection wird jetzt innerhalb von YearlyPersonDataSection gerendert
 
 const SettingsPage = () => {
@@ -27,6 +28,9 @@ const SettingsPage = () => {
     // updateYearConfiguration, // For future enhancement
   } = useFirestore(); 
 
+  // --- State for Tab Navigation ---
+  const [activeTab, setActiveTab] = useState('yearConfig'); // 'yearConfig', 'personManagement', 'yearlyPersonData', 'userData'
+
   // State for year configurations
   const [yearConfigs, setYearConfigs] = useState([]); // [{ id: 'docId', year: 2024, urlaubsanspruch: 30 }, ...]
   const [isLoadingYearConfigs, setIsLoadingYearConfigs] = useState(false);
@@ -40,14 +44,15 @@ const SettingsPage = () => {
       const loadYearConfigs = async () => {
         setIsLoadingYearConfigs(true);
         const configs = await fetchYearConfigurations();
-        setYearConfigs(configs);
-        if (configs.length > 0 && !configs.find(c => c.year === selectedConfigYear)) {
-          // If current selectedConfigYear is not in fetched configs, default to the first available or globalCurrentYear
-          setSelectedConfigYear(configs.find(c => c.year === globalCurrentYear)?.year || configs[0]?.year || globalCurrentYear);
+        setYearConfigs(configs); // Update yearConfigs state
+        // Set selectedConfigYear based on fetched configs or globalCurrentYear
+        const configForCurrentYear = configs.find(c => c.year === globalCurrentYear);
+        if (configForCurrentYear) {
+             setSelectedConfigYear(globalCurrentYear);
         } else if (configs.length === 0) {
           // If no configs, default to global current year, allowing user to add it.
           setSelectedConfigYear(globalCurrentYear);
-        }
+        } // If globalCurrentYear is not configured but others are, keep the current selectedConfigYear or default to the first one if selectedConfigYear was null/undefined. The initial state handles the null/undefined case.
         setIsLoadingYearConfigs(false);
       };
       loadYearConfigs();
@@ -68,13 +73,12 @@ const SettingsPage = () => {
     if (!currentUser || personen.length === 0 || !selectedConfigYear) {
       setIsLoadingYearlyPersonData(false); // Ensure loading is false if conditions aren't met
       setYearlyPersonData({});
-      setInitialYearlyPersonData({});
+      setInitialYearlyPersonData({}); // Also clear initial data
       return;
     }
 
     const fetchPromises = personen.map(async (p) => {
       // Detailliertes Logging vor der ID-Erstellung
-      console.log('SettingsPage - Preparing to fetch for person:', p?.id, 'User UID:', currentUser?.uid, 'Selected Year:', selectedConfigYear);
       setIsLoadingYearlyPersonData(true); // Start loading
 
       if (!currentUser?.uid || !p?.id || typeof selectedConfigYear === 'undefined' || selectedConfigYear === null) {
@@ -94,14 +98,13 @@ const SettingsPage = () => {
       try {
         // Pfad an die neue Struktur anpassen: users/{userId}/resturlaubData/{docId}
         console.log(`SettingsPage - Attempting to fetch resturlaubData from users/${currentUser.uid}/resturlaubData/${resturlaubDocId}`);
-        const resturlaubRef = doc(db, 'users', currentUser.uid, 'resturlaubData', resturlaubDocId);
+        const resturlaubRef = doc(db, 'users', currentUser.uid, 'resturlaubData', resturlaubDocId); // Use doc directly
         const resturlaubSnap = await getDoc(resturlaubRef);
         if (resturlaubSnap.exists()) {
           pResturlaub = resturlaubSnap.data().tage;
           console.log(`SettingsPage - Resturlaub for ${p.id} (${selectedConfigYear}) found: ${pResturlaub}`);
         } else {
           // Kein Dokument vorhanden, kein Fehler, einfach 0 lassen
-          console.log(`SettingsPage - No resturlaubData found for ${resturlaubDocId}`);
         }
       } catch (error) {
         if (error.code === 'permission-denied') {
@@ -116,14 +119,13 @@ const SettingsPage = () => {
 
       try {
         // Pfad an die neue Struktur anpassen: users/{userId}/employmentData/{docId}
-        console.log(`SettingsPage - Attempting to fetch employmentData from users/${currentUser.uid}/employmentData/${employmentDocId}`);
-        const employmentRef = doc(db, 'users', currentUser.uid, 'employmentData', employmentDocId);
+        const employmentRef = doc(db, 'users', currentUser.uid, 'employmentData', employmentDocId); // Use doc directly
         const employmentSnap = await getDoc(employmentRef);
         if (employmentSnap.exists()) {
           pEmpData = employmentSnap.data();
           // Ensure daysPerWeek has a sensible default if missing from older DB entries
           if (pEmpData.daysPerWeek === undefined) {
-            pEmpData.daysPerWeek = pEmpData.type === 'part-time' ? '' : null;
+            pEmpData.daysPerWeek = pEmpData.type === 'part-time' ? '' : null; // Use '' for part-time default to match input state
           }
           console.log(`SettingsPage - EmploymentData for ${p.id} (${selectedConfigYear}) found:`, pEmpData);
         } else {
@@ -163,6 +165,7 @@ const SettingsPage = () => {
       .catch(error => {
         console.error("SettingsPage - Error in Promise.all when fetching person-specific yearly data:", error);
         // Hier könntest du eine Fehlermeldung im UI anzeigen
+          setYearlyPersonData({}); // Clear current data on error
         setInitialYearlyPersonData({}); // Clear initial data on error
         setIsLoadingYearlyPersonData(false); // End loading on error
       });
@@ -177,6 +180,7 @@ const SettingsPage = () => {
         newPersonDataForId.employmentType = value;
         if (value === 'full-time') {
           newPersonDataForId.employmentPercentage = 100;
+          newPersonDataForId.daysPerWeek = null; // Full-time has no daysPerWeek
         }
         // When switching to full-time, daysPerWeek becomes irrelevant.
         // It will be handled/nulled out during save or comparison.
@@ -186,7 +190,7 @@ const SettingsPage = () => {
       } else if (field === 'employmentPercentage') {
         // This field is only visible/editable if employmentType is 'part-time'.
         const parsedValue = parseInt(value, 10);
-        if (value === '') { // Allow clearing the field
+        if (value === '') { // Allow clearing the field, store as empty string
           newPersonDataForId.employmentPercentage = '';
         } else if (!isNaN(parsedValue)) {
           if (parsedValue > 100) {
@@ -203,7 +207,7 @@ const SettingsPage = () => {
       } else if (field === 'daysPerWeek') {
         // This field is only visible/editable if employmentType is 'part-time'.
         const parsedValue = parseInt(value, 10);
-        if (value === '') { // Allow clearing the field
+        if (value === '') { // Allow clearing the field, store as empty string
           newPersonDataForId.daysPerWeek = '';
         } else if (!isNaN(parsedValue)) {
           if (parsedValue > 5) {
@@ -279,6 +283,7 @@ const SettingsPage = () => {
     } catch (error) {
       console.error("Error saving yearly data:", error);
       // Hier könntest du eine Fehlermeldung für den Benutzer anzeigen
+      alert("Fehler beim Speichern der jährlichen Daten.");
     } finally {
       setYearlyDataSavingStates(prev => ({ ...prev, [personId]: false }));
     }
@@ -289,9 +294,7 @@ const SettingsPage = () => {
     const result = await addPerson(name); // addPerson from useFirestore
     if (result.success) {
       // Input clearing is handled within PersonManagementSection
-    } else {
-      alert("Fehler beim Hinzufügen der Person.");
-    }
+    } // Error alert is handled in useFirestore
     return result; // Return result so PersonManagementSection can react
   };
 
@@ -308,9 +311,10 @@ const SettingsPage = () => {
   const handleAddYearConfigProp = async (year, urlaubsanspruch) => {
     // Validation is handled within YearConfigurationSection
     const result = await addYearConfiguration(year, urlaubsanspruch);
-    if (result.success) {
+    if (result.success) { // Error alert is handled in useFirestore
       const configs = await fetchYearConfigurations(); // Refresh list
       setYearConfigs(configs);
+      setSelectedConfigYear(year); // Automatically select the newly added year
     } else {
       alert("Fehler beim Hinzufügen der Jahreskonfiguration.");
     }
@@ -325,6 +329,12 @@ const SettingsPage = () => {
         // Refresh list after deletion
         const configs = await fetchYearConfigurations();
         setYearConfigs(configs);
+        // If the deleted year was the selected one, try to select another year
+        if (selectedConfigYear === parseInt(configId, 10)) {
+            if (configs.length > 0) {
+                setSelectedConfigYear(configs[0].year); // Select the first available year
+            } // If no configs left, selectedConfigYear will remain the deleted year until the effect runs or user adds a new one. Could default to globalCurrentYear here.
+        }
       } catch (error) {
         console.error("Error deleting year configuration:", error);
         alert("Fehler beim Löschen der Jahreskonfiguration.");
@@ -332,7 +342,7 @@ const SettingsPage = () => {
     }
   };
 
-  // Handler for applying global prefill, called by GlobalDaySettingsSection
+  // Handler for applying global prefill, called by GlobalDaySettingsSection, receives date data
   const handleApplyPrefillProp = async (statusToSet, prefillDateForAction) => {
     if (!selectedConfigYear || !prefillDateForAction.day || !prefillDateForAction.month) {
       alert("Bitte wählen Sie ein Jahr und geben Sie Tag und Monat für die Vorbelegung ein.");
@@ -342,11 +352,11 @@ const SettingsPage = () => {
     const day = parseInt(prefillDateForAction.day, 10);
     const month = parseInt(prefillDateForAction.month, 10) - 1; // Konvertiere 1-12 zu 0-11
 
+    const globalKey = `${selectedConfigYear}-${month}-${day}`; // Define globalKey here
+
     // Zusätzliche Sicherung und detailliertes Logging
     const safeGlobalTagDaten = globalTagDaten || {};
     // Prüfen, ob dieser Tag bereits global mit diesem Status gesetzt ist
-    const globalKey = `${selectedConfigYear}-${month}-${day}`;
-    console.log('SettingsPage - handleApplyPrefill - globalTagDaten (von useCalendar):', globalTagDaten, 'safeGlobalTagDaten (lokal gesichert):', safeGlobalTagDaten, 'globalKey:', globalKey);
     const currentGlobalStatus = safeGlobalTagDaten[globalKey];
     // Basisvalidierung
     if (isNaN(day) || day < 1 || day > 31 || isNaN(month) || month < 0 || month > 11) {
@@ -382,7 +392,7 @@ const SettingsPage = () => {
       } else {
         // Andernfalls setzen wir den neuen globalen Status (oder überschreiben einen anderen globalen Status)
         const confirmMessage = `Möchten Sie den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} für alle Personen als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} setzen? Eine eventuell vorhandene andere globale Einstellung für diesen Tag wird überschrieben. Personenspezifische Einträge bleiben davon unberührt.`;
-        if (window.confirm(confirmMessage)) {
+        if (window.confirm(confirmMessage)) { // Confirmation needed before setting
           await setGlobalDaySetting(day, month, selectedConfigYear, statusToSet);
           alert(`${statusToSet === 'interne teamtage' ? 'Teamtage' : 'Feiertage'} für den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} wurden global gesetzt.`);
           actionConfirmedAndExecuted = true;
@@ -397,7 +407,7 @@ const SettingsPage = () => {
   };
 
   // Handler for importing holidays, now receives the list of holidays from GlobalDaySettingsSection
-  const handleImportGermanHolidaysProp = async (holidaysToSet, skippedWeekendHolidays) => {
+  const handleImportGermanHolidaysProp = async (holidaysToSet) => { // Removed skippedWeekendHolidays from signature
     if (!selectedConfigYear) {
       alert("Bitte wählen Sie zuerst ein Jahr aus, für das die Feiertage importiert werden sollen.");
       return false;
@@ -412,7 +422,6 @@ const SettingsPage = () => {
         await batchSetGlobalDaySettings(selectedConfigYear, holidaysToSet, 'feiertag');
         alert(`Bundesweite Feiertage für ${selectedConfigYear} wurden erfolgreich importiert und als 'Feiertag' gesetzt.`);
       } else {
-        alert(`Keine bundesweiten Feiertage für ${selectedConfigYear} gefunden oder die Bibliothek konnte sie nicht bereitstellen.`);
       }
       // Skipped weekend holidays message is now handled in GlobalDaySettingsSection
       return true; // Return success status
@@ -434,7 +443,7 @@ const SettingsPage = () => {
       return {
         resturlaub: initialDbState.resturlaub, 
         employmentType: initialDbState.employmentType,
-        employmentPercentage: initialDbState.employmentPercentage,
+        employmentPercentage: initialDbState.employmentPercentage ?? '', // Treat undefined/null as empty string for comparison
         daysPerWeek: initialDbState.daysPerWeek ?? (initialDbState.employmentType === 'part-time' ? '' : null),
       };
     }
@@ -443,7 +452,7 @@ const SettingsPage = () => {
     return {
       resturlaub: '', // Represents an empty input field
       employmentType: 'full-time',
-      employmentPercentage: 100, // Corresponds to full-time type
+      employmentPercentage: 100, // Default for full-time
       daysPerWeek: null, // Not applicable for full-time default
     };
   };
@@ -468,59 +477,103 @@ const SettingsPage = () => {
     // which will disable the save/reset buttons.
   };
 
+  // Define tabs
+  const tabs = [
+    { id: 'yearConfig', label: 'Jahreskonfiguration' },
+    { id: 'personManagement', label: 'Personen verwalten' },
+    { id: 'yearlyPersonData', label: 'Jahresspezifische Daten' },
+    { id: 'userData', label: 'Benutzerdaten' },
+  ];
+
+  // Conditional rendering based on activeTab
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case 'yearConfig':
+        return (
+          <YearConfigurationSection
+            yearConfigs={yearConfigs}
+            isLoadingYearConfigs={isLoadingYearConfigs}
+            onAddYearConfig={handleAddYearConfigProp}
+            onDeleteYearConfig={handleDeleteYearConfigProp}
+            // onUpdateYearConfiguration will be passed if implemented
+          />
+        );
+      case 'personManagement':
+        return (
+          <PersonManagementSection
+            personen={personen} // Pass the current list of persons from useCalendar
+            onAddPerson={handleAddPersonProp} // Pass the local handler
+            onUpdatePersonName={updatePersonName} // Pass the Firestore hook function
+            onDeletePerson={handleDeletePerson} // Pass the local handler
+            onSavePersonOrder={savePersonOrder} // Pass the Firestore hook function
+          />
+        );
+      case 'yearlyPersonData':
+        return (
+          <YearlyPersonDataSection
+            personen={personen}
+            yearConfigs={yearConfigs}
+            selectedConfigYear={selectedConfigYear}
+            setSelectedConfigYear={setSelectedConfigYear}
+            yearlyPersonData={yearlyPersonData}
+            initialYearlyPersonData={initialYearlyPersonData}
+            onYearlyDataChange={handleEditYearlyDataChange}
+            onSaveYearlyData={handleSaveYearlyData}
+            onResetYearlyData={handleResetYearlyData}
+            yearlyDataSavingStates={yearlyDataSavingStates}
+            isLoadingYearlyPersonData={isLoadingYearlyPersonData}
+            getInitialDataForPerson={getInitialDataForPerson}
+            isLoadingYearConfigs={isLoadingYearConfigs} // Pass loading state for year configs
+            // Pass props needed by GlobalDaySettingsSection
+            globalTagDaten={globalTagDaten}
+            onApplyPrefill={handleApplyPrefillProp} // Pass the handler
+            onImportHolidays={handleImportGermanHolidaysProp} // Pass the handler
+            getMonatsName={getMonatsName} // Pass getMonatsName
+          />
+        );
+      case 'userData':
+        return (
+          <UserDataManagementSection />
+          // currentUser wird via useAuth() direkt in der Komponente geholt
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <main className="container px-4 py-8 mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Einstellungen</h1>
-        {currentUser && currentUser.email && (
+        {/* {currentUser && currentUser.email && (
           <span className="text-sm text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-lg shadow-sm" title="Eingeloggt als">
             Eingeloggt als: {currentUser.email}
           </span>
-        )}
+        )} */}
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex mb-6 border-b border-gray-200 overflow-x-auto">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-shrink-0 px-4 py-2 -mb-px text-sm font-medium leading-5 focus:outline-none transition-colors duration-150 ease-in-out ${
+              activeTab === tab.id
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 border-transparent'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Jahreskonfiguration verwalten */}
-      <YearConfigurationSection
-        yearConfigs={yearConfigs}
-        isLoadingYearConfigs={isLoadingYearConfigs}
-        onAddYearConfig={handleAddYearConfigProp}
-        onDeleteYearConfig={handleDeleteYearConfigProp}
-        // onUpdateYearConfiguration will be passed if implemented
-      />
+      {/* Tab Content */}
+      <div>
+        {renderActiveTabContent()}
+      </div>
 
-      {/* Personen verwalten - unabhängig vom Jahr */}
-      <PersonManagementSection
-        personen={personen} // Pass the current list of persons from useCalendar
-        onAddPerson={handleAddPersonProp} // Pass the local handler
-        onUpdatePersonName={updatePersonName} // Pass the Firestore hook function
-        onDeletePerson={handleDeletePerson} // Pass the local handler
-        onSavePersonOrder={savePersonOrder} // Pass the Firestore hook function
-      />
-
-      {/* Jahresspezifische Daten verwalten */}
-      <YearlyPersonDataSection
-        personen={personen}
-        yearConfigs={yearConfigs}
-        selectedConfigYear={selectedConfigYear}
-        setSelectedConfigYear={setSelectedConfigYear}
-        yearlyPersonData={yearlyPersonData}
-        initialYearlyPersonData={initialYearlyPersonData}
-        onYearlyDataChange={handleEditYearlyDataChange}
-        onSaveYearlyData={handleSaveYearlyData}
-        onResetYearlyData={handleResetYearlyData}
-        yearlyDataSavingStates={yearlyDataSavingStates}
-        isLoadingYearlyPersonData={isLoadingYearlyPersonData}
-        getInitialDataForPerson={getInitialDataForPerson}
-        isLoadingYearConfigs={isLoadingYearConfigs} // Pass loading state for year configs
-        // Pass props needed by GlobalDaySettingsSection
-        globalTagDaten={globalTagDaten}
-        onApplyPrefill={handleApplyPrefillProp}
-        onImportHolidays={handleImportGermanHolidaysProp}
-        getMonatsName={getMonatsName} // Pass getMonatsName
-      />
-
-      {/* GlobalDaySettingsSection wird nun von YearlyPersonDataSection gerendert, wenn ein Jahr ausgewählt ist */}
     </main>
   );
 };
