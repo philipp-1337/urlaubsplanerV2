@@ -194,14 +194,10 @@ const YearlyOverview = () => {
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-100">
-                  <th rowspan="2" className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r">
-                    Person
-                  </th>
-                  <th colspan="5" className="p-3 text-center border-t">Urlaub</th>
-                  <th colspan="3" className="p-3 text-center border-t border-l">Sonstiges</th>
-                  <th rowspan="2" className="left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r text-center">
-                    Aktionen
-                  </th>
+                  <th rowSpan="2" className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r">Person</th>
+                  <th colSpan="5" className="p-3 text-center border-t">Urlaub</th>
+                  <th colSpan="3" className="p-3 text-center border-t border-l">Sonstiges</th>
+                  <th rowSpan="2" className="left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-r text-center">Aktionen</th>
                 </tr>
                 <tr className="bg-gray-100">
                   <th className="p-3 text-center border-t">Übertrag</th>
@@ -212,7 +208,8 @@ const YearlyOverview = () => {
                   <th className="p-3 text-center border-t border-l">Durchführung</th>
                   <th className="p-3 text-center border-t border-l">Fortbildung</th>
                   <th className="p-3 text-center border-t border-l">Teamtage</th>
-                  {/* <th className="p-3 text-center border-t border-l">Feiertage</th> */}                </tr>
+                  {/* <th className="p-3 text-center border-t border-l">Feiertage</th> */}
+                </tr>
               </thead>
               <tbody>
                 {personen.map((person) => {
@@ -268,19 +265,19 @@ const YearlyOverview = () => {
                   <td className="sticky left-0 z-10 p-3 text-left bg-gray-100 border-t border-l border-b border-r">
                     <SigmaIcon className="inline-block mr-2" />
                   </td>
-                  <td className="p-3 text-center border-t border-b">-
+                  <td className="p-3 text-center border-t border-b">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getPersonResturlaub(person.id), 0)} */}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-l border-b">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getCurrentYearUrlaubsanspruch(person.id, currentYear), 0)} */}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-l border-b">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getPersonJahresUrlaub(person.id, currentYear), 0)}     */}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-l border-b">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getPersonJahresUrlaub(person.id, currentYear), 0)} */}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b bg-gray-50">-
+                  <td className="p-3 text-center border-t border-l border-b bg-gray-50">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getPersonResturlaub(person.id), 0) +
                       personen.reduce((acc, person) => acc + getCurrentYearUrlaubsanspruch(person.id, currentYear), 0) -
                       personen.reduce((acc, person) => acc + getPersonJahresUrlaub(person.id, currentYear), 0)} */}
@@ -288,18 +285,16 @@ const YearlyOverview = () => {
                   <td className="p-3 text-center border-t border-l border-b">
                     {personen.reduce((acc, person) => acc + getPersonJahresDurchfuehrung(person.id, currentYear), 0)}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-l border-b">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getPersonJahresFortbildung(person.id, currentYear), 0)} */}
                   </td>
-                  <td className="p-3 text-center border-t border-l border-b">-
+                  <td className="p-3 text-center border-t border-l border-b">{'-'}
                     {/* {personen.reduce((acc, person) => acc + getPersonJahresInterneTeamtage(person.id, currentYear), 0)} */}
                   </td>
-                  {/* <td className="p-3 text-center border-t border-l border-b">-
+                  {/* <td className="p-3 text-center border-t border-l border-b">{'-'}
                     {personen.reduce((acc, person) => acc + getPersonJahresFeiertage(person.id, currentYear), 0)}
                   </td> */}
                   <td className="p-3 text-center border-t border-l border-b border-r"></td>
-                </tr>
-                <tr>
                 </tr>
               </tbody>
             </table>
