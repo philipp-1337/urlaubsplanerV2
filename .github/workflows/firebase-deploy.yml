@@ -30,18 +30,18 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      - name: Deploy to Firebase Preview Channel
-        if: contains(github.event.head_commit.message, '[preview]')
+      - name: Deploy to Firebase
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          echo "Commit message contains '[preview]'. Deploying to Firebase Preview Channel..."
-          firebase deploy --only hosting:preview --token ${{ secrets.FIREBASE_TOKEN }}
-
-      - name: Deploy to Firebase Production
-        if: "!contains(github.event.head_commit.message, '[preview]')"
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          echo "Commit message does not contain '[preview]'. Deploying to Firebase Production..."
-          firebase deploy --token ${{ secrets.FIREBASE_TOKEN }}
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            echo "Deploying to production..."
+            firebase deploy --only hosting:production --token ${{ secrets.FIREBASE_TOKEN }}
+          elif contains(github.event.head_commit.message, '[preview]'); then
+            echo "Deploying to preview channel..."
+            firebase deploy --only hosting:preview --token ${{ secrets.FIREBASE_TOKEN }}
+          else
+            BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
+            echo "Deploying to preview channel: preview-${BRANCH_NAME}..."
+            firebase hosting:channel:deploy preview-${BRANCH_NAME} --token ${{ secrets.FIREBASE_TOKEN }}
+          fi
