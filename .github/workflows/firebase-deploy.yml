@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - '**'
+  workflow_dispatch: # Optional: manuell auslösbar
 
 jobs:
   build_and_deploy:
