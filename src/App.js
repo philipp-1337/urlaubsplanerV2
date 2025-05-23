@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'sonner'; // Importiere Toaster
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CalendarProvider } from './context/CalendarContext';
+import useServiceWorkerUpdate from './hooks/useServiceWorkerUpdate';
+import { showServiceWorkerUpdateToast } from './components/common/ServiceWorkerUpdateToast';
 
 // Import components
 import LoginForm from './components/auth/LoginForm';
@@ -17,8 +19,13 @@ import ActionHandlerPage from './components/auth/ActionHandlerPage'; // Import d
 import PrivacyPolicyPage from './components/legal/PrivacyPolicyPage'; // Import PrivacyPolicyPage
 import ImprintPage from './components/legal/ImprintPage'; // Import ImprintPage
 
-function AppContent() { // Renamed from AppRoutes and restructured
+function AppContent() {
   const { isLoggedIn, loadingAuth } = useAuth();
+
+  // Service Worker Update Hook
+  useServiceWorkerUpdate(() => {
+    showServiceWorkerUpdateToast();
+  });
 
   if (loadingAuth) {
     // Adjusted to be flex-grow as parent div handles min-h-screen
