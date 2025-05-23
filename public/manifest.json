@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Urlaubsplaner",
+  "name": "Urlaubsplaner - Einfache Urlaubsverwaltung",
+  "description": "Eine Web-App zur einfachen Planung und Verwaltung von Urlaubstagen für Teams.",
   "icons": [
     {
       "src": "favicon.ico",
