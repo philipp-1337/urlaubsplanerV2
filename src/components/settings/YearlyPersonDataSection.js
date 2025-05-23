@@ -31,7 +31,7 @@ const YearlyPersonDataSection = ({
       <h2 className="mb-4 text-2xl font-semibold text-gray-700">Jahresspezifische Daten verwalten</h2>
 
       {/* Tabs für Jahresauswahl */}
-      <div className="flex mb-6 border-b border-gray-200 overflow-x-auto"> {/* Added overflow-x-auto */}
+      <div className="flex mb-6 border-b border-gray-200 overflow-x-auto overflow-y-hidden"> {/* Added overflow-x-auto */}
         {yearConfigs.length > 0 ? (
           yearConfigs.map(yc => (
             <button
