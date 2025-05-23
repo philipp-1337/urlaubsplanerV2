@@ -5,6 +5,7 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { auth } from '../firebase'; // Import Firebase auth instance
+import { toast } from 'sonner'; // Import toast for error notifications
 
 // Kontext für die Authentifizierung
 const AuthContext = createContext();
@@ -15,7 +16,7 @@ export function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState(''); // Changed from username to email
   const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  // const [loginError, setLoginError] = useState(''); // Removed, will use toast
   const [loadingAuth, setLoadingAuth] = useState(true); // To track auth state loading
 
   useEffect(() => {
@@ -29,20 +30,20 @@ export function AuthProvider({ children }) {
 
   // Login-Funktionalität
   const login = async () => {
-    setLoginError('');
+    // setLoginError(''); // Removed
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // setIsLoggedIn(true) will be handled by onAuthStateChanged
-      setLoginError('');
+      // setLoginError(''); // Removed
       return true;
     } catch (error) {
       console.error("Firebase login error:", error);
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        setLoginError('Falsche E-Mail-Adresse oder Passwort.');
+        toast.error('Falsche E-Mail-Adresse oder Passwort.');
       } else if (error.code === 'auth/invalid-email') {
-        setLoginError('Ungültiges E-Mail-Format.');
+        toast.error('Ungültiges E-Mail-Format.');
       } else {
-        setLoginError('Ein Fehler ist beim Login aufgetreten.');
+        toast.error('Ein Fehler ist beim Login aufgetreten.');
       }
       return false;
     }
@@ -59,7 +60,7 @@ export function AuthProvider({ children }) {
     }
     setEmail(''); // Clear email and password fields on logout
     setPassword('');
-    setLoginError('');
+    // setLoginError(''); // Removed
   };
 
   // Bereitgestellte Werte und Funktionen
@@ -70,8 +71,8 @@ export function AuthProvider({ children }) {
     setEmail, // Changed from setUsername
     password,
     setPassword,
-    loginError,
-    setLoginError,
+    // loginError, // Removed
+    // setLoginError, // Removed
     login,
     logout,
     loadingAuth // Expose loading state

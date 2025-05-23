@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, ChevronDownIcon } from 'lucide-react'; // CheckCircle2 Icon hinzugefügt, ChevronDownIcon
 import { getHolidays } from 'feiertagejs'; // Importiere feiertagejs
+import { toast } from 'sonner';
 
 const GlobalDaySettingsSection = ({
   selectedConfigYear,
@@ -16,8 +17,8 @@ const GlobalDaySettingsSection = ({
   const [isPrefilling, setIsPrefilling] = useState(false);
   const [isImportingHolidays, setIsImportingHolidays] = useState(false); // State für Feiertagsimport
   const [messageTimeoutId, setMessageTimeoutId] = useState(null); // State for timeout ID
-  const [importMessage, setImportMessage] = useState(''); // State für Erfolgsmeldungen
-  const [importError, setImportError] = useState(''); // State für Fehlermeldungen
+  // const [importMessage, setImportMessage] = useState(''); // State für Erfolgsmeldungen (entfernt)
+  // const [importError, setImportError] = useState(''); // State für Fehlermeldungen (entfernt)
   // const [holidaysAlreadyImported, setHolidaysAlreadyImported] = useState(false); // Wird jetzt aus Props abgeleitet
   const [selectedStateCode, setSelectedStateCode] = useState('BE'); // Default Berlin
 
@@ -60,7 +61,7 @@ const GlobalDaySettingsSection = ({
   const handleApplyPrefillClick = async (statusToSet) => {
     // Grundlegende Prüfung, ob Felder ausgefüllt sind, bevor die Prop aufgerufen wird
     if (!prefillDate.day || !prefillDate.month) {
-      alert("Bitte geben Sie Tag und Monat für die Vorbelegung ein.");
+      toast.error("Bitte geben Sie Tag und Monat für die Vorbelegung ein.");
       return;
     }
     setIsPrefilling(true);
@@ -82,16 +83,16 @@ const GlobalDaySettingsSection = ({
   // Handler for importing holidays, now includes the feiertagejs logic
   const handleImportGermanHolidaysClick = async () => { // stateCode wird vom State genommen
     if (!selectedConfigYear) {
-      alert("Bitte wählen Sie zuerst ein Jahr aus, für das die Feiertage importiert werden sollen.");
+      toast.error("Bitte wählen Sie zuerst ein Jahr aus, für das die Feiertage importiert werden sollen.");
       return;
     }
     setIsImportingHolidays(true);
     try {
-      setImportMessage(''); // Clear previous messages
+      // setImportMessage(''); // entfernt
       if (messageTimeoutId) { // Clear any existing timeout
         clearTimeout(messageTimeoutId);
       }
-      setImportError('');
+      // setImportError(''); // entfernt
       // Verwende den ausgewählten Bundesland-Code aus dem State
       const holidaysFromLib = getHolidays(selectedConfigYear, selectedStateCode);
       
@@ -111,27 +112,30 @@ const GlobalDaySettingsSection = ({
       });
 
       // Nur die Liste der Feiertage an die Elternkomponente übergeben
-      const importSuccessful = await onImportHolidays(holidaysToSet);
-      if (importSuccessful) {
-        // Speichere den Status in Firestore über die Prop-Funktion (diese aktualisiert den Context)
+      const userConfirmedAndActionStarted = await onImportHolidays(holidaysToSet);
+      if (userConfirmedAndActionStarted) {
         await onSetHolidaysImportedStatus(selectedConfigYear, true);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('holidays-imported'));
+        }
         let successMsg = `Feiertage für ${selectedConfigYear} (${selectedStateCode}) erfolgreich importiert.`;
         if (skippedWeekendHolidays > 0) {
-          // Füge die Info über übersprungene Tage zur Erfolgsmeldung hinzu
           successMsg += ` (${skippedWeekendHolidays} Feiertag(e) wurde(n) übersprungen, da sie auf ein Wochenende fielen.)`;
         }
-        setImportMessage(successMsg);
-        const timeoutId = setTimeout(() => setImportMessage(''), 5000); // Clear message after 5 seconds
+        toast.success(successMsg);
+        // holidaysAlreadyImported-Status im lokalen State sofort aktualisieren
+        currentYearConfig.holidaysImported = true;
+        // Dummy timeout, falls Logik benötigt
+        const timeoutId = setTimeout(() => {}, 5000);
         setMessageTimeoutId(timeoutId);
       } else {
-        // onImportHolidays in SettingsPage.js zeigt bei Fehler einen Alert,
-        // aber wir setzen hier auch einen lokalen Fehlerstate für Konsistenz.
-        // Dies könnte redundant sein, je nachdem wie SettingsPage Fehler behandelt.
-        setImportError("Fehler beim Importieren der Feiertage.");
+        // Benutzer hat den Import in SettingsPage abgebrochen oder es gab einen Fehler,
+        // der bereits in SettingsPage via toast.promise oder Validierung behandelt wurde.
+        // Hier keine zusätzliche Fehlermeldung anzeigen, wenn userConfirmedAndActionStarted false ist.
       }
     } catch (error) {
       console.error("Error importing German holidays in GlobalDaySettingsSection:", error);
-      alert(`Fehler beim Importieren der Feiertage: ${error.message}`);
+      toast.error(`Fehler beim Importieren der Feiertage: ${error.message}`);
     } finally {
       setIsImportingHolidays(false);
     }
@@ -183,11 +187,8 @@ const GlobalDaySettingsSection = ({
                 {holidaysAlreadyImported ? 'Erneut importieren' : 'Importieren'}
               </button>
             </div>
-            {/* Meldungen anzeigen */}
-            {importMessage && <p className="mt-2 text-sm text-green-600">{importMessage}</p>}
-            {importError && <p className="mt-2 text-sm text-red-600">{importError}</p>}
-            {/* Zeige den "bereits importiert" Text nur, wenn keine temporäre Meldung aktiv ist */}
-            {!importMessage && !importError && holidaysAlreadyImported && !isImportingHolidays && <p className="mt-2 text-xs text-green-600">Die Feiertage für {selectedConfigYear} wurden bereits importiert.</p>}
+            {/* Meldungen anzeigen entfernt, Toast übernimmt Feedback */}
+            {/* {!importMessage && !importError && holidaysAlreadyImported && !isImportingHolidays && <p className="mt-2 text-xs text-green-600">Die Feiertage für {selectedConfigYear} wurden bereits importiert.</p>} */}
           </div>
 
           {/* Abschnitt: Benutzerdefinierte Tage / Teamtage setzen */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner'; // Importiere Toaster
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CalendarProvider } from './context/CalendarContext';
 
@@ -71,6 +72,7 @@ function App() {
         <CalendarProvider>
           <div className="flex flex-col min-h-screen"> {/* Global wrapper for flex layout */}
             <AppContent /> {/* Component containing Header (conditional) and Routes */}
+            <Toaster richColors position="bottom-right" /> {/* Füge Toaster hier hinzu */}
             <Footer />     {/* Global Footer */}
           </div>
         </CalendarProvider>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../firebase'; // Importiere Firebase auth Instanz
 import { sendPasswordResetEmail } from 'firebase/auth'; // Importiere die Funktion
+import { toast } from 'sonner';
 
 function LoginForm() {
   const { 
@@ -10,14 +11,12 @@ function LoginForm() {
     password, 
     setPassword, 
     login, 
-    loginError 
+    // loginError // Removed, using toast now
   } = useAuth();
 
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [passwordResetEmail, setPasswordResetEmail] = useState(''); // Eigene E-Mail für das Reset-Formular
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
-  const [resetMessage, setResetMessage] = useState('');
-  const [resetError, setResetError] = useState('');
 
   // Submit mit Enter-Taste
   const handleKeyDown = (e) => {
@@ -28,20 +27,17 @@ function LoginForm() {
 
   const handleForgotPassword = async () => {
     if (!passwordResetEmail) { // E-Mail aus dem Reset-Formular verwenden
-      setResetError("Bitte geben Sie Ihre E-Mail-Adresse ein.");
-      setResetMessage('');
+      toast.error("Bitte geben Sie Ihre E-Mail-Adresse ein.");
       return;
     }
     setIsSendingResetEmail(true);
-    setResetMessage('');
-    setResetError('');
     try {
       await sendPasswordResetEmail(auth, passwordResetEmail); // E-Mail aus dem Reset-Formular verwenden
-      setResetMessage("Eine E-Mail zum Zurücksetzen des Passworts wurde an Ihre Adresse gesendet. Bitte überprüfen Sie Ihr Postfach.");
+      toast.success("Eine E-Mail zum Zurücksetzen des Passworts wurde an Ihre Adresse gesendet. Bitte überprüfen Sie Ihr Postfach.");
     } catch (err) {
       console.error("Error sending password reset email:", err);
       // Hier könntest du spezifischere Fehlermeldungen basierend auf err.code hinzufügen
-      setResetError("Fehler beim Senden der Passwort-Reset-E-Mail. Bitte überprüfen Sie die E-Mail-Adresse oder versuchen Sie es später erneut.");
+      toast.error("Fehler beim Senden der Passwort-Reset-E-Mail. Bitte überprüfen Sie die E-Mail-Adresse oder versuchen Sie es später erneut.");
     } finally {
       setIsSendingResetEmail(false);
     }
@@ -51,12 +47,8 @@ function LoginForm() {
     return (
       <div className="flex flex-col items-center justify-center flex-grow py-12"> {/* Added flex-grow */}
         <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md"> {/* bg-white is fine here for the card */}
-          <h1 className="mb-6 text-2xl font-bold text-center text-primary">Passwort zurücksetzen</h1>
-          
-          {resetMessage && <p className="mb-4 text-sm text-center text-green-600">{resetMessage}</p>}
-          {resetError && <p className="mb-4 text-sm text-center text-red-600">{resetError}</p>}
-          
-          {!resetMessage && ( // Formular nur anzeigen, wenn keine Erfolgsmeldung da ist
+          <h1 className="mb-6 text-2xl font-bold text-center text-primary">Passwort zurücksetzen</h1>          
+          { // Das Formular wird immer angezeigt, Feedback kommt per Toast
             <div className="space-y-6">
               <div>
                 <label htmlFor="reset-email" className="block mb-2 text-sm font-medium text-gray-700">
@@ -80,15 +72,13 @@ function LoginForm() {
                 {isSendingResetEmail ? 'Sende E-Mail...' : 'Passwort-Reset anfordern'}
               </button>
             </div>
-          )}
+          }
 
           <div className="mt-6 text-sm text-center">
             <button
               type="button"
               onClick={() => {
                 setShowPasswordReset(false);
-                setResetMessage('');
-                setResetError('');
                 setPasswordResetEmail(''); // E-Mail-Feld für Reset zurücksetzen
               }}
               className="font-medium text-primary hover:text-accent"
@@ -104,13 +94,7 @@ function LoginForm() {
   return (
     <div className="flex flex-col items-center justify-center flex-grow py-12"> {/* Added flex-grow */}
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md"> {/* bg-white is fine here for the card */}
-        <h1 className="mb-6 text-2xl font-bold text-center text-primary">Urlaubsplaner Login</h1>
-        
-        {loginError && (
-          <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
-            {loginError}
-          </div>
-        )}
+        <h1 className="mb-6 text-2xl font-bold text-center text-primary">Urlaubsplaner Login</h1>        
         
         <div className="space-y-6">
           <div>

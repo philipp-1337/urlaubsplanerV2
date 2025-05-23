@@ -8,6 +8,8 @@ import YearConfigurationSection from './YearConfigurationSection'; // Import Yea
 import PersonManagementSection from './PersonManagementSection'; // Import PersonManagementSection
 import YearlyPersonDataSection from './YearlyPersonDataSection'; // Import YearlyPersonDataSection
 import UserDataManagementSection from './UserDataManagementSection'; // Import der neuen Komponente
+import { toast } from 'sonner'; // Importiere toast
+import SettingsPageSkeleton from './SettingsPageSkeleton'; // Import Skeleton
 // GlobalDaySettingsSection wird jetzt innerhalb von YearlyPersonDataSection gerendert
 
 const SettingsPage = () => {
@@ -264,8 +266,8 @@ const SettingsPage = () => {
       let daysPerWeekToSave;
       if (yearlyData.employmentType === 'part-time') {
         const parsedDays = parseInt(yearlyData.daysPerWeek, 10);
-        if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 5) {
-          alert("Für Teilzeitbeschäftigung muss 'Tage pro Woche' eine Zahl zwischen 1 und 5 sein.");
+        if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 5) {          
+          toast.error("Für Teilzeitbeschäftigung muss 'Tage pro Woche' eine Zahl zwischen 1 und 5 sein.");
           setYearlyDataSavingStates(prev => ({ ...prev, [personId]: false })); // Reset saving state
           return; // Prevent saving
         }
@@ -313,12 +315,44 @@ const SettingsPage = () => {
   };
 
   const handleDeletePerson = async (personId) => {
-    if (window.confirm("Sind Sie sicher, dass Sie diese Person löschen möchten? Alle zugehörigen Daten gehen verloren.")) {
-      await deletePersonFirebase(personId);
-      // Also clear related data from local yearlyPersonData state
-      setYearlyPersonData(prev => { const newState = {...prev}; delete newState[personId]; return newState; });
-      setInitialYearlyPersonData(prev => { const newState = {...prev}; delete newState[personId]; return newState; });
-    }
+    const personToDelete = personen.find(p => p.id === personId);
+    if (!personToDelete) return;
+
+    const performDelete = () => {
+      const promise = () => new Promise(async (resolve, reject) => {
+        try {
+          const result = await deletePersonFirebase(personId);
+          if (result.success) {
+            // UI updates are handled by context/useEffect or here if necessary
+            setYearlyPersonData(prev => { const newState = {...prev}; delete newState[personId]; return newState; });
+            setInitialYearlyPersonData(prev => { const newState = {...prev}; delete newState[personId]; return newState; });
+            resolve(`Person "${personToDelete.name}" wurde gelöscht.`);
+          } else {
+            reject(new Error(result.error?.message || result.error || "Unbekannter Fehler beim Löschen."));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      toast.promise(promise, {
+        loading: `Person "${personToDelete.name}" wird gelöscht...`,
+        success: (message) => message,
+        error: (err) => `Fehler beim Löschen von "${personToDelete.name}": ${err.message}`,
+      });
+    };
+
+    toast.custom((t) => (
+      <div className="bg-white p-4 rounded shadow-lg border flex flex-col items-start max-w-md">
+        <p className="mb-3 text-sm text-gray-700">
+          Sind Sie sicher, dass Sie <strong>{personToDelete.name}</strong> löschen möchten? Alle zugehörigen Daten (inkl. vergangener Jahre) gehen verloren.
+        </p>
+        <div className="flex space-x-2 mt-2 self-end w-full">
+          <button className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 w-1/2" onClick={() => toast.dismiss(t)}>Abbrechen</button>
+          <button className="px-3 py-1.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 w-1/2" onClick={() => { toast.dismiss(t); performDelete(); }}>Löschen</button>
+        </div>
+      </div>
+    ), { duration: Infinity, position: 'bottom-right' });
   };
 
   // Handler for adding a year configuration, called by YearConfigurationSection
@@ -329,31 +363,56 @@ const SettingsPage = () => {
       const configs = await fetchYearConfigurations(); // Refresh list
       setYearConfigs(configs);
       setSelectedConfigYear(year); // Automatically select the newly added year
-    } else {
-      alert("Fehler beim Hinzufügen der Jahreskonfiguration.");
+      // Erfolgsmeldung könnte hier hinzugefügt werden, wenn gewünscht, z.B. toast.success(`Jahreskonfiguration für ${year} hinzugefügt.`);
+    } else { // Fehlerbehandlung bereits in useFirestore oder YearConfigurationSection, hier ggf. spezifischer
+      toast.error("Fehler beim Hinzufügen der Jahreskonfiguration.");
     }
   };
 
   // Handler for deleting a year configuration, called by YearConfigurationSection
   const handleDeleteYearConfigProp = async (configId) => {
-    // YearConfigurationSection manages its own deletingYearConfigId for spinner
-    if (window.confirm("Sind Sie sicher, dass Sie diese Jahreskonfiguration löschen möchten?")) {
-      try {
-        await deleteYearConfiguration(configId);
-        // Refresh list after deletion
-        const configs = await fetchYearConfigurations();
-        setYearConfigs(configs);
-        // If the deleted year was the selected one, try to select another year
-        if (selectedConfigYear === parseInt(configId, 10)) {
-            if (configs.length > 0) {
-                setSelectedConfigYear(configs[0].year); // Select the first available year
-            } // If no configs left, selectedConfigYear will remain the deleted year until the effect runs or user adds a new one. Could default to globalCurrentYear here.
-        }
-      } catch (error) {
-        console.error("Error deleting year configuration:", error);
-        alert("Fehler beim Löschen der Jahreskonfiguration.");
-      }
+    const yearToDelete = parseInt(configId, 10);
+    if (isNaN(yearToDelete)) {
+        toast.error("Ungültige Jahres-ID zum Löschen.");
+        return;
     }
+
+    const performDelete = () => {
+      const promise = () => new Promise(async (resolve, reject) => {
+        try {
+          await deleteYearConfiguration(configId);
+          const configs = await fetchYearConfigurations();
+          setYearConfigs(configs);
+          if (selectedConfigYear === yearToDelete) {
+            if (configs.length > 0) {
+              setSelectedConfigYear(configs[0].year);
+            }
+          }
+          resolve(`Jahreskonfiguration für ${yearToDelete} gelöscht.`);
+        } catch (error) {
+          console.error("Error deleting year configuration:", error);
+          reject(error);
+        }
+      });
+
+      toast.promise(promise, {
+        loading: `Jahreskonfiguration für ${yearToDelete} wird gelöscht...`,
+        success: (message) => message,
+        error: (err) => `Fehler beim Löschen der Jahreskonfiguration für ${yearToDelete}: ${err.message || 'Unbekannter Fehler'}`,
+      });
+    };
+
+    toast.custom((t) => (
+      <div className="bg-white p-4 rounded shadow-lg border flex flex-col items-start max-w-md">
+        <p className="mb-3 text-sm text-gray-700">
+          Sind Sie sicher, dass Sie die Jahreskonfiguration für <strong>{yearToDelete}</strong> und alle damit verbundenen Daten (Resturlaub, Anstellungsart, globale Tage, Tageseinträge) löschen möchten?
+        </p>
+        <div className="flex space-x-2 mt-2 self-end w-full">
+          <button className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 w-1/2" onClick={() => toast.dismiss(t)}>Abbrechen</button>
+          <button className="px-3 py-1.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 w-1/2" onClick={() => { toast.dismiss(t); performDelete(); }}>Löschen</button>
+        </div>
+      </div>
+    ), { duration: Infinity, position: 'bottom-right' });
   };
 
   // Handler for updating a year configuration, called by YearConfigurationSection
@@ -363,16 +422,16 @@ const SettingsPage = () => {
     if (result.success) {
       const configs = await fetchYearConfigurations(); // Refresh list
       setYearConfigs(configs);
-      // Optionally, provide user feedback like a success message
+      toast.success(`Jahreskonfiguration für ${yearStringId} aktualisiert.`);
     } else {
-      alert("Fehler beim Aktualisieren der Jahreskonfiguration.");
+      toast.error("Fehler beim Aktualisieren der Jahreskonfiguration.");
     }
   };
 
   // Handler for applying global prefill, called by GlobalDaySettingsSection, receives date data
   const handleApplyPrefillProp = async (statusToSet, prefillDateForAction) => {
     if (!selectedConfigYear || !prefillDateForAction.day || !prefillDateForAction.month) {
-      alert("Bitte wählen Sie ein Jahr und geben Sie Tag und Monat für die Vorbelegung ein.");
+      toast.error("Bitte wählen Sie ein Jahr und geben Sie Tag und Monat für die Vorbelegung ein.");
       return false;
     }
     // Monat ist 0-indiziert für Date-Objekte und unsere interne Logik
@@ -387,73 +446,107 @@ const SettingsPage = () => {
     const currentGlobalStatus = safeGlobalTagDaten[globalKey];
     // Basisvalidierung
     if (isNaN(day) || day < 1 || day > 31 || isNaN(month) || month < 0 || month > 11) {
-      alert("Ungültiger Tag oder Monat.");
+      toast.error("Ungültiger Tag oder Monat.");
       return false;
     }
 
     // Validieren, ob der Tag im Monat für das ausgewählte Jahr existiert
     // new Date(year, monthIndex + 1, 0) gibt den letzten Tag des Monats monthIndex zurück
     const daysInSelectedMonth = new Date(selectedConfigYear, month + 1, 0).getDate();
-    if (day > daysInSelectedMonth) {
-      alert(`Der Monat ${getMonatsName(month)} im Jahr ${selectedConfigYear} hat nur ${daysInSelectedMonth} Tage.`);
+    if (day > daysInSelectedMonth) {      
+      toast.error(`Der Monat ${getMonatsName(month)} im Jahr ${selectedConfigYear} hat nur ${daysInSelectedMonth} Tage.`);
       return false;
     }
 
     // Prüfen, ob der ausgewählte Tag ein Wochenende ist
     const dateToCheck = new Date(selectedConfigYear, month, day);
     if (dateToCheck.getDay() === 0 || dateToCheck.getDay() === 6) { // 0 = Sonntag, 6 = Samstag
-      alert("Globale Tage können nicht auf ein Wochenende gelegt werden.");
+      toast.error("Globale Tage können nicht auf ein Wochenende gelegt werden.");
       return false;
     }
 
-    let actionConfirmedAndExecuted = false;
-    try {
-      if (currentGlobalStatus === statusToSet) {
-        // Wenn der Tag bereits mit diesem Status global gesetzt ist, entfernen wir ihn
-        const confirmMessage = `Der ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} ist bereits als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} global gesetzt. Möchten Sie diese globale Einstellung entfernen?`;
-        if (window.confirm(confirmMessage)) {
-          await deleteGlobalDaySetting(day, month, selectedConfigYear);
-          alert(`Die globale Einstellung für den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} wurde entfernt.`);
-          actionConfirmedAndExecuted = true;
-        }
-      } else {
-        // Andernfalls setzen wir den neuen globalen Status (oder überschreiben einen anderen globalen Status)
-        const confirmMessage = `Möchten Sie den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} für alle Personen als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} setzen? Eine eventuell vorhandene andere globale Einstellung für diesen Tag wird überschrieben. Personenspezifische Einträge bleiben davon unberührt.`;
-        if (window.confirm(confirmMessage)) { // Confirmation needed before setting
-          await setGlobalDaySetting(day, month, selectedConfigYear, statusToSet);
-          alert(`${statusToSet === 'interne teamtage' ? 'Teamtage' : 'Feiertage'} für den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} wurden global gesetzt.`);
-          actionConfirmedAndExecuted = true;
-        }
-      }
-      return actionConfirmedAndExecuted; // Return success status
-    } catch (error) {
-      console.error("Error prefilling global day status:", error);
-      alert(`Fehler beim Vorbelegen: ${error.message}`);
-      return false; // Return failure status
+    let confirmDialogMessage = '';
+    let actionFn; // This will be the function that returns a promise
+
+    if (currentGlobalStatus === statusToSet) {
+      confirmDialogMessage = `Der ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} ist bereits als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} global gesetzt. Möchten Sie diese globale Einstellung entfernen?`;
+      actionFn = () => deleteGlobalDaySetting(day, month, selectedConfigYear)
+                          .then(() => `Die globale Einstellung für den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} wurde entfernt.`);
+    } else {
+      confirmDialogMessage = `Möchten Sie den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} für alle Personen als ${statusToSet === 'interne teamtage' ? 'Teamtag' : 'Feiertag'} setzen? Eine eventuell vorhandene andere globale Einstellung für diesen Tag wird überschrieben. Personenspezifische Einträge bleiben davon unberührt.`;
+      actionFn = () => setGlobalDaySetting(day, month, selectedConfigYear, statusToSet)
+                          .then(() => `${statusToSet === 'interne teamtage' ? 'Teamtage' : 'Feiertage'} für den ${prefillDateForAction.day}.${prefillDateForAction.month}.${selectedConfigYear} wurden global gesetzt.`);
     }
+
+    const performAction = () => {
+      const promise = () => new Promise(async (resolve, reject) => {
+        try {
+          const successMessage = await actionFn();
+          resolve(successMessage);
+        } catch (error) {
+          console.error("Error in handleApplyPrefillProp action:", error);
+          reject(error);
+        }
+      });
+
+      toast.promise(promise, {
+        loading: 'Aktion wird ausgeführt...',
+        success: (message) => message,
+        error: (err) => `Fehler bei der Aktion: ${err.message || 'Unbekannter Fehler'}`,
+      });
+    };
+
+    return new Promise((resolveOuter) => {
+      toast.custom((t) => (
+        <div className="bg-white p-4 rounded shadow-lg border flex flex-col items-start max-w-md">
+          <p className="mb-3 text-sm text-gray-700 whitespace-pre-line">{confirmDialogMessage}</p>
+          <div className="flex space-x-2 mt-2 self-end w-full">
+            <button className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 w-1/2" onClick={() => { toast.dismiss(t); resolveOuter(false); }}>Abbrechen</button>
+            <button className="px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-accent hover:text-primary w-1/2" onClick={() => { toast.dismiss(t); performAction(); resolveOuter(true); }}>Bestätigen</button>
+          </div>
+        </div>
+      ), { duration: Infinity, position: 'bottom-right' });
+    });
   };
 
   // Handler for importing holidays, now receives the list of holidays from GlobalDaySettingsSection
   const handleImportGermanHolidaysProp = async (holidaysToSet) => { // Removed skippedWeekendHolidays from signature
     if (!selectedConfigYear) {
-      alert("Bitte wählen Sie zuerst ein Jahr aus, für das die Feiertage importiert werden sollen.");
-      return false;
+      toast.error("Bitte wählen Sie zuerst ein Jahr aus, für das die Feiertage importiert werden sollen.");
+      return false; // Early exit
     }
 
-    if (!window.confirm(`Möchten Sie die bundesweiten deutschen Feiertage für ${selectedConfigYear} importieren? Bestehende globale Einstellungen für diese Tage werden als 'Feiertag' überschrieben.`)) {
-      return false;
-    }    
-    
-    try {
-      if (holidaysToSet.length > 0) {
-        await batchSetGlobalDaySettings(selectedConfigYear, holidaysToSet, 'feiertag');
-      } // Success/Error messages and skipped weekend holidays message are now handled in GlobalDaySettingsSection
-      return true; // Return success status
-    } catch (error) {
-      console.error("Error importing German holidays:", error);
-      alert(`Fehler beim Importieren der Feiertage: ${error.message}`);
-      return false; // Return failure status
-    }
+    const confirmDialogMessage = `Möchten Sie die ausgewählten Feiertage für ${selectedConfigYear} importieren? Bestehende globale Einstellungen für diese Tage werden als 'Feiertag' überschrieben.`;
+
+    const performImport = () => {
+      const promise = () => new Promise(async (resolve, reject) => {
+        try {
+          if (holidaysToSet.length > 0) {
+            await batchSetGlobalDaySettings(selectedConfigYear, holidaysToSet, 'feiertag');
+          }
+          resolve("Feiertagsimport-Aktion abgeschlossen. Details in der Erfolgsmeldung."); // Generic, specific success in GlobalDaySettingsSection
+        } catch (error) {
+          reject(error);
+        }
+      });
+      toast.promise(promise, {
+        loading: 'Feiertage werden importiert...',
+        success: (message) => message, // This toast is for the batch operation itself
+        error: (err) => `Fehler beim Batch-Import der Feiertage: ${err.message || 'Unbekannter Fehler'}`,
+      });
+    };
+
+    return new Promise((resolveOuter) => {
+      toast.custom((t) => (
+        <div className="bg-white p-4 rounded shadow-lg border flex flex-col items-start max-w-md">
+          <p className="mb-3 text-sm text-gray-700 whitespace-pre-line">{confirmDialogMessage}</p>
+          <div className="flex space-x-2 mt-2 self-end w-full">
+            <button className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 w-1/2" onClick={() => { toast.dismiss(t); resolveOuter(false); }}>Abbrechen</button>
+            <button className="px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-accent hover:text-primary w-1/2" onClick={() => { toast.dismiss(t); performImport(); resolveOuter(true); }}>Importieren</button>
+          </div>
+        </div>
+      ), { duration: Infinity, position: 'bottom-right' });
+    });
   };
 
   // Handler for setting the holiday import status for a year
@@ -464,7 +557,7 @@ const SettingsPage = () => {
       // Die yearConfigs im Context werden durch updateYearConfigurationImportStatus aktualisiert,
       // was zu einem Re-Render und Aktualisierung der Props für GlobalDaySettingsSection führt.
     } else {
-      alert("Fehler beim Speichern des Feiertagsimport-Status.");
+      toast.error("Fehler beim Speichern des Feiertagsimport-Status.");
     }
   };
 
@@ -576,6 +669,11 @@ const SettingsPage = () => {
         return null;
     }
   };
+
+  // Skeleton anzeigen, wenn Jahreskonfigurationen oder jahresspezifische Personendaten laden
+  if (isLoadingYearConfigs || isLoadingYearlyPersonData) {
+    return <SettingsPageSkeleton />;
+  }
 
   return (
     <main className="container px-4 py-8 mx-auto">
