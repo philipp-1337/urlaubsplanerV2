@@ -187,15 +187,15 @@ const GlobalDaySettingsSection = ({
             {importMessage && <p className="mt-2 text-sm text-green-600">{importMessage}</p>}
             {importError && <p className="mt-2 text-sm text-red-600">{importError}</p>}
             {/* Zeige den "bereits importiert" Text nur, wenn keine temporäre Meldung aktiv ist */}
-            {!importMessage && !importError && holidaysAlreadyImported && !isImportingHolidays && <p className="mt-2 text-xs text-green-600">Feiertage für {selectedConfigYear} ({selectedStateCode}) wurden bereits importiert.</p>}
+            {!importMessage && !importError && holidaysAlreadyImported && !isImportingHolidays && <p className="mt-2 text-xs text-green-600">Die Feiertage für {selectedConfigYear} wurden bereits importiert.</p>}
           </div>
 
           {/* Abschnitt: Benutzerdefinierte Tage / Teamtage setzen */}
           <div>
-            <h4 className="mb-3 text-lg font-medium text-gray-700">Benutzerdefinierte Tage / Teamtage setzen</h4>
+            <h4 className="mb-3 text-lg font-medium text-gray-700">Benutzerdefinierte Tage</h4>
             <p className="mb-4 text-sm text-gray-600">
             Setzen Sie hier einen einzelnen Tag für alle Personen im ausgewählten Jahr ({selectedConfigYear}) als Teamtag oder Feiertag.
-            Eine bestehende globale Einstellung für diesen Tag wird überschrieben. Erneutes Klicken mit gleichem Status entfernt die globale Einstellung. Personenspezifische Einträge haben Vorrang.
+            Eine bestehende globale Einstellung für diesen Tag wird überschrieben. Personenspezifische Einträge haben Vorrang.
           </p>
           <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-2 md:items-end">
             <div>
@@ -231,14 +231,14 @@ const GlobalDaySettingsSection = ({
               disabled={isPrefilling || isImportingHolidays || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
               className="w-full px-4 py-2 text-white bg-bold-lavender rounded-md md:w-auto hover:bg-pastel-lavender hover:text-bold-lavender disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
             >
-              {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Teamtag
+              {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Als Teamtag
             </button>
             <button
               onClick={() => handleApplyPrefillClick('feiertag')}
               disabled={isPrefilling || isImportingHolidays || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
               className="w-full px-4 py-2 text-white bg-gray-dark rounded-md md:w-auto hover:bg-gray-medium hover:text-gray-dark disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
             >
-              {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Alle als Feiertag
+              {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Als Feiertag
             </button>
           </div>
           </div>

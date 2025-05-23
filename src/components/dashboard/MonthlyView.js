@@ -190,7 +190,7 @@ const MonthlyView = () => {
           <div className="relative mb-6 flex flex-row items-center justify-between">
             <div className="flex items-center">
               <InfoOverlayButton
-                text={"In dieser Monatsübersicht sehen Sie für jede Person den Status jedes Tages: Urlaub (U), Durchführung (D), Fortbildung (F), Teamtag (T) oder Feiertag. Klicken Sie auf einen Tag, um den Status für die jeweilige Person zu ändern. Globale Einträge sind mit einem Punkt markiert und können überschrieben, aber nicht gelöscht werden. Die Summenspalten zeigen die Gesamtanzahl der jeweiligen Status pro Person im Monat."}
+                text={"In dieser Monatsübersicht sehen Sie für jede Person den Status jedes Tages: Urlaub (U), Durchführung (D), Fortbildung (F), Teamtag (T) oder Feiertag. Klicken Sie auf einen Tag, um den Status für die jeweilige Person zu ändern. Vorausgefüllte Tage, die für alle gelten, sind mit einem Punkt markiert. Diese können überschrieben, aber nicht gelöscht werden. Die Summenspalten zeigen die Gesamtanzahl der jeweiligen Status pro Person im Monat."}
                 className=""
               />
             </div>

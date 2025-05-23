@@ -134,7 +134,7 @@ const CalendarView = ({ navigateToView }) => {
           <div className="relative mb-6 flex flex-row items-center justify-between">
             <div className="flex items-center">
               <InfoOverlayButton
-                text={"Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Global gesetzte Tage, sind mit einem kleinen Punkt gekennzeichnet. Diese können überschrieben, jedoch nicht gelöscht werden."}
+                text={"Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Vorausgefüllte Tage, die für alle gelten, sind mit einem Punkt markiert. Diese können überschrieben, jedoch nicht gelöscht werden."}
                 className=""
               />
             </div>
