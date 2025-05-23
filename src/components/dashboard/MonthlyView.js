@@ -183,7 +183,7 @@ const MonthlyView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className=""> {/* Removed min-h-screen bg-gray-100, parent main tag in App.js handles this */}
       <main className="container px-4 py-8 mx-auto">
         <ErrorMessage message={loginError} />
         <div className="p-6 bg-white rounded-lg shadow-md">

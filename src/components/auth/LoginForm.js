@@ -49,8 +49,8 @@ function LoginForm() {
 
   if (showPasswordReset) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+      <div className="flex flex-col items-center justify-center flex-grow py-12"> {/* Added flex-grow */}
+        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md"> {/* bg-white is fine here for the card */}
           <h1 className="mb-6 text-2xl font-bold text-center text-primary">Passwort zurücksetzen</h1>
           
           {resetMessage && <p className="mb-4 text-sm text-center text-green-600">{resetMessage}</p>}
@@ -102,8 +102,8 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+    <div className="flex flex-col items-center justify-center flex-grow py-12"> {/* Added flex-grow */}
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md"> {/* bg-white is fine here for the card */}
         <h1 className="mb-6 text-2xl font-bold text-center text-primary">Urlaubsplaner Login</h1>
         
         {loginError && (

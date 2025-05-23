@@ -10,7 +10,7 @@ const ActionHandlerPage = () => {
   // const apiKey = searchParams.get('apiKey'); // Wird von Firebase mitgesendet, aber nicht direkt von uns benötigt
 
   // Minimalistisches Layout für diese Seite
-  const pageStyle = "flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4";
+  const pageStyle = "flex flex-col items-center justify-center flex-grow p-4 py-12"; // Added flex-grow
   const containerStyle = "w-full max-w-md p-8 bg-white rounded-lg shadow-md";
 
   if (!mode || !oobCode) {

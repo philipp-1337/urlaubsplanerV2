@@ -125,7 +125,7 @@ const CalendarView = ({ navigateToView }) => {
   if (!ausgewaehltePerson) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className=""> {/* Removed min-h-screen bg-gray-100, parent main tag in App.js handles this */}
       
       <main className="container px-4 py-8 mx-auto">
         <ErrorMessage message={loginError} />
