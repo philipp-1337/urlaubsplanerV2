@@ -171,6 +171,7 @@ const YearlyOverview = () => {
                 },
                 {
                   label: 'Scroll-Effekt',
+                  className: 'xl:hidden',
                   icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
                     setScrollHintEnabledState((prev) => {
                       setScrollHintEnabled(!prev);

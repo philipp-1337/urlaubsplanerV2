@@ -5,11 +5,12 @@ import { EllipsisVerticalIcon } from 'lucide-react';
  * KebabMenu
  * Einheitliches Drei-Punkte-Menü für die Dashboard-Container.
  * Props:
- *   items: Array<{ label: string, icon?: ReactNode, onClick?: () => void, disabled?: boolean, keepOpenOnClick?: boolean }>
+ *   items: Array<{ label: string, icon?: ReactNode, onClick?: () => void, disabled?: boolean, keepOpenOnClick?: boolean, className?: string }>
  *   buttonAriaLabel?: string
  *   align?: 'right' | 'left' (default: 'right')
+ *   itemClassName?: string // Zusätzliche Klassen für jedes Menüelement
  */
-const KebabMenu = ({ items, buttonAriaLabel = 'Weitere Aktionen', align = 'right', disabled = false }) => {
+const KebabMenu = ({ items, buttonAriaLabel = 'Weitere Aktionen', align = 'right', disabled = false, itemClassName = '' }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
@@ -70,7 +71,7 @@ const KebabMenu = ({ items, buttonAriaLabel = 'Weitere Aktionen', align = 'right
                 }
                 item.onClick?.();
               }}
-              className={`min-h-[41px] flex justify-between items-center items-center w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 transition-colors ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`min-h-[41px] flex justify-between items-center w-full px-4 py-2 text-right text-sm text-gray-700 hover:bg-gray-100 transition-colors ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''} ${itemClassName} ${item.className || ''}`}
               role="menuitem"
               disabled={item.disabled}
             >

@@ -141,6 +141,7 @@ const MonthlyDetail = () => {
               },
               {
                 label: 'Scroll-Effekt',
+                className: 'md:hidden',
                 icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
                   setScrollHintEnabledState((prev) => {
                     setScrollHintEnabled(!prev);
