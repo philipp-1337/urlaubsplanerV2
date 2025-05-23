@@ -26,7 +26,7 @@ const SettingsPage = () => {
     setGlobalDaySetting, // Fehlende Destrukturierung hinzugefügt
     batchSetGlobalDaySettings, // Importierte Funktion für Batch-Setzen
     deleteGlobalDaySetting, // Neue Funktion
-    // updateYearConfiguration, // For future enhancement
+    updateYearConfiguration, // For future enhancement - now used
   } = useFirestore(); 
 
   // --- State for Tab Navigation ---
@@ -356,6 +356,19 @@ const SettingsPage = () => {
     }
   };
 
+  // Handler for updating a year configuration, called by YearConfigurationSection
+  const handleUpdateYearConfigProp = async (yearStringId, dataToUpdate) => {
+    // yearStringId is the year (e.g., "2025"), dataToUpdate is { urlaubsanspruch: number }
+    const result = await updateYearConfiguration(yearStringId, dataToUpdate);
+    if (result.success) {
+      const configs = await fetchYearConfigurations(); // Refresh list
+      setYearConfigs(configs);
+      // Optionally, provide user feedback like a success message
+    } else {
+      alert("Fehler beim Aktualisieren der Jahreskonfiguration.");
+    }
+  };
+
   // Handler for applying global prefill, called by GlobalDaySettingsSection, receives date data
   const handleApplyPrefillProp = async (statusToSet, prefillDateForAction) => {
     if (!selectedConfigYear || !prefillDateForAction.day || !prefillDateForAction.month) {
@@ -517,7 +530,7 @@ const SettingsPage = () => {
             isLoadingYearConfigs={isLoadingYearConfigs}
             onAddYearConfig={handleAddYearConfigProp}
             onDeleteYearConfig={handleDeleteYearConfigProp}
-            // onUpdateYearConfiguration will be passed if implemented
+            onUpdateYearConfiguration={handleUpdateYearConfigProp} // Pass the new handler
           />
         );
       case 'personManagement':

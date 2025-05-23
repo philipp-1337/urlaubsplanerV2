@@ -242,12 +242,12 @@ export const useCalendar = () => {
   // Updated to accept personId to calculate part-time adjustments
   const getCurrentYearUrlaubsanspruch = (personId, jahr = currentYear) => {
     const config = yearConfigurations.find(yc => yc.year === jahr);
-    const baseUrlaubsanspruch = config ? config.urlaubsanspruch : 0;
+    // Define a default entitlement if no specific config is found for the year.
+    const DEFAULT_URLAUBSANSPRUCH = 30; // Standard-Urlaubsanspruch
+
+    const baseUrlaubsanspruch = config ? config.urlaubsanspruch : DEFAULT_URLAUBSANSPRUCH; // Verwende Default, wenn keine Konfig
 
     if (!personId) {
-      // This case should ideally not be hit if personId is always passed for accurate calculation.
-      // Returning baseUrlaubsanspruch if no personId is provided.
-      // console.warn("getCurrentYearUrlaubsanspruch called without personId. Returning base entitlement.");
       return baseUrlaubsanspruch;
     }
 
