@@ -299,7 +299,7 @@ const SettingsPage = () => {
     } catch (error) {
       console.error("Error saving yearly data:", error);
       // Hier könntest du eine Fehlermeldung für den Benutzer anzeigen
-      alert("Fehler beim Speichern der jährlichen Daten.");
+      toast.error("Fehler beim Speichern der jährlichen Daten.");
     } finally {
       setYearlyDataSavingStates(prev => ({ ...prev, [personId]: false }));
     }

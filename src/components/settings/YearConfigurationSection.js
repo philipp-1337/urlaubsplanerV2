@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Loader2, Save, Edit, XCircle } from 'lucide-react'; // Added Edit, Save, XCircle
+import { toast } from 'sonner';
 
 const YearConfigurationSection = ({
   yearConfigs,
@@ -36,7 +37,7 @@ const YearConfigurationSection = ({
 
   const handleSubmit = async () => {
     if (!newYearData.year || newYearData.urlaubsanspruch < 0) {
-      alert("Bitte geben Sie ein gültiges Jahr und einen Urlaubsanspruch (>= 0) an.");
+      toast.error("Bitte geben Sie ein gültiges Jahr und einen Urlaubsanspruch (>= 0) an.");
       return;
     }
     setIsSaving(true);
@@ -53,7 +54,7 @@ const YearConfigurationSection = ({
       }
     } catch (error) {
       console.error("Error saving year configuration:", error);
-      alert("Fehler beim Speichern der Jahreskonfiguration.");
+      toast.error("Fehler beim Speichern der Jahreskonfiguration.");
     } finally {
       setIsSaving(false);
     }

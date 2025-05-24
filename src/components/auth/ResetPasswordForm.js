@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ResetPasswordForm = ({ oobCode }) => {
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [verificationError, setVerificationError] = useState('');
@@ -34,27 +33,23 @@ const ResetPasswordForm = ({ oobCode }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccessMessage('');
-
     if (newPassword !== confirmPassword) {
-      setError("Die Passwörter stimmen nicht überein.");
+      toast.error("Die Passwörter stimmen nicht überein.");
       return;
     }
     if (newPassword.length < 6) {
-      setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+      toast.error("Das Passwort muss mindestens 6 Zeichen lang sein.");
       return;
     }
 
     setIsLoading(true);
     try {
       await confirmPasswordReset(auth, oobCode, newPassword);
-      setSuccessMessage("Ihr Passwort wurde erfolgreich geändert. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.");
-      // Optional: Automatischer Redirect nach kurzer Zeit
+      toast.success("Ihr Passwort wurde erfolgreich geändert. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.");
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       console.error("Error confirming password reset:", err);
-      setError("Fehler beim Ändern des Passworts. Der Link könnte abgelaufen sein oder das Passwort entspricht nicht den Anforderungen.");
+      toast.error("Fehler beim Ändern des Passworts. Der Link könnte abgelaufen sein oder das Passwort entspricht nicht den Anforderungen.");
     } finally {
       setIsLoading(false);
     }
@@ -71,10 +66,6 @@ const ResetPasswordForm = ({ oobCode }) => {
   if (!isVerified) {
     // Sollte nicht erreicht werden, wenn isLoading false und kein verificationError
     return <p className="text-gray-500">Überprüfung des Links steht aus.</p>;
-  }
-
-  if (successMessage) {
-    return <p className="text-green-600">{successMessage}</p>;
   }
 
   return (
@@ -101,7 +92,6 @@ const ResetPasswordForm = ({ oobCode }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
       <button type="submit" disabled={isLoading} className="w-full px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-400 flex items-center justify-center">
         {isLoading && <Loader2 size={18} className="mr-2 animate-spin" />}
         Passwort speichern

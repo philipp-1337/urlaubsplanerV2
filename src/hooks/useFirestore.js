@@ -13,6 +13,7 @@ import {
 } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import CalendarContext from '../context/CalendarContext'; // Nach oben verschoben
+import { toast } from 'sonner';
 
 const GLOBAL_PERSON_ID_MARKER = "___GLOBAL___"; // Neuer Marker
 export const useFirestore = () => {
@@ -150,6 +151,7 @@ export const useFirestore = () => {
       } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
         setLoginError("Fehler beim Laden der Daten von Firestore.");
+        toast.error("Fehler beim Laden der Daten von Firestore.");
       } finally {
         setIsLoadingData(false);
       }
@@ -172,6 +174,7 @@ export const useFirestore = () => {
     // Defensive: Only allow writing to dayStatusEntries if personId is set and currentUser exists
     if (!currentUser || !personIdStr) {
       setLoginError("Fehler: Kein Benutzer oder keine Person ausgewählt.");
+      toast.error("Fehler: Kein Benutzer oder keine Person ausgewählt.");
       return;
     }
 
@@ -233,6 +236,7 @@ export const useFirestore = () => {
           attemptedStatus: status
         });
         setLoginError(`Fehler beim Speichern: ${error.message}. Bitte erneut versuchen.`);
+        toast.error(`Fehler beim Speichern: ${error.message}. Bitte erneut versuchen.`);
 
         // Rollback optimistic UI update on error
         setTagDaten(prev => {
@@ -267,6 +271,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error adding person: ", error);
       setLoginError("Fehler beim Hinzufügen der Person.");
+      toast.error("Fehler beim Hinzufügen der Person.");
       return { success: false, error };
     }
   };
@@ -281,6 +286,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error updating person name: ", error);
       setLoginError("Fehler beim Aktualisieren des Namens.");
+      toast.error("Fehler beim Aktualisieren des Namens.");
       return { success: false, error };
     }
   };
@@ -288,6 +294,7 @@ export const useFirestore = () => {
   const deletePersonFirebase = async (personId) => {
     if (!currentUser) {
       setLoginError("Fehler: Benutzer nicht authentifiziert zum Löschen der Person.");
+      toast.error("Fehler: Benutzer nicht authentifiziert zum Löschen der Person.");
       return { success: false, error: "User not authenticated" };
     }
 
@@ -343,6 +350,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error(`[Firestore Delete ERROR] Error deleting person ${personId} or related data: `, error);
       setLoginError("Fehler beim Löschen der Person.");
+      toast.error("Fehler beim Löschen der Person.");
       return { success: false, error };
     }
   };
@@ -366,6 +374,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error saving person order: ", error);
       setLoginError("Fehler beim Speichern der Personenreihenfolge.");
+      toast.error("Fehler beim Speichern der Personenreihenfolge.");
       return { success: false, error };
     }
   };
@@ -383,6 +392,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error saving resturlaub: ", error);
       setLoginError("Fehler beim Speichern des Resturlaubs.");
+      toast.error("Fehler beim Speichern des Resturlaubs.");
       return { success: false, error };
     }
   };
@@ -391,6 +401,7 @@ export const useFirestore = () => {
     if (!forYear) {
       console.error("saveEmploymentData: forYear is required");
       setLoginError("Fehler: Jahr nicht spezifiziert für Beschäftigungsdaten.");
+      toast.error("Fehler: Jahr nicht spezifiziert für Beschäftigungsdaten.");
       return { success: false, error: "forYear is required" };
     }
     const docId = `${personId}_${forYear}`;
@@ -421,6 +432,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error saving employment data: ", error);
       setLoginError("Fehler beim Speichern der Beschäftigungsdaten.");
+      toast.error("Fehler beim Speichern der Beschäftigungsdaten.");
       return { success: false, error };
     }
   };
@@ -442,6 +454,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error fetching year configurations: ", error);
       setLoginError("Fehler beim Laden der Jahreskonfigurationen.");
+      toast.error("Fehler beim Laden der Jahreskonfigurationen.");
       return [];
     } finally {
       // Removed setIsLoadingData(false)
@@ -468,6 +481,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error adding year configuration: ", error);
       setLoginError("Fehler beim Hinzufügen der Jahreskonfiguration.");
+      toast.error("Fehler beim Hinzufügen der Jahreskonfiguration.");
       return { success: false, error };
     }
   };
@@ -483,6 +497,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error updating year configuration: ", error);
       setLoginError("Fehler beim Aktualisieren der Jahreskonfiguration.");
+      toast.error("Fehler beim Aktualisieren der Jahreskonfiguration.");
       return { success: false, error };
     }
   };
@@ -498,6 +513,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("Error updating year configuration import status: ", error);
       setLoginError("Fehler beim Aktualisieren des Feiertagsimport-Status.");
+      toast.error("Fehler beim Aktualisieren des Feiertagsimport-Status.");
       return { success: false, error };
     }
   };
@@ -506,16 +522,19 @@ export const useFirestore = () => {
   const deleteYearConfiguration = async (yearStringId) => {
     if (!currentUser) {
       setLoginError("Benutzer nicht authentifiziert.");
+      toast.error("Benutzer nicht authentifiziert.");
       return { success: false, error: "User not authenticated" };
     }
     if (!yearStringId) {
       setLoginError("Kein Jahr zum Löschen angegeben.");
+      toast.error("Kein Jahr zum Löschen angegeben.");
       return { success: false, error: "Year ID not provided" };
     }
 
     const yearToDelete = parseInt(yearStringId, 10);
     if (isNaN(yearToDelete)) {
       setLoginError("Ungültige Jahres-ID.");
+      toast.error("Ungültige Jahres-ID.");
       return { success: false, error: "Invalid year ID" };
     }
 
@@ -554,6 +573,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error(`Error deleting year configuration ${yearStringId} and associated data: `, error);
       setLoginError("Fehler beim Löschen der Jahreskonfiguration und zugehöriger Daten.");
+      toast.error("Fehler beim Löschen der Jahreskonfiguration und zugehöriger Daten.");
       return { success: false, error };
     }
   };
@@ -606,6 +626,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("[Firestore GlobalDay ERROR] Fehler beim Setzen des globalen Tagesstatus: ", error);
       setLoginError(`Fehler beim globalen Setzen des Status: ${error.message}.`);
+      toast.error(`Fehler beim globalen Setzen des Status: ${error.message}.`);
       throw error; // Erneut werfen, damit SettingsPage den Fehler behandeln kann
     }
   };
@@ -633,6 +654,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("[Firestore GlobalDay ERROR] Fehler beim Löschen des globalen Tagesstatus: ", error);
       setLoginError(`Fehler beim Löschen des globalen Status: ${error.message}.`);
+      toast.error(`Fehler beim Löschen des globalen Status: ${error.message}.`);
       throw error;
     }
   };
@@ -672,6 +694,7 @@ export const useFirestore = () => {
     } catch (error) {
       console.error("[Firestore BatchGlobalDay ERROR] Fehler beim Batch-Setzen globaler Tagesstatus: ", error);
       setLoginError(`Fehler beim globalen Setzen der Status (Batch): ${error.message}.`);
+      toast.error(`Fehler beim globalen Setzen der Status (Batch): ${error.message}.`);
       throw error;
     }
   };

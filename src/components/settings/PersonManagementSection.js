@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Save, Trash2, Loader2, ArrowUp, ArrowDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PersonManagementSection = ({
   personen, // The current list of persons from context
@@ -67,11 +68,11 @@ const PersonManagementSection = ({
       if (result.success) {
         // Success feedback handled by button animation/state
       } else {
-         alert("Fehler beim Speichern des Namens."); // Show error on failure
+         toast.error("Fehler beim Speichern des Namens."); // Show error on failure
       }
     } catch (error) {
       console.error("Error saving person name:", error);
-      alert("Fehler beim Speichern des Namens."); // Show error on exception
+      toast.error("Fehler beim Speichern des Namens."); // Show error on exception
     } finally {
       setPersonSavingStates(prev => ({ ...prev, [personId]: false }));
     }
@@ -83,7 +84,7 @@ const PersonManagementSection = ({
     if (result.success) {
       setNewPersonName(''); // Clear input
     } else {
-       alert("Fehler beim Hinzufügen der Person."); // Show error on failure
+       toast.error("Fehler beim Hinzufügen der Person."); // Show error on failure
     }
   };
 
@@ -113,7 +114,7 @@ const PersonManagementSection = ({
       setIsOrderChanged(false);
       // Success feedback is handled by button state change
     } else {
-      alert("Fehler beim Speichern der Reihenfolge. Bitte versuchen Sie es erneut.");
+      toast.error("Fehler beim Speichern der Reihenfolge. Bitte versuchen Sie es erneut.");
     }
     setIsSavingOrder(false);
   };
