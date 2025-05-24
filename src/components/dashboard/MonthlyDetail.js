@@ -6,8 +6,8 @@ import {
   DownloadIcon, 
   SheetIcon 
 } from 'lucide-react';
-import { exportToCsv } from '../../services/exportUtils';
-import { useRef, useEffect, useState } from 'react';
+import { exportToCsv } from '../../services/exportUtils'; // Removed unused useState, useRef
+import { useEffect, useState } from 'react'; // Added useState back for scrollHintEnabled
 import KebabMenu from '../common/KebabMenu';
 import InfoOverlayButton from '../common/InfoOverlayButton';
 import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
@@ -39,30 +39,7 @@ const MonthlyDetail = () => {
 
   const { personId: personIdFromUrl } = useParams(); // Get personId from URL
 
-  const [menuOpen, setMenuOpen] = useState(false);
   const [scrollHintEnabled, setScrollHintEnabledState] = useState(isScrollHintEnabled());
-  const menuRef = useRef(null);
-  const buttonRef = useRef(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (event) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target)
-      ) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [menuOpen]);
 
   // Find the person based on the ID from the URL
   const ausgewaehltePerson = personen.find(p => p.id === personIdFromUrl);
