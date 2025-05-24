@@ -1,5 +1,5 @@
 // Standard Service Worker für CRA-basierte PWAs
-const CACHE_NAME = 'urlaubsplaner-cache-v1';
+const CACHE_NAME = 'urlaubsplaner-cache-v2'; // <-- Wichtig: Bei jedem Update erhöhen/ändern!
 const urlsToCache = [
   '/',
   '/index.html',
