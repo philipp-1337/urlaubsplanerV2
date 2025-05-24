@@ -9,7 +9,7 @@ import PersonManagementSection from './PersonManagementSection'; // Import Perso
 import YearlyPersonDataSection from './YearlyPersonDataSection'; // Import YearlyPersonDataSection
 import UserDataManagementSection from './UserDataManagementSection'; // Import der neuen Komponente
 import { toast } from 'sonner'; // Importiere toast
-import SettingsPageSkeleton from './SettingsPageSkeleton'; // Import Skeleton
+// import SettingsPageSkeleton from './SettingsPageSkeleton'; // Skeleton Loader entfernt
 // GlobalDaySettingsSection wird jetzt innerhalb von YearlyPersonDataSection gerendert
 
 const SettingsPage = () => {
@@ -669,11 +669,6 @@ const SettingsPage = () => {
         return null;
     }
   };
-
-  // Skeleton anzeigen, wenn Jahreskonfigurationen oder jahresspezifische Personendaten laden
-  if (isLoadingYearConfigs || isLoadingYearlyPersonData) {
-    return <SettingsPageSkeleton />;
-  }
 
   return (
     <main className="container px-4 py-8 mx-auto">
