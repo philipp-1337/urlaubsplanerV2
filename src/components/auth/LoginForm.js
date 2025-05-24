@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../firebase'; // Importiere Firebase auth Instanz
 import { sendPasswordResetEmail } from 'firebase/auth'; // Importiere die Funktion
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 function LoginForm() {
   const { 
@@ -17,11 +18,22 @@ function LoginForm() {
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [passwordResetEmail, setPasswordResetEmail] = useState(''); // Eigene E-Mail für das Reset-Formular
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Submit mit Enter-Taste
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      login();
+      handleLogin();
+    }
+  };
+
+  // Login-Handler mit Lade-Indikation
+  const handleLogin = async () => {
+    setIsLoggingIn(true);
+    try {
+      await login();
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -126,10 +138,12 @@ function LoginForm() {
           </div>
           
           <button
-            onClick={login}
-            className="w-full px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            onClick={handleLogin}
+            disabled={isLoggingIn}
+            className="w-full px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-400 flex items-center justify-center"
           >
-            Anmelden
+            {isLoggingIn && <Loader2 size={18} className="mr-2 animate-spin" />}
+            {isLoggingIn ? 'Anmelden...' : 'Anmelden'}
           </button>
 
           <div className="mt-4 text-sm text-center">
