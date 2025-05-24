@@ -48,6 +48,8 @@ const MonthlyView = () => {
   const [scrollHintEnabled, setScrollHintEnabledState] = useState(isScrollHintEnabled());
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+  const tableScrollRef = useRef(null);
+  const hasTriggeredScrollHint = useRef(false);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -80,6 +82,32 @@ const MonthlyView = () => {
         returnDuration: 400
       });
     }
+  }, [scrollHintEnabled]);
+
+  // IntersectionObserver to trigger scroll hint only when the table is visible
+  useEffect(() => {
+    if (!scrollHintEnabled) return;
+    if (!tableScrollRef.current) return;
+    if (hasTriggeredScrollHint.current) return;
+
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          triggerHorizontalScrollHint({
+            selector: '#monthly-table-scroll',
+            breakpoint: 9999,
+            scrollDistance: 90,
+            duration: 500,
+            returnDuration: 400
+          });
+          hasTriggeredScrollHint.current = true;
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(tableScrollRef.current);
+    return () => observer.disconnect();
   }, [scrollHintEnabled]);
 
   // Helper function for handling clicks on day cells
@@ -266,7 +294,7 @@ const MonthlyView = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto" id="monthly-table-scroll">
+          <div className="overflow-x-auto" id="monthly-table-scroll" ref={tableScrollRef}>
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-100">
