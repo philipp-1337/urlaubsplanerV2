@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'sonner'; // Importiere Toaster
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CalendarProvider } from './context/CalendarContext';
-// import './safe-area.css'; // Entfernen, da nicht mehr benötigt
 // import useServiceWorkerUpdate from './hooks/useServiceWorkerUpdate'; // Entfernt
 // import { showServiceWorkerUpdateToast } from './components/common/ServiceWorkerUpdateToast'; // Wird in index.js verwendet
 
@@ -77,10 +76,7 @@ function App() {
         <CalendarProvider>
           <div className="flex flex-col min-h-screen">
             <AppContent />
-            {/* Add safe-area to Toaster wrapper for iOS safe area */}
-            <div style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
               <Toaster richColors position="bottom-right" />
-            </div>
             <Footer />
           </div>
         </CalendarProvider>

@@ -25,6 +25,9 @@ module.exports = {
         'gray-medium': '#d8d0d4',
         'gray-dark': '#806a74',
       },
+      spacing: {
+        'safe-4': 'calc(1rem + env(safe-area-inset-bottom, 0px))'
+      }
     },
   },
   plugins: [],
