@@ -71,19 +71,6 @@ const MonthlyView = () => {
     };
   }, [menuOpen]);
 
-  // Simulate horizontal scroll to hint scrollability on small screens
-  useEffect(() => {
-    if (scrollHintEnabled) {
-      triggerHorizontalScrollHint({
-        selector: '#monthly-table-scroll',
-        breakpoint: 9999,
-        scrollDistance: 90,
-        duration: 500,
-        returnDuration: 400
-      });
-    }
-  }, [scrollHintEnabled]);
-
   // IntersectionObserver to trigger scroll hint only when the table is visible
   useEffect(() => {
     if (!scrollHintEnabled) return;
@@ -93,14 +80,20 @@ const MonthlyView = () => {
     const observer = new window.IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          triggerHorizontalScrollHint({
-            selector: '#monthly-table-scroll',
-            breakpoint: 9999,
-            scrollDistance: 90,
-            duration: 500,
-            returnDuration: 400
-          });
-          hasTriggeredScrollHint.current = true;
+          // Add a short delay to allow layout to stabilize, especially on mobile
+          setTimeout(() => {
+            // Check again if still intersecting and not yet triggered, in case of quick state changes
+            if (entries[0].isIntersecting && !hasTriggeredScrollHint.current && tableScrollRef.current) {
+              triggerHorizontalScrollHint({
+                selector: '#monthly-table-scroll',
+                breakpoint: 9999, // Effectively always on for this view if enabled
+                scrollDistance: 90,
+                duration: 500,
+                returnDuration: 400
+              });
+              hasTriggeredScrollHint.current = true;
+            }
+          }, 150); // 150ms delay
           observer.disconnect();
         }
       },
