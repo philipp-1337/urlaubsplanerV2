@@ -5,10 +5,10 @@ const Footer = () => {
   return (
     <footer className="bg-gray-100 text-center py-4">
       <div className="text-xs text-gray-500">
-        <Link to="/" className="hover:text-primary px-2">
+        {/* <Link to="/" className="hover:text-primary px-2">
           Startseite
         </Link>
-        <span className="select-none">|</span>
+        <span className="select-none">|</span> */}
         {/* <Link to="/impressum" className="hover:text-primary px-2">
           Impressum
         </Link>
