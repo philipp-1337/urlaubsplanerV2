@@ -26,8 +26,28 @@ serviceWorkerRegistration.register({
     // Dieses Objekt enthält .waiting, was der neue Service Worker ist.
     showServiceWorkerUpdateToast(registration);
     console.log('Service Worker: Update gefunden, Toast wird angezeigt.', registration);
+
+    // Manuelles Update anstoßen (Workaround für iOS)
+    if (registration && registration.update) {
+      registration.update();
+    }
   },
   onSuccess: registration => { // Optional: Für die erste erfolgreiche Installation
     console.log('Service Worker: Erfolgreich registriert und Inhalte gecacht.', registration);
+
+    if (registration && registration.update) {
+      registration.update();
+    }
   }
 });
+
+// Optional: Polling-Workaround für iOS, prüft regelmäßig auf wartenden SW
+if ('serviceWorker' in navigator) {
+  setInterval(() => {
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg && reg.waiting) {
+        showServiceWorkerUpdateToast(reg);
+      }
+    });
+  }, 30000); // alle 30 Sekunden
+}
