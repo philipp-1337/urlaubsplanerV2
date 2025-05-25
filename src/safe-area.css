@@ -1,0 +1,13 @@
+/* Fix for iOS Standalone Mode: Add safe area bottom padding for toasts */
+
+@supports(padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
+
+@media (display-mode: standalone) {
+  .safe-area {
+    padding-bottom: max(env(safe-area-inset-bottom, 20px), 32px);
+  }
+}
