@@ -353,7 +353,7 @@ const SettingsPage = () => {
           <button className="px-3 py-1.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 w-1/2" onClick={() => { toast.dismiss(t); performDelete(); }}>Löschen</button>
         </div>
       </div>
-    ), { duration: Infinity, position: 'bottom-right' });
+    ), { duration: Infinity });
   };
 
   // Handler for adding a year configuration, called by YearConfigurationSection
@@ -413,7 +413,7 @@ const SettingsPage = () => {
           <button className="px-3 py-1.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 w-1/2" onClick={() => { toast.dismiss(t); performDelete(); }}>Löschen</button>
         </div>
       </div>
-    ), { duration: Infinity, position: 'bottom-right' });
+    ), { duration: Infinity });
   };
 
   // Handler for updating a year configuration, called by YearConfigurationSection
@@ -506,7 +506,7 @@ const SettingsPage = () => {
             <button className="px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-accent hover:text-primary w-1/2" onClick={() => { toast.dismiss(t); performAction(); resolveOuter(true); }}>Bestätigen</button>
           </div>
         </div>
-      ), { duration: Infinity, position: 'bottom-right' });
+      ), { duration: Infinity });
     });
   };
 
@@ -546,7 +546,7 @@ const SettingsPage = () => {
             <button className="px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-accent hover:text-primary w-1/2" onClick={() => { toast.dismiss(t); performImport(); resolveOuter(true); }}>Importieren</button>
           </div>
         </div>
-      ), { duration: Infinity, position: 'bottom-right' });
+      ), { duration: Infinity });
     });
   };
 

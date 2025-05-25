@@ -24,7 +24,7 @@ export function showServiceWorkerUpdateToast(registration) { // registration als
         </button>
       </div>
     ),
-    { duration: Infinity, position: 'bottom-right', id: 'sw-update-toast' } // Eindeutige ID für den Toast
+    { duration: Infinity, id: 'sw-update-toast' } // Eindeutige ID für den Toast
   );
   return toastId; // Gebe die Toast-ID zurück, falls sie extern benötigt wird
 }

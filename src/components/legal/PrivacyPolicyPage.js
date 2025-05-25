@@ -6,6 +6,7 @@ const PrivacyPolicyPage = () => {
   const [devClickCount, setDevClickCount] = useState(0);
 
   const handleHiddenClick = () => {
+    toast.dismiss();
     // devClickCount starts at 0.
     // Click 1: devClickCount = 0 (0 % 2 === 0) -> odd click (info)
     // Click 2: devClickCount = 1 (1 % 2 !== 0) -> even click (custom)
@@ -52,7 +53,7 @@ const PrivacyPolicyPage = () => {
             </button>
           </div>
         </div>
-      ), { duration: Infinity, position: 'bottom-right' });
+      ), { duration: Infinity });
     }
     setDevClickCount(prevCount => prevCount + 1);
   };
