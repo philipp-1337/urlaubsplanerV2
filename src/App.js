@@ -32,7 +32,7 @@ function AppContent() {
   return (
     <>
       {isLoggedIn && <Header />} {/* Header is rendered conditionally here */}
-      <main className="flex flex-col flex-grow bg-gray-100"> {/* Make main a flex container that arranges children vertically and grows */}
+      <main className="flex flex-col flex-grow bg-gray-100 overflow-auto"> {/* Make main a flex container that arranges children vertically and grows */}
         <Routes>
           {/* Public routes accessible always */}
           <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <LoginForm />} />
@@ -76,7 +76,10 @@ function App() {
         <CalendarProvider>
           <div className="flex flex-col min-h-screen">
             <AppContent />
-              <Toaster richColors position="bottom-right" />
+              <Toaster 
+                richColors 
+                position="top-center"
+                />
             <Footer />
           </div>
         </CalendarProvider>
