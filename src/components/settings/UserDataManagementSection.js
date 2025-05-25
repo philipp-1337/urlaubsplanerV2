@@ -9,12 +9,6 @@ const UserDataManagementSection = () => {
   const { currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleReload = () => {
-    toast.info("Die Seite wird neu geladen...");
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
-  };
   const handleChangePassword = async () => {
     if (!currentUser || !currentUser.email) {
       toast.error("Benutzerinformationen nicht verfügbar, um das Passwort zu ändern.");
@@ -48,12 +42,6 @@ const UserDataManagementSection = () => {
             >
               {isLoading && <Loader2 size={18} className="mr-2 animate-spin" />}
               Passwort ändern
-            </button>
-            <button
-              onClick={handleReload}
-              className="px-4 py-2 text-white bg-primary rounded-md hover:bg-accent hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-400 flex items-center"
-            >
-              Neu Laden
             </button>
           </div>
         </div>

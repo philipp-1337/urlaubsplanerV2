@@ -1,6 +1,62 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 const PrivacyPolicyPage = () => {
+  // Developer Mode Unlock State
+  const [devClickCount, setDevClickCount] = useState(0);
+
+  const handleHiddenClick = () => {
+    // devClickCount starts at 0.
+    // Click 1: devClickCount = 0 (0 % 2 === 0) -> odd click (info)
+    // Click 2: devClickCount = 1 (1 % 2 !== 0) -> even click (custom)
+    // Click 3: devClickCount = 2 (2 % 2 === 0) -> odd click (info)
+    // etc.
+
+    if (devClickCount % 2 === 0) { // Odd-numbered clicks
+      toast.info('Die Datenschutzerklärung wurde zuletzt am 25.\u00A0Mai\u00A02025 aktualisiert.');
+    } else { // Even-numbered clicks
+      const isDeveloperModeEnabled = localStorage.getItem('DeveloperMode') === 'true';
+      
+      const message = isDeveloperModeEnabled
+        ? "Bist du sicher, dass du das Developer Menü deaktivieren möchtest?"
+        : "Bist du sicher, dass du das Developer Menü freischalten möchtest?";
+      
+      const actionButtonText = isDeveloperModeEnabled ? "Deaktivieren" : "Aktivieren";
+
+      toast.custom((t) => (
+        <div className="bg-white p-4 rounded shadow-lg border flex flex-col items-start max-w-md">
+          <p className="mb-3 text-sm text-gray-700">{message}</p>
+          <div className="flex space-x-2 mt-2 self-end w-full">
+            <button
+              className="px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-accent hover:text-primary w-1/2"
+              onClick={() => {
+                if (isDeveloperModeEnabled) {
+                  localStorage.setItem('DeveloperMode', 'false');
+                  toast.success('Developer Menü wurde deaktiviert.');
+                } else {
+                  localStorage.setItem('DeveloperMode', 'true');
+                  toast.success('Developer Menü wurde freigeschaltet.');
+                }
+                toast.dismiss(t);
+              }}
+            >
+              {actionButtonText}
+            </button>
+            <button
+              className="px-3 py-1.5 text-xs bg-primary text-white rounded hover:bg-accent hover:text-primary w-1/2"
+              onClick={() => {
+                toast.dismiss(t);
+              }}
+            >
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      ), { duration: Infinity, position: 'bottom-right' });
+    }
+    setDevClickCount(prevCount => prevCount + 1);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 text-gray-700">
       <h1 className="text-2xl font-bold mb-6">Datenschutzerklärung</h1>
@@ -75,7 +131,17 @@ const PrivacyPolicyPage = () => {
       <p className="mb-4">
         Wir behalten uns vor, diese Datenschutzerklärung anzupassen, damit sie stets den aktuellen rechtlichen Anforderungen entspricht oder um Änderungen unserer Leistungen in der Datenschutzerklärung umzusetzen, z.B. bei der Einführung neuer Services. Für Ihren erneuten Besuch gilt dann die neue Datenschutzerklärung.
       </p>
-      <p className="mb-4">Stand: Mai 2025</p>
+      <p className="mb-4">
+        <span
+          style={{ cursor: 'pointer', userSelect: 'none', color: 'inherit', textDecoration: 'none' }}
+          tabIndex={0}
+          aria-label="Letzte Aktualisierung"
+          onClick={handleHiddenClick}
+          onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleHiddenClick()}
+        >
+          Stand: Mai 2025
+        </span>
+      </p>
     </div>
   );
 };

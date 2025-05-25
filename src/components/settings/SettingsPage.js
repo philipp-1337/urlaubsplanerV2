@@ -8,6 +8,7 @@ import YearConfigurationSection from './YearConfigurationSection'; // Import Yea
 import PersonManagementSection from './PersonManagementSection'; // Import PersonManagementSection
 import YearlyPersonDataSection from './YearlyPersonDataSection'; // Import YearlyPersonDataSection
 import UserDataManagementSection from './UserDataManagementSection'; // Import der neuen Komponente
+import DeveloperSettingsSection from './DeveloperSettingsSection'; // Import DeveloperSettingsSection
 import { toast } from 'sonner'; // Importiere toast
 // import SettingsPageSkeleton from './SettingsPageSkeleton'; // Skeleton Loader entfernt
 // GlobalDaySettingsSection wird jetzt innerhalb von YearlyPersonDataSection gerendert
@@ -562,6 +563,24 @@ const SettingsPage = () => {
   };
 
 
+  // Developer Mode State
+  const [isDeveloperMode, setIsDeveloperMode] = useState(false);
+
+  useEffect(() => {
+    // Check LocalStorage for DeveloperMode
+    if (localStorage.getItem('DeveloperMode') === 'true') {
+      setIsDeveloperMode(true);
+    }
+    // Listen for changes from other tabs/windows
+    const onStorage = (e) => {
+      if (e.key === 'DeveloperMode') {
+        setIsDeveloperMode(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Helper to get the definitive initial data for a person for the selected year
   // (either from loaded/saved data or application defaults if no data exists)
   const getInitialDataForPerson = (personId) => {
@@ -611,6 +630,7 @@ const SettingsPage = () => {
     { id: 'personManagement', label: 'Personen verwalten' },
     { id: 'yearlyPersonData', label: 'Jahresspezifische Daten' },
     { id: 'userData', label: 'Benutzerdaten' },
+    ...(isDeveloperMode ? [{ id: 'developer', label: 'Developer' }] : [])
   ];
 
   // Conditional rendering based on activeTab
@@ -665,6 +685,8 @@ const SettingsPage = () => {
           <UserDataManagementSection />
           // currentUser wird via useAuth() direkt in der Komponente geholt
         );
+      case 'developer':
+        return <DeveloperSettingsSection />;
       default:
         return null;
     }
