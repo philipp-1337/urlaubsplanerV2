@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'sonner'; // Importiere Toaster
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CalendarProvider } from './context/CalendarContext';
-import useServiceWorkerUpdate from './hooks/useServiceWorkerUpdate';
-import { showServiceWorkerUpdateToast } from './components/common/ServiceWorkerUpdateToast';
+// import useServiceWorkerUpdate from './hooks/useServiceWorkerUpdate'; // Entfernt
+// import { showServiceWorkerUpdateToast } from './components/common/ServiceWorkerUpdateToast'; // Wird in index.js verwendet
 
 // Import components
 import LoginForm from './components/auth/LoginForm';
@@ -22,10 +22,7 @@ import ImprintPage from './components/legal/ImprintPage'; // Import ImprintPage
 function AppContent() {
   const { isLoggedIn, loadingAuth } = useAuth();
 
-  // Service Worker Update Hook
-  useServiceWorkerUpdate(() => {
-    showServiceWorkerUpdateToast();
-  });
+  // Service Worker Update Logik wird jetzt in src/index.js über serviceWorkerRegistration gehandhabt
 
   if (loadingAuth) {
     // Adjusted to be flex-grow as parent div handles min-h-screen
