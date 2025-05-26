@@ -204,290 +204,288 @@ const MonthlyView = () => {
   };
 
   return (
-    <div className=""> {/* Removed min-h-screen bg-gray-100, parent main tag in App.js handles this */}
-      <main className="container px-4 py-8 mx-auto">
-        <ErrorMessage message={loginError} />
-        <div className="p-6 bg-white rounded-lg shadow-md">
-          <div className="relative mb-6 flex flex-row items-center justify-between">
-            <div className="flex items-center">
-              <InfoOverlayButton
-                text={"In dieser Monatsübersicht sehen Sie für jede Person den Status jedes Tages: Urlaub (U), Durchführung (D), Fortbildung (F), Teamtag (T) oder Feiertag. Klicken Sie auf einen Tag, um den Status für die jeweilige Person zu ändern. Vorausgefüllte Tage, die für alle gelten, sind mit einem Punkt markiert. Diese können überschrieben, aber nicht gelöscht werden. Die Summenspalten zeigen die Gesamtanzahl der jeweiligen Status pro Person im Monat."}
-                className=""
-              />
-            </div>
-            <div className="flex items-center flex-1 justify-center space-x-2">
-              <button
-                onClick={() => handleMonatWechsel('zurueck')}
-                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-                aria-label="Vorheriger Monat"
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-              </button>
-              <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
-                {getMonatsName(currentMonth)} {currentYear}
-              </h2>
-              <button
-                onClick={() => handleMonatWechsel('vor')}
-                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-                aria-label="Nächster Monat"
-              >
-                <ArrowLeftIcon className="w-4 h-4 transform rotate-180" />
-              </button>
-            </div>
-            <div className="relative">
-              <KebabMenu
-                items={[{
-                  label: 'CSV Export',
-                  icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
-                  onClick: handleExportCsv
-                },
-                {
-                  label: 'Scroll-Effekt',
-                  icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
-                    setScrollHintEnabledState((prev) => {
-                      setScrollHintEnabled(!prev);
-                      return !prev;
-                    });
-                  }} label="" id="scroll-toggle" />,
-                  keepOpenOnClick: true, // Menü bleibt offen
-                  onClick: () => {
-                    setScrollHintEnabledState((prev) => {
-                      setScrollHintEnabled(!prev);
-                      return !prev;
-                    });
-                  }
+    <div className="container px-4 py-8 mx-auto">
+      <ErrorMessage message={loginError} />
+      <div className="p-6 bg-white rounded-lg shadow-md">
+        <div className="relative mb-6 flex flex-row items-center justify-between">
+          <div className="flex items-center">
+            <InfoOverlayButton
+              text={"In dieser Monatsübersicht sehen Sie für jede Person den Status jedes Tages: Urlaub (U), Durchführung (D), Fortbildung (F), Teamtag (T) oder Feiertag. Klicken Sie auf einen Tag, um den Status für die jeweilige Person zu ändern. Vorausgefüllte Tage, die für alle gelten, sind mit einem Punkt markiert. Diese können überschrieben, aber nicht gelöscht werden. Die Summenspalten zeigen die Gesamtanzahl der jeweiligen Status pro Person im Monat."}
+              className=""
+            />
+          </div>
+          <div className="flex items-center flex-1 justify-center space-x-2">
+            <button
+              onClick={() => handleMonatWechsel('zurueck')}
+              className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Vorheriger Monat"
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+            </button>
+            <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
+              {getMonatsName(currentMonth)} {currentYear}
+            </h2>
+            <button
+              onClick={() => handleMonatWechsel('vor')}
+              className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Nächster Monat"
+            >
+              <ArrowLeftIcon className="w-4 h-4 transform rotate-180" />
+            </button>
+          </div>
+          <div className="relative">
+            <KebabMenu
+              items={[{
+                label: 'CSV Export',
+                icon: <DownloadIcon size={16} className="ml-2" />, // importiert oben
+                onClick: handleExportCsv
+              },
+              {
+                label: 'Scroll-Effekt',
+                icon: <ToggleSwitch checked={scrollHintEnabled} onChange={() => {
+                  setScrollHintEnabledState((prev) => {
+                    setScrollHintEnabled(!prev);
+                    return !prev;
+                  });
+                }} label="" id="scroll-toggle" />,
+                keepOpenOnClick: true, // Menü bleibt offen
+                onClick: () => {
+                  setScrollHintEnabledState((prev) => {
+                    setScrollHintEnabled(!prev);
+                    return !prev;
+                  });
                 }
-                ]}
-              />
+              }
+              ]}
+            />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex flex-wrap mb-2 gap-2 items-center">
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
+              <span>Urlaub</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-mint rounded"></div>
+              <span>Durchführung</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-apricot rounded"></div>
+              <span>Fortbildung</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-lavender rounded"></div>
+              <span>Teamtag</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-gray-dark rounded"></div>
+              <span>Feiertag</span>
             </div>
           </div>
+        </div>
 
-          <div className="mb-6">
-            <div className="flex flex-wrap mb-2 gap-2 items-center">
-             <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
-                <span>Urlaub</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-mint rounded"></div>
-                <span>Durchführung</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-apricot rounded"></div>
-                <span>Fortbildung</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-lavender rounded"></div>
-                <span>Teamtag</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-gray-dark rounded"></div>
-                <span>Feiertag</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto" id="monthly-table-scroll" ref={tableScrollRef}>
-            <table className="w-full border-separate border-spacing-0">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border-l border-t border-r min-w-[100px]">
-                    Person
+        <div className="overflow-x-auto" id="monthly-table-scroll" ref={tableScrollRef}>
+          <table className="w-full border-separate border-spacing-0">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="sticky left-0 z-10 p-2 text-left bg-gray-100 border-l border-t border-r min-w-[100px]">
+                  Person
+                </th>
+                {getTageImMonat().map((tag) => (
+                  <th
+                    key={`header-${tag.tag}`}
+                    className={`p-1 text-center border-t border-r min-w-[50px] ${
+                      tag.istWochenende ? "bg-gray-medium" : "bg-gray-100" // Consistent background for header
+                    }`}
+                  >
+                    <div>{tag.tag}</div>
+                    <div className="text-xs font-normal">
+                      {getWochentagName(tag.wochentag)}
+                    </div>
                   </th>
-                  {getTageImMonat().map((tag) => (
-                    <th
-                      key={`header-${tag.tag}`}
-                      className={`p-1 text-center border-t border-r min-w-[50px] ${
-                        tag.istWochenende ? "bg-gray-medium" : "bg-gray-100" // Consistent background for header
-                      }`}
-                    >
-                      <div>{tag.tag}</div>
-                      <div className="text-xs font-normal">
-                        {getWochentagName(tag.wochentag)}
-                      </div>
-                    </th>
-                  ))}
-                  <th className="p-2 text-center border-t border-r min-w-[100px]">
-                    Gesamt Urlaub
-                  </th>
-                  <th className="p-2 text-center border-t border-r min-w-[100px]">
-                    Gesamt Durchf.
-                  </th>
-                  <th className="p-2 text-center border-t border-r min-w-[100px]">
-                    Gesamt Fortb.
-                  </th>
-                  <th className="p-2 text-center border-t border-r min-w-[100px]">
-                    Gesamt Teamt.
-                  </th>
-                  <th className="p-2 text-center border-t border-r min-w-[100px]">
-                    Gesamt Feiert.
-                  </th>
-                  <th className="p-2 text-center border-t border-r min-w-[100px]">
-                    Aktionen
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {personen.map((person) => (
-                  <tr key={person.id}>
-                    <td className="sticky left-0 z-10 p-2 text-left bg-white border-l border-t border-r min-w-[100px]">
-                      {person.name}
-                    </td>
-                    {getTageImMonat().map((tag) => {
-                      const status = getTagStatus(String(person.id), tag.tag);
-                      // Add relative positioning for the marker
-                      let cellClass = "relative p-2 text-center border-t border-r min-w-[50px]";
-                      let cellContent = "";
-
-                      const personIdStr = String(person.id);
-                      const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tag.tag}`;
-                      const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
-                      const isGlobal = status !== null && !hasPersonSpecificEntry;
-
-                      if (tag.istWochenende) {
-                        cellClass += " bg-gray-medium";
-                      } else {
-                        cellClass += " cursor-pointer";
-                        if (status === "urlaub") {
-                          cellClass += " bg-bold-blue text-white hover:bg-pastel-blue hover:text-bold-blue";
-                          cellContent = "U";
-                        } else if (status === "durchfuehrung") {
-                          cellClass += " bg-bold-mint text-white hover:bg-pastel-mint hover:text-bold-mint";
-                          cellContent = "D";
-                        } else if (status === "fortbildung") {
-                          cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-apricot";
-                          cellContent = "F";
-                        } else if (status === "interne teamtage") {
-                          cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-lavender";
-                          cellContent = "T";
-                        } else if (status === "feiertag") {
-                          cellClass += " bg-gray-dark text-white hover:bg-gray-medium hover:text-gray-dark";
-                          // cellContent = "X";
-                        } else {
-                          cellClass += " hover:bg-gray-light";
-                        }
-                      }
-                      return (
-                        <td
-                          key={`${person.id}-${tag.tag}`}
-                          className={cellClass}
-                          onClick={() => handleDayCellClick(person.id, tag)}
-                        >
-                          {cellContent}
-                          {isGlobal && (
-                            <span
-                              title="Globaler Status"
-                              className="absolute bottom-1 left-1 w-2 h-2 bg-gray-medium hover:bg-gray-dark rounded-full"
-                            ></span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td className="p-2 text-center border-t border-r min-w-[100px]">
-                      {getPersonGesamtUrlaub(String(person.id))}
-                    </td>
-                    <td className="p-2 text-center border-t border-r min-w-[100px]">
-                      {getPersonGesamtDurchfuehrung(String(person.id))}
-                    </td>
-                    <td className="p-2 text-center border-t border-r min-w-[100px]">
-                      {getPersonGesamtFortbildung(String(person.id))}
-                    </td>
-                    <td className="p-2 text-center border-t border-r min-w-[100px]">
-                      {getPersonGesamtInterneTeamtage(String(person.id))}
-                    </td>
-                    <td className="p-2 text-center border-t border-r min-w-[100px]">
-                      {getPersonGesamtFeiertage(String(person.id))}
-                    </td>
-                    <td className="p-2 text-center border-t border-r min-w-[100px]">
-                      <button
-                        onClick={() => {
-                          setAusgewaehltePersonId(person.id);
-                          setAnsichtModus("kalender");
-                          navigate(`/calendar/${person.id}`);
-                        }}
-                        className="rounded-full rounded-md text-primary bg-accent hover:bg-gray-100 transition-colors p-2"
-                      >
-                        <CornerDownRightIcon size={16} />
-                      </button>
-                    </td>
-                  </tr>
                 ))}
-              </tbody>
-              <tfoot>
-                <tr className="font-bold">
-                  <td className="sticky left-0 z-10 p-2 bg-gray-100 border">
-                    <SigmaIcon size={20} />
+                <th className="p-2 text-center border-t border-r min-w-[100px]">
+                  Gesamt Urlaub
+                </th>
+                <th className="p-2 text-center border-t border-r min-w-[100px]">
+                  Gesamt Durchf.
+                </th>
+                <th className="p-2 text-center border-t border-r min-w-[100px]">
+                  Gesamt Fortb.
+                </th>
+                <th className="p-2 text-center border-t border-r min-w-[100px]">
+                  Gesamt Teamt.
+                </th>
+                <th className="p-2 text-center border-t border-r min-w-[100px]">
+                  Gesamt Feiert.
+                </th>
+                <th className="p-2 text-center border-t border-r min-w-[100px]">
+                  Aktionen
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {personen.map((person) => (
+                <tr key={person.id}>
+                  <td className="sticky left-0 z-10 p-2 text-left bg-white border-l border-t border-r min-w-[100px]">
+                    {person.name}
                   </td>
                   {getTageImMonat().map((tag) => {
-                    const dailyTotals = getTagesGesamtStatus(tag.tag);
+                    const status = getTagStatus(String(person.id), tag.tag);
+                    // Add relative positioning for the marker
+                    let cellClass = "relative p-2 text-center border-t border-r min-w-[50px]";
+                    let cellContent = "";
+
+                    const personIdStr = String(person.id);
+                    const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tag.tag}`;
+                    const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
+                    const isGlobal = status !== null && !hasPersonSpecificEntry;
+
+                    if (tag.istWochenende) {
+                      cellClass += " bg-gray-medium";
+                    } else {
+                      cellClass += " cursor-pointer";
+                      if (status === "urlaub") {
+                        cellClass += " bg-bold-blue text-white hover:bg-pastel-blue hover:text-bold-blue";
+                        cellContent = "U";
+                      } else if (status === "durchfuehrung") {
+                        cellClass += " bg-bold-mint text-white hover:bg-pastel-mint hover:text-bold-mint";
+                        cellContent = "D";
+                      } else if (status === "fortbildung") {
+                        cellClass += " bg-bold-apricot text-white hover:bg-pastel-apricot hover:text-bold-apricot";
+                        cellContent = "F";
+                      } else if (status === "interne teamtage") {
+                        cellClass += " bg-bold-lavender text-white hover:bg-pastel-lavender hover:text-bold-lavender";
+                        cellContent = "T";
+                      } else if (status === "feiertag") {
+                        cellClass += " bg-gray-dark text-white hover:bg-gray-medium hover:text-gray-dark";
+                        // cellContent = "X";
+                      } else {
+                        cellClass += " hover:bg-gray-light";
+                      }
+                    }
                     return (
                       <td
-                        key={`footer-total-${tag.tag}`}
-                        className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
-                          tag.istWochenende ? "bg-gray-medium" : "bg-white"
-                        }`}
+                        key={`${person.id}-${tag.tag}`}
+                        className={cellClass}
+                        onClick={() => handleDayCellClick(person.id, tag)}
                       >
-                        {dailyTotals.urlaubCount > 0 && (
-                          <div className="text-bold-blue">
-                            U:{dailyTotals.urlaubCount}
-                          </div>
+                        {cellContent}
+                        {isGlobal && (
+                          <span
+                            title="Globaler Status"
+                            className="absolute bottom-1 left-1 w-2 h-2 bg-gray-medium hover:bg-gray-dark rounded-full"
+                          ></span>
                         )}
-                        {dailyTotals.durchfuehrungCount > 0 && (
-                          <div className="text-bold-mint">
-                            D:{dailyTotals.durchfuehrungCount}
-                          </div>
-                        )}
-                        {dailyTotals.fortbildungCount > 0 && (
-                          <div className="text-bold-apricot">
-                            F:{dailyTotals.fortbildungCount}
-                          </div>
-                        )}
-                        {dailyTotals.interneTeamtageCount > 0 && (
-                          <div className="text-bold-lavender">
-                            T:{dailyTotals.interneTeamtageCount}
-                          </div>
-                        )}
-                        {/* {dailyTotals.feiertagCount > 0 && (
-                          <div className="text-primary">
-                            X:{dailyTotals.feiertagCount}
-                          </div>
-                        )} */}
                       </td>
                     );
                   })}
-                  <td className="p-2 text-center border-t border-r border-b">
-                    {getGesamtUrlaub()}
+                  <td className="p-2 text-center border-t border-r min-w-[100px]">
+                    {getPersonGesamtUrlaub(String(person.id))}
                   </td>
-                  <td className="p-2 text-center border-t border-r border-b">
-                    {getGesamtDurchfuehrung()}
+                  <td className="p-2 text-center border-t border-r min-w-[100px]">
+                    {getPersonGesamtDurchfuehrung(String(person.id))}
                   </td>
-                  <td className="p-2 text-center border-t border-r border-b">
-                    {getGesamtFortbildung()}
+                  <td className="p-2 text-center border-t border-r min-w-[100px]">
+                    {getPersonGesamtFortbildung(String(person.id))}
                   </td>
-                  <td className="p-2 text-center border-t border-r border-b">
-                    {getGesamtInterneTeamtage()}
+                  <td className="p-2 text-center border-t border-r min-w-[100px]">
+                    {getPersonGesamtInterneTeamtage(String(person.id))}
                   </td>
-                  <td className="p-2 text-center border-t border-r border-b">
-                    {getGesamtFeiertage()}
+                  <td className="p-2 text-center border-t border-r min-w-[100px]">
+                    {getPersonGesamtFeiertage(String(person.id))}
                   </td>
-                  <td className="p-2 border-t border-r border-b"></td>
+                  <td className="p-2 text-center border-t border-r min-w-[100px]">
+                    <button
+                      onClick={() => {
+                        setAusgewaehltePersonId(person.id);
+                        setAnsichtModus("kalender");
+                        navigate(`/calendar/${person.id}`);
+                      }}
+                      className="rounded-full rounded-md text-primary bg-accent hover:bg-gray-100 transition-colors p-2"
+                    >
+                      <CornerDownRightIcon size={16} />
+                    </button>
+                  </td>
                 </tr>
-              </tfoot>
-            </table>
-          </div>
-          {/* Navigation Buttons */}
-          <div className="mt-8 flex flex-row justify-between items-center gap-4">
-            <button
-              onClick={() => {
-                navigate('/yearly-overview'); // Navigate to the route that renders MonthlyView.js
-              }}
-              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
-            >
-              <SheetIcon className="w-4 h-4" />
-            </button>
-          </div>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="font-bold">
+                <td className="sticky left-0 z-10 p-2 bg-gray-100 border">
+                  <SigmaIcon size={20} />
+                </td>
+                {getTageImMonat().map((tag) => {
+                  const dailyTotals = getTagesGesamtStatus(tag.tag);
+                  return (
+                    <td
+                      key={`footer-total-${tag.tag}`}
+                      className={`p-1 text-xs text-center border-t border-r border-b min-w-[50px] ${
+                        tag.istWochenende ? "bg-gray-medium" : "bg-white"
+                      }`}
+                    >
+                      {dailyTotals.urlaubCount > 0 && (
+                        <div className="text-bold-blue">
+                          U:{dailyTotals.urlaubCount}
+                        </div>
+                      )}
+                      {dailyTotals.durchfuehrungCount > 0 && (
+                        <div className="text-bold-mint">
+                          D:{dailyTotals.durchfuehrungCount}
+                        </div>
+                      )}
+                      {dailyTotals.fortbildungCount > 0 && (
+                        <div className="text-bold-apricot">
+                          F:{dailyTotals.fortbildungCount}
+                        </div>
+                      )}
+                      {dailyTotals.interneTeamtageCount > 0 && (
+                        <div className="text-bold-lavender">
+                          T:{dailyTotals.interneTeamtageCount}
+                        </div>
+                      )}
+                      {/* {dailyTotals.feiertagCount > 0 && (
+                        <div className="text-primary">
+                          X:{dailyTotals.feiertagCount}
+                        </div>
+                      )} */}
+                    </td>
+                  );
+                })}
+                <td className="p-2 text-center border-t border-r border-b">
+                  {getGesamtUrlaub()}
+                </td>
+                <td className="p-2 text-center border-t border-r border-b">
+                  {getGesamtDurchfuehrung()}
+                </td>
+                <td className="p-2 text-center border-t border-r border-b">
+                  {getGesamtFortbildung()}
+                </td>
+                <td className="p-2 text-center border-t border-r border-b">
+                  {getGesamtInterneTeamtage()}
+                </td>
+                <td className="p-2 text-center border-t border-r border-b">
+                  {getGesamtFeiertage()}
+                </td>
+                <td className="p-2 border-t border-r border-b"></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-      </main>
+        {/* Navigation Buttons */}
+        <div className="mt-8 flex flex-row justify-between items-center gap-4">
+          <button
+            onClick={() => {
+              navigate('/yearly-overview'); // Navigate to the route that renders MonthlyView.js
+            }}
+            className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+          >
+            <SheetIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

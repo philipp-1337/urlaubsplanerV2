@@ -60,9 +60,9 @@ const PrivacyPolicyPage = () => {
 
   return (
     <div className="container mx-auto px-4 pt-8 text-gray-700">
-      <h1 className="text-3xl font-bold mb-6">Datenschutzerklärung</h1>
 
       <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-6">Datenschutzerklärung</h1>
         <p className="mb-4">
           Wir legen größten Wert auf den Schutz Ihrer Daten und die Wahrung Ihrer Privatsphäre.
           Nachfolgend informieren wir Sie deshalb über die Erhebung und Verwendung persönlicher Daten bei Nutzung unserer Webseite/Anwendung "Urlaubsplaner".

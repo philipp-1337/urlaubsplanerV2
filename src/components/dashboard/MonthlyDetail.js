@@ -94,7 +94,7 @@ const MonthlyDetail = () => {
   };
 
   return (
-    <main className="container px-4 py-8 mx-auto">
+    <div className="container px-4 py-8 mx-auto">
       {loginError && <ErrorMessage message={loginError} />}
       <div className="p-6 bg-white rounded-lg shadow-md">
         <div className="relative mb-6 flex flex-row items-center justify-between">
@@ -226,7 +226,7 @@ const MonthlyDetail = () => {
             </button>
           </div>
       </div>
-    </main>
+    </div>
   );
 };
 

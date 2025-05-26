@@ -25,9 +25,6 @@ module.exports = {
         'gray-medium': '#d8d0d4',
         'gray-dark': '#806a74',
       },
-      spacing: {
-        'safe-smart': 'max(1rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)))', 
-      },
     },
   },
   plugins: [],

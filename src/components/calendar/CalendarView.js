@@ -124,162 +124,159 @@ const CalendarView = ({ navigateToView }) => {
   
   if (!ausgewaehltePerson) return null;
 
-  return (
-    <div className=""> {/* Removed min-h-screen bg-gray-100, parent main tag in App.js handles this */}
+  return (     
+    <div className="container px-4 py-8 mx-auto">
+      <ErrorMessage message={loginError} />
       
-      <main className="container px-4 py-8 mx-auto">
-        <ErrorMessage message={loginError} />
-        
-        <div className="p-6 mb-6 bg-white rounded-lg shadow-md">
-          <div className="relative mb-6 flex flex-row items-center justify-between">
-            <div className="flex items-center">
-              <InfoOverlayButton
-                text={"Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Vorausgefüllte Tage, die für alle gelten, sind mit einem Punkt markiert. Diese können überschrieben, jedoch nicht gelöscht werden."}
-                className=""
-              />
-            </div>
-            <div className="flex items-center flex-1 justify-center space-x-2">
-              <button
-                onClick={() => handleMonatWechsel('zurueck')}
-                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-                aria-label="Vorheriger Monat"
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-              </button>
-              <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
-                {ausgewaehltePerson.name} - {getMonatsName(currentMonth)} {currentYear}
-              </h2>
-              <button
-                onClick={() => handleMonatWechsel('vor')}
-                className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-                aria-label="Nächster Monat"
-              >
-                <ArrowLeftIcon className="w-4 h-4 transform rotate-180" />
-              </button>
-            </div>
-             <div className="relative">
-            <KebabMenu
-              disabled={true}
-              items={[{
-                label: 'N/A',
-                icon: <PenOffIcon size={16} className="ml-2" />, // importiert oben
-              }]}
+      <div className="p-6 mb-6 bg-white rounded-lg shadow-md">
+        <div className="relative mb-6 flex flex-row items-center justify-between">
+          <div className="flex items-center">
+            <InfoOverlayButton
+              text={"Klicken Sie auf einen Tag, um zwischen den Status-Typen zu wechseln. Vorausgefüllte Tage, die für alle gelten, sind mit einem Punkt markiert. Diese können überschrieben, jedoch nicht gelöscht werden."}
+              className=""
             />
           </div>
-          </div> 
-          
-          <div className="mb-6">
-            <div className="flex flex-wrap mb-2 gap-2">
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
-                <span>Urlaub</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-mint rounded"></div>
-                <span>Durchführung</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-apricot rounded"></div>
-                <span>Fortbildung</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-bold-lavender rounded"></div>
-                <span>Teamtag</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-gray-dark rounded"></div>
-                <span>Feiertag</span>
-              </div>
-              {/* <div className="flex items-center">
-                <div className="w-4 h-4 mr-1 bg-gray-300 rounded"></div>
-                <span>Wochenende</span>
-              </div> */}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-7 gap-2 text-center">
-            {/* Wochentags-Header */}
-            {/* Reihenfolge geändert: Mo, Di, Mi, Do, Fr, Sa, So */}
-            {[1, 2, 3, 4, 5, 6, 0].map((wochentag) => (
-              <div key={wochentag} className="p-2 font-bold bg-gray-100">
-                {getWochentagName(wochentag)}
-              </div>
-            ))}
-            
-            {/* Leere Felder für Tage vor dem 1. des Monats */}
-            {/* Anpassung für Wochenstart am Montag: (wochentag + 6) % 7 */}
-            {/* tageImMonat[0].wochentag: 0=So, 1=Mo, ..., 6=Sa */}
-            {/* Wenn Mo (1): (1+6)%7 = 0 leere Zellen. Wenn So (0): (0+6)%7 = 6 leere Zellen. */}
-            {Array.from({ length: (tageImMonat[0].wochentag + 6) % 7 }).map((_, index) => (
-              <div key={`leer-${index}`} className="p-2"></div>
-            ))}
-            
-            {/* Tage des Monats */}
-            {tageImMonat.map((tag) => {
-              const status = getTagStatus(String(ausgewaehltePerson.id), tag.tag); // Use person.id from found person
-              
-              // Determine if the status is global for the selected person
-              const personIdStr = String(ausgewaehltePersonId);
-              const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tag.tag}`;
-              const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
-              const isGlobal = status !== null && !hasPersonSpecificEntry;
-
-              return (
-                <DayCell 
-                  key={tag.tag}
-                  day={tag}
-                  status={status}
-                  isWeekend={tag.istWochenende}
-                  onClick={() => handleDayCellClick(tag)}
-                  view="calendar" // Pass view prop
-                  isGlobal={isGlobal} // Pass the new prop
-                />
-              );
-            })}
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-3">
-            <div className="text-lg">
-              <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(String(ausgewaehltePerson.id))}
-            </div>
-            <div className="text-lg">
-              <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(String(ausgewaehltePerson.id))}
-            </div>
-            <div className="text-lg">
-              <strong>Fortbildungstage:</strong> {getPersonGesamtFortbildung(String(ausgewaehltePerson.id))}
-            </div>
-            <div className="text-lg">
-              <strong>Teamtage:</strong> {getPersonGesamtInterneTeamtage(String(ausgewaehltePerson.id))}
-            </div>
-            <div className="text-lg">
-              <strong>Feiertage:</strong> {getPersonGesamtFeiertage(String(ausgewaehltePerson.id))}
-            </div>
-          </div>
-          
-          {/* Navigation Buttons */}
-          <div className="mt-8 flex flex-row justify-between items-center gap-4">
+          <div className="flex items-center flex-1 justify-center space-x-2">
             <button
-              onClick={() => {
-                setAnsichtModus('liste'); // Set mode for MonthlyView (all users table)
-                navigate('/'); // Navigate to the route that renders MonthlyView.js
-              }}
-              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+              onClick={() => handleMonatWechsel('zurueck')}
+              className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Vorheriger Monat"
             >
-              <Table2Icon className="w-4 h-4" />
+              <ArrowLeftIcon className="w-4 h-4" />
             </button>
+            <h2 className="text-base font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none sm:text-lg">
+              {ausgewaehltePerson.name} - {getMonatsName(currentMonth)} {currentYear}
+            </h2>
             <button
-              onClick={() => {
-                setAnsichtModus('jahresdetail'); // This is the mode for MonthlyDetail view
-                navigate(`/monthly-detail/${ausgewaehltePerson.id}`); // Use person.id from found person
-              }}
-              className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+              onClick={() => handleMonatWechsel('vor')}
+              className="p-2 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Nächster Monat"
             >
-              <TableIcon className="w-4 h-4" />
+              <ArrowLeftIcon className="w-4 h-4 transform rotate-180" />
             </button>
           </div>
-
+            <div className="relative">
+          <KebabMenu
+            disabled={true}
+            items={[{
+              label: 'N/A',
+              icon: <PenOffIcon size={16} className="ml-2" />, // importiert oben
+            }]}
+          />
         </div>
-      </main>
+        </div> 
+        
+        <div className="mb-6">
+          <div className="flex flex-wrap mb-2 gap-2">
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-blue rounded"></div>
+              <span>Urlaub</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-mint rounded"></div>
+              <span>Durchführung</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-apricot rounded"></div>
+              <span>Fortbildung</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-bold-lavender rounded"></div>
+              <span>Teamtag</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-gray-dark rounded"></div>
+              <span>Feiertag</span>
+            </div>
+            {/* <div className="flex items-center">
+              <div className="w-4 h-4 mr-1 bg-gray-300 rounded"></div>
+              <span>Wochenende</span>
+            </div> */}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-2 text-center">
+          {/* Wochentags-Header */}
+          {/* Reihenfolge geändert: Mo, Di, Mi, Do, Fr, Sa, So */}
+          {[1, 2, 3, 4, 5, 6, 0].map((wochentag) => (
+            <div key={wochentag} className="p-2 font-bold bg-gray-100">
+              {getWochentagName(wochentag)}
+            </div>
+          ))}
+          
+          {/* Leere Felder für Tage vor dem 1. des Monats */}
+          {/* Anpassung für Wochenstart am Montag: (wochentag + 6) % 7 */}
+          {/* tageImMonat[0].wochentag: 0=So, 1=Mo, ..., 6=Sa */}
+          {/* Wenn Mo (1): (1+6)%7 = 0 leere Zellen. Wenn So (0): (0+6)%7 = 6 leere Zellen. */}
+          {Array.from({ length: (tageImMonat[0].wochentag + 6) % 7 }).map((_, index) => (
+            <div key={`leer-${index}`} className="p-2"></div>
+          ))}
+          
+          {/* Tage des Monats */}
+          {tageImMonat.map((tag) => {
+            const status = getTagStatus(String(ausgewaehltePerson.id), tag.tag); // Use person.id from found person
+            
+            // Determine if the status is global for the selected person
+            const personIdStr = String(ausgewaehltePersonId);
+            const personSpecificKey = `${personIdStr}-${currentYear}-${currentMonth}-${tag.tag}`;
+            const hasPersonSpecificEntry = tagDaten.hasOwnProperty(personSpecificKey);
+            const isGlobal = status !== null && !hasPersonSpecificEntry;
+
+            return (
+              <DayCell 
+                key={tag.tag}
+                day={tag}
+                status={status}
+                isWeekend={tag.istWochenende}
+                onClick={() => handleDayCellClick(tag)}
+                view="calendar" // Pass view prop
+                isGlobal={isGlobal} // Pass the new prop
+              />
+            );
+          })}
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-3">
+          <div className="text-lg">
+            <strong>Urlaubstage:</strong> {getPersonGesamtUrlaub(String(ausgewaehltePerson.id))}
+          </div>
+          <div className="text-lg">
+            <strong>Durchführungstage:</strong> {getPersonGesamtDurchfuehrung(String(ausgewaehltePerson.id))}
+          </div>
+          <div className="text-lg">
+            <strong>Fortbildungstage:</strong> {getPersonGesamtFortbildung(String(ausgewaehltePerson.id))}
+          </div>
+          <div className="text-lg">
+            <strong>Teamtage:</strong> {getPersonGesamtInterneTeamtage(String(ausgewaehltePerson.id))}
+          </div>
+          <div className="text-lg">
+            <strong>Feiertage:</strong> {getPersonGesamtFeiertage(String(ausgewaehltePerson.id))}
+          </div>
+        </div>
+        
+        {/* Navigation Buttons */}
+        <div className="mt-8 flex flex-row justify-between items-center gap-4">
+          <button
+            onClick={() => {
+              setAnsichtModus('liste'); // Set mode for MonthlyView (all users table)
+              navigate('/'); // Navigate to the route that renders MonthlyView.js
+            }}
+            className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+          >
+            <Table2Icon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              setAnsichtModus('jahresdetail'); // This is the mode for MonthlyDetail view
+              navigate(`/monthly-detail/${ausgewaehltePerson.id}`); // Use person.id from found person
+            }}
+            className="p-2 rounded-full text-gray-700 rounded-md hover:bg-gray-100 transition-colors border border-gray-medium flex items-center gap-1"
+          >
+            <TableIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 };

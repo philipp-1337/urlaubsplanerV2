@@ -693,7 +693,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <main className="container px-4 py-8 mx-auto">
+    <div className="container px-4 py-8 mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Einstellungen</h1>
         {/* {currentUser && currentUser.email && (
@@ -724,8 +724,8 @@ const SettingsPage = () => {
       <div>
         {renderActiveTabContent()}
       </div>
-
-    </main>
+      
+    </div>
   );
 };
 

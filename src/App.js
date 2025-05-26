@@ -25,14 +25,13 @@ function AppContent() {
   // Service Worker Update Logik wird jetzt in src/index.js über serviceWorkerRegistration gehandhabt
 
   if (loadingAuth) {
-    // Adjusted to be flex-grow as parent div handles min-h-screen
     return <div className="flex-grow flex items-center justify-center bg-gray-100 text-xl">Authentifizierung wird geladen...</div>;
   }
 
   return (
     <>
       {isLoggedIn && <Header />} {/* Header is rendered conditionally here */}
-      <main className="flex flex-col flex-grow bg-gray-100 overflow-auto"> {/* Make main a flex container that arranges children vertically and grows */}
+      <main className="content-area flex flex-col flex-grow bg-gray-100">
         <Routes>
           {/* Public routes accessible always */}
           <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <LoginForm />} />
@@ -74,13 +73,10 @@ function App() {
     <Router>
       <AuthProvider>
         <CalendarProvider>
-          <div className="flex flex-col min-h-screen">
+            <div class="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
             <AppContent />
-              <Toaster 
-                richColors 
-                position="top-center"
-                />
             <Footer />
+            <Toaster richColors position="top-center" />
           </div>
         </CalendarProvider>
       </AuthProvider>
