@@ -78,7 +78,7 @@ function App() {
             <div className="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
             <AppContent />
             <Footer />
-            <Toaster richColors position="top-center" />
+            <Toaster richColors={true} position="bottom-right" mobileOffset={32} offset={32} closeButton={false} expand={true} invert={false} gap={16}/>
           </div>
         </CalendarProvider>
       </AuthProvider>
