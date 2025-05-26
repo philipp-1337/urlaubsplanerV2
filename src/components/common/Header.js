@@ -108,7 +108,7 @@ function Header() {
 
         {/* Mobile Drawer */}
         <div
-          className={`fixed inset-y-0 right-0 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-40 ${
+          className={`fixed inset-y-0 right-0 bg-white shadow-lg transform transition-transform ease-in-out duration-300 z-[1000] ${
             isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
           } lg:hidden`}
         >
@@ -151,7 +151,7 @@ function Header() {
       {/* Overlay */}
       {isDrawerOpen && (
         <div
-          className="fixed inset-0 bg-black opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black opacity-50 z-[990] lg:hidden"
           onClick={closeDrawer}
           aria-hidden="true"
         ></div>
