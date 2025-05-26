@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom'; // Import Link
 import { useAuth } from '../../context/AuthContext'; // Import useAuth
+import { ArrowLeftIcon } from 'lucide-react';
 
 const PrivacyPolicyPage = () => {
   // Developer Mode Unlock State
@@ -71,9 +72,9 @@ const PrivacyPolicyPage = () => {
           <p className="mb-6">
             <Link 
               to="/login" 
-              className="text-primary hover:underline font-semibold"
+              className="text-primary hover:underline font-semibold flex items-center gap-1"
             >
-              &larr; Zurück zum Login
+              <ArrowLeftIcon /> Zurück zum Login
             </Link>
           </p>
         )}
