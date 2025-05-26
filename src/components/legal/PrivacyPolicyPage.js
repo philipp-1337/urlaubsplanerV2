@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom'; // Import Link
+import { useAuth } from '../../context/AuthContext'; // Import useAuth
 
 const PrivacyPolicyPage = () => {
   // Developer Mode Unlock State
   const [devClickCount, setDevClickCount] = useState(0);
+  const { isLoggedIn } = useAuth(); // Get login status
 
   const handleHiddenClick = () => {
     toast.dismiss();
@@ -61,8 +64,20 @@ const PrivacyPolicyPage = () => {
   return (
     <div className="container mx-auto px-4 pt-8 text-gray-700">
 
-      <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6">Datenschutzerklärung</h1>
+      <section className="p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Datenschutzerklärung</h1>
+
+        {!isLoggedIn && (
+          <p className="mb-6">
+            <Link 
+              to="/login" 
+              className="text-primary hover:underline font-semibold"
+            >
+              &larr; Zurück zum Login
+            </Link>
+          </p>
+        )}
+
         <p className="mb-4">
           Wir legen größten Wert auf den Schutz Ihrer Daten und die Wahrung Ihrer Privatsphäre.
           Nachfolgend informieren wir Sie deshalb über die Erhebung und Verwendung persönlicher Daten bei Nutzung unserer Webseite/Anwendung "Urlaubsplaner".
