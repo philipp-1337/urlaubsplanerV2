@@ -18,6 +18,7 @@ import SettingsPage from './components/settings/SettingsPage';
 import ActionHandlerPage from './components/auth/ActionHandlerPage'; // Import der neuen Seite
 import PrivacyPolicyPage from './components/legal/PrivacyPolicyPage'; // Import PrivacyPolicyPage
 import ImprintPage from './components/legal/ImprintPage'; // Import ImprintPage
+import ScrollToTop from './components/common/ScrollToTop'; // Importiere die ScrollToTop Komponente
 
 function AppContent() {
   const { isLoggedIn, loadingAuth } = useAuth();
@@ -71,6 +72,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <CalendarProvider>
             <div class="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
