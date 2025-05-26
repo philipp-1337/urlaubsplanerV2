@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; // useEffect importiert
+import { useNavigate, useLocation } from 'react-router-dom'; // useLocation importiert
 import { useAuth } from '../../context/AuthContext';
 import { useCalendar } from '../../hooks/useCalendar'; // Korrigierter Importpfad
 import { 
@@ -14,7 +14,35 @@ function Header() {
   const { logout } = useAuth();
   const { setAnsichtModus, handleMonatWechsel, isLoadingData } = useCalendar(); // isLoadingData hier holen
   const navigate = useNavigate();
+  const location = useLocation(); // useLocation Hook für den aktuellen Pfad
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [badgeText, setBadgeText] = useState('BETA');
+
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const href = window.location.href;
+
+    // Regulärer Ausdruck, um zu prüfen, ob der Hostname eine IP-Adresse ist
+    // Dies deckt IPv4 und gängige private Bereiche ab.
+    // Für eine sehr robuste IP-Prüfung könnte man eine Bibliothek verwenden,
+    // aber für die gängigsten lokalen IPs sollte dies ausreichen.
+    const ipAddressRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    const isLocalNetworkIP = hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
+
+
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      isLocalNetworkIP ||
+      ipAddressRegex.test(hostname) // Prüft, ob es eine beliebige IP ist (für den Fall, dass es nicht die typischen privaten sind)
+    ) {
+      setBadgeText('LOCALHOST');
+    } else if (href.includes('alpha')) {
+      setBadgeText('ALPHA');
+    } else {
+      setBadgeText('BETA');
+    }
+  }, [location]); // Abhängigkeit von location, falls sich die URL ändert (z.B. durch Navigation)
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -52,8 +80,8 @@ function Header() {
             >
               Urlaubsplaner
             </button>
-            <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-accent text-primary rounded uppercase tracking-wide" style={{letterSpacing: '0.05em'}}>
-              beta
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-accent text-primary rounded uppercase tracking-wide" style={{ letterSpacing: '0.05em' }}>
+              {badgeText}
             </span>
           </h1>
           {isLoadingData && <Loader2 size={24} className="ml-3 animate-spin" />}
