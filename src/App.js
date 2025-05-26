@@ -75,7 +75,7 @@ function App() {
       <ScrollToTop />
       <AuthProvider>
         <CalendarProvider>
-            <div class="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+            <div className="min-h-dvh flex flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
             <AppContent />
             <Footer />
             <Toaster richColors position="top-center" />

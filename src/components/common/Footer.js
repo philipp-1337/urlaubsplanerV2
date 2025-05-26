@@ -8,7 +8,7 @@ const Footer = () => {
   const location = useLocation(); // Hole die aktuelle Location
 
   return (
-    <footer class="bg-gray-100 text-center py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shrink-0">
+    <footer className="bg-gray-100 text-center py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shrink-0">
       <div className="text-xs text-gray-500">
         {/* Zeige Login-Link nur, wenn nicht eingeloggt und nicht auf der Login-Seite */}
         {!isLoggedIn && location.pathname !== '/login' && (
