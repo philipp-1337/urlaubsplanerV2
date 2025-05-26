@@ -141,15 +141,15 @@ const PrivacyPolicyPage = () => {
           Wir setzen keine externen Tracking- oder Analyse-Tools (wie z.B. Google Analytics, Matomo, etc.) ein, die Ihr Nutzungsverhalten über unsere Anwendung hinaus verfolgen.
         </p>
 
-        <h2 className="text-xl font-semibold mt-6 mb-3">Ihre Rechte als Betroffener</h2>
+        <h2 className="text-xl font-semibold mt-6 mb-3">Ihre Rechte</h2>
         <p className="mb-2">Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung und ggf. ein Recht auf Berichtigung, Sperrung oder Löschung dieser Daten.</p>
-        <p className="mb-4">Hierzu sowie zu weiteren Fragen zum Thema personenbezogene Daten können Sie sich jederzeit unter der im Impressum angegebenen Adresse an uns wenden.</p>
+        {/* <p className="mb-4">Hierzu sowie zu weiteren Fragen zum Thema personenbezogene Daten können Sie sich jederzeit unter der im Impressum angegebenen Adresse an uns wenden.</p> */}
 
         <h2 className="text-xl font-semibold mt-6 mb-3">Änderung unserer Datenschutzbestimmungen</h2>
         <p className="mb-4">
           Wir behalten uns vor, diese Datenschutzerklärung anzupassen, damit sie stets den aktuellen rechtlichen Anforderungen entspricht oder um Änderungen unserer Leistungen in der Datenschutzerklärung umzusetzen, z.B. bei der Einführung neuer Services. Für Ihren erneuten Besuch gilt dann die neue Datenschutzerklärung.
         </p>
-        <p className="mb-4">
+        <p>
           <span
             style={{ cursor: 'pointer', userSelect: 'none', color: 'inherit', textDecoration: 'none' }}
             tabIndex={0}
