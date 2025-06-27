@@ -1,7 +1,7 @@
 # Technisches Konzept: Umbau zur mandantenfähigen Anwendung
 
-**Datum:** 25. Mai 2024
-**Autor:** Gemini Code Assist
+**Datum:** 25. Mai 2024 (aktualisiert 26. Juni 2025)
+**Autor:** Philipp
 
 ## 1. Zielsetzung und Motivation
 
@@ -76,11 +76,10 @@ Die bisherige, benutzerzentrierte Struktur wird durch eine mandantenzentrierte S
   |
   `-- dayStatusEntries/{entryId}
       |-- (Struktur wie bisher)
-
 /users/{userId}/
   |
   `-- privateInfo/
-      |-- {docId}: { tenantId: "tenantId_des_benutzers", personId: "personId_im_tenant" }
+      |-- user_tenant_role: { tenantId: "...", personId: "...", role: "admin" | "member" }
 ```
 
 **Wichtige Änderungen:**
@@ -89,34 +88,28 @@ Die bisherige, benutzerzentrierte Struktur wird durch eine mandantenzentrierte S
 2. **`persons`:** Wird zur zentralen Quelle für alle Individuen. Die Unterscheidung zwischen "Benutzer" und "Person" wird hier durch die optionalen Felder `userId` und `role` abgebildet. Eine Person ohne `userId` ist ein reiner Planeintrag, eine Person mit `userId` ist ein aktiver Benutzer.
 3. **`users`:** Dient nur noch zur Speicherung privater Benutzerinformationen, insbesondere der Zuordnung zu einem Mandanten (`tenantId`) und einer Person (`personId`) innerhalb dieses Mandanten.
 
-### 3.2. Zugriffskontrolle mit Firebase Auth Custom Claims
+### 3.2. Zugriffskontrolle
 
-Für eine performante und sichere Prüfung der Berechtigungen werden **Firebase Auth Custom Claims** verwendet. Dies vermeidet zusätzliche Datenbankabfragen in den Sicherheitsregeln.
+Die Berechtigungslogik wird vollständig über die Firestore-Sicherheitsregeln und die im Frontend gespeicherten Benutzerinformationen abgebildet. Die Zuordnung von `tenantId`, `personId` und `role` erfolgt clientseitig nach dem Login durch das Auslesen der privaten Userdaten (`/users/{userId}/privateInfo/user_tenant_role`).
 
-- **Claims:** An das Auth-Token eines jeden angemeldeten Benutzers werden folgende Claims gehängt:
-  - `tenantId`: ID des Mandanten, zu dem der Benutzer gehört.
-  - `personId`: Die Dokument-ID des Benutzers in der `persons`-Subkollektion.
-  - `role`: Die Rolle des Benutzers (`admin` oder `member`).
+- Nach dem Login liest der Client die Zuordnung (`tenantId`, `personId`, `role`) aus den privaten Userdaten.
+- Diese Informationen werden im Auth-Kontext global verfügbar gemacht und für alle Datenbankzugriffe verwendet.
+- Die Firestore-Regeln prüfen die Berechtigung anhand der Datenstruktur und der UID des eingeloggten Users.
+- Die Rollenlogik (z.B. welche Felder ein Mitglied ändern darf) wird im Frontend und in den Firestore-Regeln abgebildet.
 
-- **Cloud Function:** Eine Cloud Function wird benötigt, die auf Schreibvorgänge in `/tenants/{tenantId}/persons/{personId}` reagiert. Wenn ein `person`-Dokument mit einer `userId` und `role` erstellt oder geändert wird, aktualisiert die Funktion die Custom Claims für den entsprechenden Firebase-Benutzer.
+**Hinweis:**
+
+- Die Sicherheit basiert darauf, dass die UID des eingeloggten Users mit dem Feld `userId` im jeweiligen `person`-Dokument übereinstimmt.
+- Die Verwaltung der Rollen und Zuordnungen erfolgt durch die Team-Leitung direkt in Firestore (z.B. durch Anlegen/Bearbeiten von `person`-Dokumenten).
 
 ### 3.3. Angepasste Firestore-Sicherheitsregeln
 
-Die Regeln werden komplett überarbeitet, um auf die Custom Claims zu reagieren.
+Die Regeln werden so gestaltet, dass sie ohne Custom Claims auskommen und stattdessen direkt auf die Datenstruktur und die UID des eingeloggten Users prüfen.
 
 ```js
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- Hilfsfunktionen basierend auf Custom Claims ---
-    function isMemberOf(tenantId) {
-      return request.auth != null && request.auth.token.tenantId == tenantId;
-    }
-
-    function isAdminOf(tenantId) {
-      return isMemberOf(tenantId) && request.auth.token.role == 'admin';
-    }
 
     // --- Regeln für private Benutzerdaten ---
     match /users/{userId}/{documents=**} {
@@ -125,34 +118,37 @@ service cloud.firestore {
 
     // --- Regeln für geteilte Tenant-Daten ---
     match /tenants/{tenantId}/{documents=**} {
-      // Genereller Lesezugriff für alle Mitglieder des Mandanten
+      // Genereller Lesezugriff für alle, die im Mandanten als Person mit userId eingetragen sind
       allow read: if isMemberOf(tenantId);
-
-      // Schreibzugriff wird pro Subkollektion feingranular gesteuert
-      allow write: if isAdminOf(tenantId); // Admins dürfen standardmäßig alles schreiben
+      allow write: if isAdminOf(tenantId);
     }
 
-    match /tenants/{tenantId} {
-      // Personenverwaltung: Nur Admins dürfen anlegen/löschen.
-      // Mitglieder dürfen nur eigene, ungefährliche Felder ändern.
-      match /persons/{personId} {
-        allow create, delete: if isAdminOf(tenantId);
-        allow update: if isAdminOf(tenantId) ||
-                       (isMemberOf(tenantId) && request.auth.token.personId == personId &&
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']));
-      }
-
-      // Tageseinträge: Admins dürfen alles, Mitglieder nur eigene.
-      match /dayStatusEntries/{entryId} {
-        allow write: if isAdminOf(tenantId) ||
-                      (isMemberOf(tenantId) && request.resource.data.personId == request.auth.token.personId);
-      }
-
-      // Konfigurationen: Nur Admins dürfen schreiben.
-      match /yearConfigurations/{yearId} { allow write: if isAdminOf(tenantId); }
-      match /resturlaubData/{resturlaubId} { allow write: if isAdminOf(tenantId); }
-      match /employmentData/{employmentId} { allow write: if isAdminOf(tenantId); }
+    function isMemberOf(tenantId) {
+      return exists(/databases/$(database)/documents/tenants/$(tenantId)/persons/$(request.auth.uid)) ||
+             exists(/databases/$(database)/documents/tenants/$(tenantId)/persons/$(getPersonIdByUserId(request.auth.uid)));
     }
+
+    function isAdminOf(tenantId) {
+      // Prüft, ob die Rolle im persons-Dokument "admin" ist
+      return get(/databases/$(database)/documents/tenants/$(tenantId)/persons/$(getPersonIdByUserId(request.auth.uid))).data.role == 'admin';
+    }
+
+    // --- Feingranulare Regeln für Subkollektionen ---
+    match /tenants/{tenantId}/persons/{personId} {
+      allow create, delete: if isAdminOf(tenantId);
+      allow update: if isAdminOf(tenantId) ||
+                     (isMemberOf(tenantId) && resource.data.userId == request.auth.uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']));
+    }
+
+    match /tenants/{tenantId}/dayStatusEntries/{entryId} {
+      allow write: if isAdminOf(tenantId) ||
+                    (isMemberOf(tenantId) && request.resource.data.personId == getPersonIdByUserId(request.auth.uid));
+    }
+
+    match /tenants/{tenantId}/yearConfigurations/{yearId} { allow write: if isAdminOf(tenantId); }
+    match /tenants/{tenantId}/resturlaubData/{resturlaubId} { allow write: if isAdminOf(tenantId); }
+    match /tenants/{tenantId}/employmentData/{employmentId} { allow write: if isAdminOf(tenantId); }
   }
 }
 ```
@@ -161,13 +157,9 @@ service cloud.firestore {
 
 ## 4. Umsetzungsplan / Refactoring-Schritte
 
-1. **Backend (Cloud Function):**
-    - Erstellen einer Cloud Function mit einem `onWrite`-Trigger für `tenants/{tenantId}/persons/{personId}`.
-    - Diese Funktion liest `userId` und `role` aus dem geschriebenen Dokument und verwendet das Firebase Admin SDK, um `setCustomUserClaims` für den entsprechenden Benutzer aufzurufen.
-
-2. **Frontend-Anpassungen:**
+1. **Frontend-Anpassungen:**
     - **`AuthContext`:**
-        - Nach dem Login das ID-Token des Benutzers abrufen und die Claims (`tenantId`, `personId`, `role`) parsen.
+        - Nach dem Login das Mapping (`tenantId`, `personId`, `role`) aus `/users/{userId}/privateInfo/user_tenant_role` laden.
         - Diese Informationen im Auth-Kontext global verfügbar machen.
     - **`useFirestore` Hook:**
         - Alle Datenbankpfade von `/users/{currentUser.uid}/...` auf `/tenants/{tenantId}/...` umstellen. Die `tenantId` wird aus dem `AuthContext` bezogen.
@@ -176,5 +168,42 @@ service cloud.firestore {
         - Komponenten wie `SettingsPage` müssen die Rolle des Benutzers aus dem `AuthContext` prüfen. Verwaltungs-Buttons und -Sektionen werden nur für `admin` gerendert.
         - Die `onClick`-Handler in den Kalenderansichten (`MonthlyView`, `CalendarView`) müssen prüfen, ob der Benutzer die Berechtigung zum Bearbeiten hat (`isAdmin` oder `personId` des Eintrags stimmt mit der eigenen `personId` überein).
     - **Onboarding-Prozess:**
-        - **Registrierung:** Ein neuer Benutzer erstellt einen neuen Mandanten. Für ihn wird automatisch ein `person`-Dokument mit `role: 'admin'` und seiner `userId` angelegt. Die Cloud Function setzt daraufhin die Claims.
+        - **Registrierung:** Ein neuer Benutzer erstellt einen neuen Mandanten. Für ihn wird automatisch ein `person`-Dokument mit `role: 'admin'` und seiner `userId` angelegt. Die Zuordnung wird in den privaten Userdaten gespeichert.
         - **Einladung (optional):** Ein Admin kann neue Personen anlegen. Wird eine E-Mail-Adresse angegeben, kann ein Einladungs-Flow implementiert werden, der den neuen Benutzer nach der Registrierung dem korrekten Mandanten und `person`-Dokument zuordnet.
+
+---
+
+## 5. Migration bestehender Daten
+
+Die Migration der bestehenden Benutzerdaten in die neue mandantenfähige Struktur erfolgt clientseitig durch einen eingeloggten Benutzer (meist der bisherige Einzelbenutzer/Admin). Es wird ein Migrations-Button oder ein automatischer Migrationsprozess im Frontend bereitgestellt.
+
+**Ablauf:**
+
+1. **Migration starten:**
+   - Der eingeloggte Benutzer (bisheriger Einzelbenutzer) startet die Migration im Frontend.
+
+2. **Neuen Mandanten anlegen:**
+   - Es wird ein neues Dokument in `/tenants/{tenantId}` erstellt. Die `tenantId` kann generiert werden (z.B. UUID).
+
+3. **Personen übernehmen:**
+   - Alle Einträge aus `/users/{userId}/persons` werden nach `/tenants/{tenantId}/persons` kopiert.
+   - Für die Person, die dem aktuellen User entspricht, wird das Feld `userId` gesetzt und die Rolle auf `admin` gesetzt.
+
+4. **Weitere Daten übernehmen:**
+   - Alle Einträge aus `/users/{userId}/resturlaubData`, `/employmentData`, `/yearConfigurations`, `/dayStatusEntries` werden in die entsprechenden Subkollektionen unter `/tenants/{tenantId}/` kopiert.
+
+5. **Private Userdaten aktualisieren:**
+   - Im Dokument `/users/{userId}/privateInfo/user_tenant_role` wird `{ tenantId, personId, role: 'admin' }` gespeichert.
+
+6. **Abschluss:**
+   - Nach erfolgreicher Migration arbeitet der User nur noch mit den neuen Tenant-Daten. Die alten Daten können optional gelöscht werden.
+
+**Hinweise:**
+
+- Die Migration kann beliebig oft getestet werden, solange die neuen Daten nicht produktiv genutzt werden.
+- Die Migration sollte atomar ablaufen, um Inkonsistenzen zu vermeiden.
+- Nach der Migration muss die Anwendung ausschließlich mit der neuen Struktur arbeiten.
+
+---
+<!-- markdownlint-disable-next-line MD036 -->
+**Ende des Konzepts**
