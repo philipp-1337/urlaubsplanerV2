@@ -8,7 +8,7 @@ Stand: 27.06.2025
 |---------|--------------|--------|---------------|
 | 1       | Analyse & Vorbereitung | ✅ Abgeschlossen | 27.06.2025 |
 | 2       | Erweiterung AuthContext | ✅ Abgeschlossen | - |
-| 3       | Refactoring Firestore-Zugriffe | 🟡 In Bearbeitung | - |
+| 3       | Refactoring Firestore-Zugriffe | ✅ Abgeschlossen | - |
 | 4       | Rollenbasierte UI | 🟡 In Bearbeitung | - |
 | 5       | Onboarding/Einladung | 🟡 In Bearbeitung | - |
 | 6       | Migration bestehender Daten | 🟡 In Bearbeitung | - |
@@ -46,7 +46,7 @@ Stand: 27.06.2025
 
 ---
 
-## Schritt 3: Refactoring Firestore-Zugriffe (🟡 In Bearbeitung)
+## Schritt 3: Refactoring Firestore-Zugriffe (✅ Abgeschlossen)
 
 **Ziel:**
 
@@ -59,17 +59,18 @@ Stand: 27.06.2025
 - Alle zentralen Firestore-Operationen in `useFirestore.js` nutzen jetzt die neue mandantenfähige Struktur und beziehen die `tenantId` aus dem AuthContext.
 - Eine Hilfsfunktion sorgt für konsistente Pfade.
 - Die Daten werden nur geladen, wenn die `tenantId` verfügbar ist.
+- Alle Haupt- und Detailkomponenten (SettingsPage, PersonManagementSection, YearlyPersonDataSection, GlobalDaySettingsSection, MonthlyView, YearlyOverview, MonthlyDetail, CalendarView, DayCell) wurden systematisch geprüft und auf die neue Datenstruktur umgestellt bzw. benötigen keine eigene Anpassung, da sie ihre Daten und Funktionen korrekt über Context/Hooks erhalten.
+- Props, States und useEffect-Dependencies sind überall auf die neue Struktur angepasst.
+- Fallbacks und Loading-Handling sind implementiert (Checks auf tenantId, loadingUserTenantRole etc.).
+- Tests und Validierung der neuen Datenpfade wurden durchgeführt.
 
-**Offene ToDos:**
+**Status:**
 
-- [ ] Komponenten auf neue Datenstruktur umstellen (Props, States, useEffect-Dependencies prüfen)
-- [ ] Sicherstellen, dass überall die `tenantId` aus dem AuthContext verwendet wird
-- [ ] Fallback/Loading-Handling, falls `tenantId` noch nicht geladen ist
-- [ ] Tests/Validierung der neuen Datenpfade
+- Schritt 3 ist vollständig abgeschlossen. Es sind keine weiteren Maßnahmen erforderlich.
 
 **Nächster Schritt:**
 
-- Komponenten und UI-Logik anpassen, sodass sie mit der neuen Tenant-Struktur und dem Context arbeiten.
+- Komponenten und UI-Logik anpassen, sodass sie mit der neuen Tenant-Struktur und dem Context arbeiten (Schritt 4: Rollenbasierte UI).
 
 ---
 
