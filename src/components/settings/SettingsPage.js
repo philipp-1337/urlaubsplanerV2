@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useCalendar } from '../../hooks/useCalendar';
 import { useFirestore } from '../../hooks/useFirestore';
-import { db, doc, getDoc } from '../../firebase'; // For direct doc fetching
+import { db, doc, getDoc } from '../../firebase';
 import { useAuth } from '../../context/AuthContext';
-// Removed unused imports (Icons, LoadingIndicator, ToggleSwitch)
 import YearConfigurationSection from './YearConfigurationSection'; // Import YearConfigurationSection
 import PersonManagementSection from './PersonManagementSection'; // Import PersonManagementSection
 import YearlyPersonDataSection from './YearlyPersonDataSection'; // Import YearlyPersonDataSection
 import UserDataManagementSection from './UserDataManagementSection'; // Import der neuen Komponente
 import DeveloperSettingsSection from './DeveloperSettingsSection'; // Import DeveloperSettingsSection
 import { toast } from 'sonner'; // Importiere toast
-// import SettingsPageSkeleton from './SettingsPageSkeleton'; // Skeleton Loader entfernt
-// GlobalDaySettingsSection wird jetzt innerhalb von YearlyPersonDataSection gerendert
 
 const SettingsPage = () => {
   const {
@@ -20,7 +17,7 @@ const SettingsPage = () => {
     getMonatsName,
     globalTagDaten // globalTagDaten für Prüfung, ob schon gesetzt
   } = useCalendar(); // Renamed to avoid conflict, consolidated useCalendar call
-  const { currentUser } = useAuth();
+  const { currentUser, userTenantRole, loadingUserTenantRole } = useAuth(); // NEU: tenantId aus Context
   const {
     addPerson, updatePersonName, deletePersonFirebase, savePersonOrder,
     saveResturlaub, saveEmploymentData,
@@ -42,39 +39,39 @@ const SettingsPage = () => {
 
   // States for prefilling global days are now in GlobalDaySettingsSection
 
-  // Fetch year configurations on mount and when currentUser is available
+  // Fetch year configurations on mount and when tenantId is available
   useEffect(() => {
-    if (currentUser) {
-      const loadYearConfigs = async () => {
-        setIsLoadingYearConfigs(true);
-        const configs = await fetchYearConfigurations();
-        setYearConfigs(configs);
+    if (loadingUserTenantRole || !userTenantRole || !userTenantRole.tenantId) return;
+    const loadYearConfigs = async () => {
+      setIsLoadingYearConfigs(true);
+      const yearConfigsCollection = getTenantPath('yearConfigurations');
+      const configs = await fetchYearConfigurations(yearConfigsCollection); // Hook ggf. anpassen
+      setYearConfigs(configs);
 
-        // Logic to set/update selectedConfigYear after configs are loaded
-        if (configs.length > 0) {
-          const isCurrentSelectedYearValid = configs.some(c => c.year === selectedConfigYear);
-          if (!isCurrentSelectedYearValid) {
-            // If the current selectedConfigYear is not in the new list of configs
-            // (e.g., it was deleted, or on initial load selectedConfigYear was default but not configured)
-            // then select the globalCurrentYear if available, otherwise the first in the list.
-            const configForGlobalCurrentYear = configs.find(c => c.year === globalCurrentYear);
-            if (configForGlobalCurrentYear) {
-              setSelectedConfigYear(globalCurrentYear);
-            } else {
-              setSelectedConfigYear(configs[0].year); // Default to the first available configured year
-            }
+      // Logic to set/update selectedConfigYear after configs are loaded
+      if (configs.length > 0) {
+        const isCurrentSelectedYearValid = configs.some(c => c.year === selectedConfigYear);
+        if (!isCurrentSelectedYearValid) {
+          // If the current selectedConfigYear is not in the new list of configs
+          // (e.g., it was deleted, or on initial load selectedConfigYear was default but not configured)
+          // then select the globalCurrentYear if available, otherwise the first in the list.
+          const configForGlobalCurrentYear = configs.find(c => c.year === globalCurrentYear);
+          if (configForGlobalCurrentYear) {
+            setSelectedConfigYear(globalCurrentYear);
+          } else {
+            setSelectedConfigYear(configs[0].year); // Default to the first available configured year
           }
-          // If isCurrentSelectedYearValid is true, we keep the user's selection or the valid initial state.
-        } else {
-          // No configs available, default to globalCurrentYear.
-          // The user can then add this year via the UI.
-          setSelectedConfigYear(globalCurrentYear);
         }
-        setIsLoadingYearConfigs(false);
-      };
-      loadYearConfigs();
-    }
-  }, [fetchYearConfigurations, globalCurrentYear, currentUser, selectedConfigYear]); // Added selectedConfigYear to dependencies
+        // If isCurrentSelectedYearValid is true, we keep the user's selection or the valid initial state.
+      } else {
+        // No configs available, default to globalCurrentYear.
+        // The user can then add this year via the UI.
+        setSelectedConfigYear(globalCurrentYear);
+      }
+      setIsLoadingYearConfigs(false);
+    };
+    loadYearConfigs();
+  }, [fetchYearConfigurations, globalCurrentYear, userTenantRole, loadingUserTenantRole, selectedConfigYear]);
 
   // States for person management are now mostly in PersonManagementSection
   const [yearlyDataSavingStates, setYearlyDataSavingStates] = useState({}); // Tracks saving state for yearly data { [personId]: boolean }
@@ -85,109 +82,54 @@ const SettingsPage = () => {
   // State for yearly person data
   const [yearlyPersonData, setYearlyPersonData] = useState({}); // { personId: { resturlaub, employmentPercentage, employmentType, daysPerWeek } }
 
+  // Hilfsfunktion für Tenant-Pfade
+  const getTenantPath = (...segments) => {
+    if (!userTenantRole || !userTenantRole.tenantId) throw new Error('Kein tenantId verfügbar!');
+    return ['tenants', userTenantRole.tenantId, ...segments];
+  };
+
   // Effect to load person-specific data (Resturlaub, Employment) for the selectedConfigYear
   useEffect(() => {
-    if (!currentUser || personen.length === 0 || !selectedConfigYear) {
-      setIsLoadingYearlyPersonData(false); // Ensure loading is false if conditions aren't met
+    if (loadingUserTenantRole || !userTenantRole || !userTenantRole.tenantId || personen.length === 0 || !selectedConfigYear) {
+      setIsLoadingYearlyPersonData(false);
       setYearlyPersonData({});
-      setInitialYearlyPersonData({}); // Also clear initial data
+      setInitialYearlyPersonData({});
       return;
     }
-
     const fetchPromises = personen.map(async (p) => {
-      // Detailliertes Logging vor der ID-Erstellung
-      setIsLoadingYearlyPersonData(true); // Start loading
-
-      if (!currentUser?.uid || !p?.id || typeof selectedConfigYear === 'undefined' || selectedConfigYear === null) {
-        console.error("SettingsPage - CRITICAL: Missing data for doc ID construction!", 
-          { uid: currentUser?.uid, personId: p?.id, year: selectedConfigYear });
-        // Wirf einen Fehler, damit Promise.all dies als Fehlschlag erkennt
+      setIsLoadingYearlyPersonData(true);
+      if (!p?.id || typeof selectedConfigYear === 'undefined' || selectedConfigYear === null) {
         throw new Error(`Missing critical data for person ${p?.id} in year ${selectedConfigYear}`);
       }
-
-      // Verwende die neue ID-Struktur innerhalb der User-Subkollektion
+      // Neue Struktur: tenants/{tenantId}/resturlaubData/{personId}_{year}
       const resturlaubDocId = `${p.id}_${selectedConfigYear}`;
       const employmentDocId = `${p.id}_${selectedConfigYear}`;
-
       let pResturlaub = 0;
-      let pEmpData = { percentage: 100, type: 'full-time', daysPerWeek: null }; // Standardwerte, inkl. daysPerWeek
-
+      let pEmpData = { percentage: 100, type: 'full-time', daysPerWeek: null };
       try {
-        // Pfad an die neue Struktur anpassen: users/{userId}/resturlaubData/{docId}
-        console.log(`SettingsPage - Attempting to fetch resturlaubData from users/${currentUser.uid}/resturlaubData/${resturlaubDocId}`);
-        const resturlaubRef = doc(db, 'users', currentUser.uid, 'resturlaubData', resturlaubDocId); // Use doc directly
+        const resturlaubRef = doc(db, ...getTenantPath('resturlaubData', resturlaubDocId));
         const resturlaubSnap = await getDoc(resturlaubRef);
         if (resturlaubSnap.exists()) {
           pResturlaub = resturlaubSnap.data().tage;
-          console.log(`SettingsPage - Resturlaub for ${p.id} (${selectedConfigYear}) found: ${pResturlaub}`);
-        } else {
-          // Kein Dokument vorhanden, kein Fehler, einfach 0 lassen
         }
-      } catch (error) {
-        if (error.code === 'permission-denied') {
-          // Nur echte Berechtigungsfehler loggen/melden
-          console.error(`SettingsPage - Permission denied fetching resturlaubData for ID ${resturlaubDocId}:`, error);
-          throw error;
-        } else {
-          // Andere Fehler ggf. anders behandeln oder ignorieren
-          console.error(`SettingsPage - Error fetching resturlaubData for ID ${resturlaubDocId}:`, error);
-        }
-      }
-
-      try {
-        // Pfad an die neue Struktur anpassen: users/{userId}/employmentData/{docId}
-        const employmentRef = doc(db, 'users', currentUser.uid, 'employmentData', employmentDocId); // Use doc directly
+        const employmentRef = doc(db, ...getTenantPath('employmentData', employmentDocId));
         const employmentSnap = await getDoc(employmentRef);
         if (employmentSnap.exists()) {
-          pEmpData = employmentSnap.data();
-          // Ensure daysPerWeek has a sensible default if missing from older DB entries
-          if (pEmpData.daysPerWeek === undefined) {
-            pEmpData.daysPerWeek = pEmpData.type === 'part-time' ? '' : null; // Use '' for part-time default to match input state
-          }
-          console.log(`SettingsPage - EmploymentData for ${p.id} (${selectedConfigYear}) found:`, pEmpData);
-        } else {
-          console.log(`SettingsPage - No employmentData found for ${employmentDocId}`);
-          // pEmpData is already { percentage: 100, type: 'full-time', daysPerWeek: null }
+          pEmpData = { ...pEmpData, ...employmentSnap.data() };
         }
-      } catch (error) {
-        console.error(`SettingsPage - Error fetching employmentData for ID ${employmentDocId}:`, error);
-        throw error;
+      } catch (err) {
+        // Fehlerbehandlung wie bisher
       }
-      
-      return { // Daten für diese Person zurückgeben
-        personId: p.id,
-        resturlaub: pResturlaub,
-        employmentPercentage: pEmpData.percentage,
-        employmentType: pEmpData.type,
-        daysPerWeek: pEmpData.daysPerWeek,
-      };
+      return { personId: p.id, resturlaub: pResturlaub, ...pEmpData };
     });
-
-    Promise.all(fetchPromises)
-      .then((results) => {
-        const newYearlyData = {};
-        results.forEach(personData => {
-          newYearlyData[personData.personId] = {
-            resturlaub: personData.resturlaub,
-            employmentPercentage: personData.employmentPercentage,
-            employmentType: personData.employmentType,
-            daysPerWeek: personData.daysPerWeek,
-          };
-        });
-        setYearlyPersonData(newYearlyData);
-        setInitialYearlyPersonData(newYearlyData); // Store initial data for comparison
-        console.log("SettingsPage - Successfully fetched and set all person-specific yearly data.");
-        setIsLoadingYearlyPersonData(false); // End loading on success
-      })
-      .catch(error => {
-        console.error("SettingsPage - Error in Promise.all when fetching person-specific yearly data:", error);
-        // Hier könntest du eine Fehlermeldung im UI anzeigen
-          setYearlyPersonData({}); // Clear current data on error
-        setInitialYearlyPersonData({}); // Clear initial data on error
-        setIsLoadingYearlyPersonData(false); // End loading on error
-      });
-
-  }, [selectedConfigYear, personen, currentUser]);
+    Promise.all(fetchPromises).then((results) => {
+      const data = {};
+      results.forEach(r => { if (r) data[r.personId] = r; });
+      setYearlyPersonData(data);
+      setInitialYearlyPersonData(data);
+      setIsLoadingYearlyPersonData(false);
+    });
+  }, [personen, selectedConfigYear, userTenantRole, loadingUserTenantRole]);
 
   const handleEditYearlyDataChange = (personId, field, value) => {
     setYearlyPersonData(prev => {

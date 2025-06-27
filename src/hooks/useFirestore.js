@@ -12,12 +12,12 @@ import {
   writeBatch // Import writeBatch for saving order
 } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import CalendarContext from '../context/CalendarContext'; // Nach oben verschoben
+import CalendarContext from '../context/CalendarContext';
 import { toast } from 'sonner';
 
-const GLOBAL_PERSON_ID_MARKER = "___GLOBAL___"; // Neuer Marker
+const GLOBAL_PERSON_ID_MARKER = "___GLOBAL___";
 export const useFirestore = () => {
-  const { isLoggedIn, currentUser } = useAuth(); // Get currentUser from useAuth
+  const { isLoggedIn, currentUser, userTenantRole, loadingUserTenantRole } = useAuth(); // NEU: userTenantRole
   const {
     personen, // Get current personen list from context for addPerson
     currentYear,
@@ -45,9 +45,15 @@ export const useFirestore = () => {
     return orderA - orderB;
   }, []);
 
+  // Hilfsfunktion für Tenant-Pfade
+  const getTenantPath = (...segments) => {
+    if (!userTenantRole || !userTenantRole.tenantId) throw new Error('Kein tenantId verfügbar!');
+    return ['tenants', userTenantRole.tenantId, ...segments];
+  };
+
   // Fetch data from Firestore
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || loadingUserTenantRole) {
       // Clear any pending debounce timers on logout
       Object.values(debounceTimers.current).forEach(clearTimeout);
       debounceTimers.current = {};
@@ -60,94 +66,72 @@ export const useFirestore = () => {
       setYearConfigurations([]);
       return;
     }
-
-    if (!currentUser) { // Wait for currentUser to be available
+    if (!currentUser || !userTenantRole || !userTenantRole.tenantId) {
       setIsLoadingData(false);
       return;
     }
-
     const fetchData = async () => {
       setIsLoadingData(true);
-      setLoginError(''); // Clear previous errors
+      setLoginError('');
       try {
         // 1. Fetch Persons
-        // const personsQuery = query(collection(db, 'persons'), where('userId', '==', currentUser.uid));
-        const personsPath = collection(db, 'users', currentUser.uid, 'persons');
-        const personsQuery = query(personsPath); // No 'where' needed as path implies user
+        const personsPath = collection(db, ...getTenantPath('persons'));
+        const personsQuery = query(personsPath);
         const personsSnapshot = await getDocs(personsQuery);
         const fetchedPersonsData = personsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPersonen(fetchedPersonsData.sort(personSortFn));
-
-        // 2. Fetch Resturlaub for the currentYear (dependent on fetchedPersons)
-        // const resturlaubQuery = query(collection(db, 'resturlaubData'), 
-        //                           where('userId', '==', currentUser.uid),
-        //                           where('forYear', '==', currentYear));
-        const resturlaubPath = collection(db, 'users', currentUser.uid, 'resturlaubData');
-        const resturlaubQuery = query(resturlaubPath,
-                                  where('forYear', '==', currentYear));
+        // 2. Fetch Resturlaub
+        const resturlaubPath = collection(db, ...getTenantPath('resturlaubData'));
+        const resturlaubQuery = query(resturlaubPath, where('forYear', '==', currentYear));
         const resturlaubSnapshot = await getDocs(resturlaubQuery);
         const newResturlaub = {};
-        fetchedPersonsData.forEach(p => newResturlaub[String(p.id)] = 0); // Initialize with 0 for all fetched persons
+        fetchedPersonsData.forEach(p => newResturlaub[String(p.id)] = 0);
         resturlaubSnapshot.forEach((doc) => {
           const data = doc.data();
-          // Assuming personId is still a field in resturlaubData documents
           if (data.personId) newResturlaub[data.personId] = data.tage;
         });
         setResturlaub(newResturlaub);
-
-        // 3. Fetch Employment Data for the currentYear (dependent on fetchedPersons)
-        const employmentPath = collection(db, 'users', currentUser.uid, 'employmentData');
-        const employmentQuery = query(employmentPath,
-          where('forYear', '==', currentYear) // Fetch only for the current global year
-        );
+        // 3. Fetch Employment Data
+        const employmentPath = collection(db, ...getTenantPath('employmentData'));
+        const employmentQuery = query(employmentPath, where('forYear', '==', currentYear));
         const employmentSnapshot = await getDocs(employmentQuery);
         const newEmploymentData = {};
         employmentSnapshot.forEach((doc) => {
           const data = doc.data();
-          // For the main app, employmentData in context is for the currentYear.
-          // SettingsPage will fetch for other years separately.
-          // Key by personId (which should be a field in employmentData documents)
           if (data.personId) {
             newEmploymentData[data.personId] = {
               type: data.type,
               percentage: data.percentage,
-              daysPerWeek: data.daysPerWeek, // This might be undefined/null if not set from DB
-              id: doc.id // Firestore document ID
+              daysPerWeek: data.daysPerWeek,
+              id: doc.id
             };
           }
         });
         setEmploymentData(newEmploymentData);
-
         // 4. Fetch Year Configurations
-        const yearConfigsPath = collection(db, 'users', currentUser.uid, 'yearConfigurations');
+        const yearConfigsPath = collection(db, ...getTenantPath('yearConfigurations'));
         const yearConfigsQuery = query(yearConfigsPath);
         const yearConfigsSnapshot = await getDocs(yearConfigsQuery);
         const fetchedYearConfigs = yearConfigsSnapshot.docs.map(doc => ({ id: doc.id, year: parseInt(doc.id, 10), ...doc.data() })).sort((a,b) => a.year - b.year);
         setYearConfigurations(fetchedYearConfigs);
-
-        // 5. Fetch TagDaten - IMMER FÜR DAS GESAMTE AKTUELLE JAHR
-        // Die Unterscheidung nach ansichtModus oder currentMonth für das Laden der dayStatusEntries entfällt.
-        // Wir laden immer alle Einträge für das currentYear des currentUser.
-        const dayStatusPath = collection(db, 'users', currentUser.uid, 'dayStatusEntries');
-        const dayStatusQuery = query(dayStatusPath,
-                             where('year', '==', currentYear));
-
+        // 5. Fetch TagDaten
+        const dayStatusPath = collection(db, ...getTenantPath('dayStatusEntries'));
+        const dayStatusQuery = query(dayStatusPath, where('year', '==', currentYear));
         const dayStatusSnapshot = await getDocs(dayStatusQuery);
         const newTagDaten = {};
-        const newGlobalTagDaten = {}; // newGlobalTagDaten hier initialisieren
+        const newGlobalTagDaten = {};
         dayStatusSnapshot.forEach((doc) => {
           const data = doc.data();
-      if (data.personId === GLOBAL_PERSON_ID_MARKER) {
-        const globalKey = `${data.year}-${data.month}-${data.day}`;        
-        newGlobalTagDaten[globalKey] = data.status; // ESLint-disable nicht mehr nötig
-      } else {
-        const personSpecificKey = `${data.personId}-${data.year}-${data.month}-${data.day}`;
-        newTagDaten[personSpecificKey] = data.status;
-      }
+          if (data.personId === GLOBAL_PERSON_ID_MARKER) {
+            const globalKey = `${data.year}-${data.month}-${data.day}`;
+            newGlobalTagDaten[globalKey] = data.status;
+          } else {
+            const personSpecificKey = `${data.personId}-${data.year}-${data.month}-${data.day}`;
+            newTagDaten[personSpecificKey] = data.status;
+          }
         });
-        setTagDaten(newTagDaten); // Speichert alle Einträge des Jahres
-    setGlobalTagDaten(newGlobalTagDaten); // Globale Einträge aus dayStatusEntries setzen
-
+        setTagDaten(newTagDaten);
+        setGlobalTagDaten(newGlobalTagDaten);
       } catch (error) {
         console.error("Error fetching data from Firestore: ", error);
         setLoginError("Fehler beim Laden der Daten von Firestore.");
@@ -156,14 +140,8 @@ export const useFirestore = () => {
         setIsLoadingData(false);
       }
     };
-
     fetchData();
-  // ANGEPASSTE ABHÄNGIGKEITSLISTE:
-  // currentMonth, ansichtModus, ausgewaehltePersonId wurden entfernt, da tagDaten jetzt jahresweise geladen werden
-  // und diese Änderungen kein Neuladen der Jahresdaten aus Firestore auslösen sollen.
-  // Die Setter-Funktionen (setPersonen, setTagDaten etc.) sind hier enthalten, da sie im Effekt verwendet werden und stabil sind.
-  // Sie sind durch useState und useContext stabil.
-  }, [isLoggedIn, currentYear, currentUser, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError, personSortFn]);
+  }, [isLoggedIn, currentYear, currentUser, userTenantRole, loadingUserTenantRole, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError, personSortFn]);
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {

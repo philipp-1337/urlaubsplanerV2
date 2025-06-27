@@ -54,33 +54,22 @@ Stand: 27.06.2025
 - Die `tenantId` wird aus dem AuthContext bezogen.
 - Sicherstellen, dass Hooks und Komponenten erst Daten laden, wenn die `tenantId` verfügbar ist.
 
-**ToDos:**
+**Umsetzung:**
 
-- [ ] Alle Firestore-Querys und -Writes in Hooks (z.B. `useFirestore`) und Services anpassen
+- Alle zentralen Firestore-Operationen in `useFirestore.js` nutzen jetzt die neue mandantenfähige Struktur und beziehen die `tenantId` aus dem AuthContext.
+- Eine Hilfsfunktion sorgt für konsistente Pfade.
+- Die Daten werden nur geladen, wenn die `tenantId` verfügbar ist.
+
+**Offene ToDos:**
+
 - [ ] Komponenten auf neue Datenstruktur umstellen (Props, States, useEffect-Dependencies prüfen)
 - [ ] Sicherstellen, dass überall die `tenantId` aus dem AuthContext verwendet wird
 - [ ] Fallback/Loading-Handling, falls `tenantId` noch nicht geladen ist
 - [ ] Tests/Validierung der neuen Datenpfade
 
-**Theoretische Umsetzungsschritte:**
+**Nächster Schritt:**
 
-1. **Zentrale Hooks/Services anpassen:**
-   - In `useFirestore.js` und ggf. weiteren Service-Dateien alle Firestore-Pfade refaktorisieren.
-   - Statt `currentUser.uid` wird `tenantId` aus dem AuthContext verwendet.
-2. **Komponenten anpassen:**
-   - Alle Komponenten, die Firestore-Daten laden oder schreiben, auf die neue Struktur umstellen.
-   - Props und States ggf. anpassen, damit sie mit der neuen Datenstruktur kompatibel sind.
-3. **Abhängigkeiten prüfen:**
-   - useEffect- und Query-Dependencies auf `tenantId` umstellen, damit Daten erst geladen werden, wenn die Zuordnung bekannt ist.
-4. **Fallback/Loading:**
-   - Komponenten/Hooks dürfen erst Daten laden, wenn `tenantId` verfügbar ist (Loading-States einbauen).
-5. **Test/Validierung:**
-   - Sicherstellen, dass alle Datenzugriffe korrekt funktionieren und keine alten User-Pfade mehr verwendet werden.
-
-**Hinweise:**
-
-- Die Umstellung ist Voraussetzung für die Migration und die rollenbasierte UI.
-- Die neue Struktur ist mandantenfähig und trennt die Daten logisch nach Teams.
+- Komponenten und UI-Logik anpassen, sodass sie mit der neuen Tenant-Struktur und dem Context arbeiten.
 
 ---
 
@@ -118,6 +107,26 @@ Stand: 27.06.2025
 
 - Die rollenbasierte UI ist essenziell für die Sicherheit und Nutzerführung.
 - Die Logik kann später für weitere Rollen/Feingranularität erweitert werden.
+
+---
+
+## Schritt 4: Rollenbasierte UI – Konkretisierung der Umsetzung (27.06.2025)
+
+**Umsetzungsschritte:**
+
+- In allen relevanten Komponenten wird die Rolle (`role`) aus dem AuthContext bezogen.
+- Verwaltungsfunktionen (z.B. Personen anlegen/löschen, Jahreskonfiguration ändern) werden nur angezeigt und aktiviert, wenn `role === 'admin'`.
+- Mutierende Aktionen (z.B. Speichern/Löschen) prüfen vor Ausführung die Rolle und verhindern unberechtigte Änderungen.
+- Für Mitglieder (`role === 'member'`): Nur eigene Daten/Einträge dürfen bearbeitet werden, keine globalen Einstellungen oder andere Personen.
+- UI-Feedback: Buttons und Aktionen werden bei fehlender Berechtigung deaktiviert oder mit Hinweistext/Tooltip versehen.
+- Die Sichtbarkeit und Aktivierbarkeit aller kritischen UI-Elemente ist rollenbasiert gesteuert.
+- Die Logik ist zentral im AuthContext und in den Komponenten implementiert, keine doppelten Checks im Code.
+- UI-Tests und Validierung für beide Rollen (admin/member) sind vorgesehen.
+
+**Nächster Schritt:**
+
+- Überprüfung und ggf. Nachziehen aller Komponenten auf diese Logik.
+- Dokumentation der Rollenlogik im Konzept und im Code.
 
 ---
 
@@ -280,6 +289,31 @@ Stand: 27.06.2025
 
 - Umfassende Tests sind essenziell, um Datenverlust, Sicherheitslücken und Usability-Probleme zu vermeiden.
 - Die Testphase sollte vor dem produktiven Rollout abgeschlossen sein.
+
+---
+
+## Stand der Multi-Tenant-Umstellung (27.06.2025)
+
+**Bereits umgesetzt:**
+
+- Analyse, Vorbereitung und Konzeptdokumentation
+- Erweiterung des AuthContext: Tenant- und Rollen-Infos werden global bereitgestellt
+- Refactoring aller zentralen Firestore-Hooks und Contexts auf die neue Struktur (`/tenants/{tenantId}/...`)
+- Umstellung und Prüfung aller Haupt- und Detailkomponenten (Settings, Dashboard, Kalender, Personenverwaltung, Detailansichten, Spezialkomponenten)
+- Komponenten greifen nur noch auf Context/Hooks zu, keine alten Firestore-Pfade mehr
+- UI-Logik ist tenant- und rollenbasiert vorbereitet
+
+**Offen/Empfohlene nächste Schritte:**
+
+- Schritt 4: Rollenbasierte UI finalisieren (Sichtbarkeit, Schreibrechte, UI-Feedback für Rollen)
+- Schritt 5: Onboarding/Einladungs-Flow implementieren und testen
+- Schritt 6: Migration bestehender Daten (UI-Button/Prozess, Validierung, ggf. Alt-Daten löschen)
+- Schritt 7: Firestore-Regeln final anpassen und mit Emulator testen
+- Schritt 8: End-to-End-Tests, Fehlerfälle, Edge Cases und Feedback-Phase
+- Kleinere Hilfs- oder Spezialkomponenten prüfen (falls noch nicht geschehen)
+
+**Fazit:**
+Die technische Basis und die Kernlogik sind mandantenfähig. Die letzten Schritte betreffen vor allem die User Experience, Sicherheit und Datenmigration.
 
 ---
 
