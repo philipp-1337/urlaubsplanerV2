@@ -7,7 +7,7 @@ Stand: 27.06.2025
 | Schritt | Beschreibung | Status | Letztes Update |
 |---------|--------------|--------|---------------|
 | 1       | Analyse & Vorbereitung | ✅ Abgeschlossen | 27.06.2025 |
-| 2       | Erweiterung AuthContext | 🟡 In Bearbeitung | - |
+| 2       | Erweiterung AuthContext | ✅ Abgeschlossen | - |
 | 3       | Refactoring Firestore-Zugriffe | 🟡 In Bearbeitung | - |
 | 4       | Rollenbasierte UI | 🟡 In Bearbeitung | - |
 | 5       | Onboarding/Einladung | 🟡 In Bearbeitung | - |
@@ -26,7 +26,7 @@ Stand: 27.06.2025
 
 ---
 
-## Schritt 2: Erweiterung AuthContext (🟡 In Bearbeitung)
+## Schritt 2: Erweiterung AuthContext (✅ Abgeschlossen)
 
 **Ziel:**
 
@@ -34,40 +34,15 @@ Stand: 27.06.2025
 - Diese Informationen im AuthContext global verfügbar machen.
 - Sicherstellen, dass alle Komponenten/Hooks auf diese Informationen zugreifen können.
 
-**ToDos:**
+**Umsetzung:**
 
-- [ ] Firestore-Query im AuthContext ergänzen, um die User-Tenant-Rolle nach Login zu laden
-- [ ] Typen/Interface für die User-Tenant-Rolle definieren (`tenantId`, `personId`, `role`)
-- [ ] State im AuthContext erweitern und Provider anpassen
-- [ ] Loading/Error-Handling für die Zuordnung implementieren
-- [ ] Exports/Context-API so gestalten, dass alle Komponenten darauf zugreifen können
+- Im `AuthContext` wird nach Login die User-Tenant-Rolle aus Firestore geladen und im Context bereitgestellt.
+- Die Werte `userTenantRole`, `loadingUserTenantRole` und `userTenantRoleError` stehen global zur Verfügung.
+- Eine JSDoc-Typdefinition für `UserTenantRole` wurde angelegt.
 
-**Theoretische Umsetzungsschritte:**
+**Nächster Schritt:**
 
-1. **Interface/Type anlegen:**
-
-   ```js
-   // Beispiel (TypeScript, für JS als JSDoc):
-   // interface UserTenantRole { tenantId: string; personId: string; role: 'admin' | 'member'; }
-   ```
-
-2. **Firestore-Query:**
-   - Nach erfolgreichem Login (wenn `currentUser` gesetzt ist) die Collection `/users/{userId}/privateInfo/user_tenant_role` abfragen.
-   - Die Daten in den Context-State übernehmen.
-3. **Context erweitern:**
-   - Im AuthContext einen neuen State für die User-Tenant-Rolle anlegen (inkl. Loading/Error).
-   - Die Rolle und IDs im Provider bereitstellen.
-4. **API/Exports:**
-   - Getter/Hook bereitstellen, damit alle Komponenten auf `tenantId`, `personId`, `role` zugreifen können.
-5. **Fehler- und Ladezustände:**
-   - Loading- und Error-Handling für die Abfrage implementieren.
-6. **Test/Validierung:**
-   - Sicherstellen, dass nach Login die Rolle korrekt geladen und im Context verfügbar ist.
-
-**Hinweise:**
-
-- Die Migration auf Multi-Tenant ist erst möglich, wenn diese Zuordnung überall verfügbar ist.
-- Die Rolle steuert später die Sichtbarkeit und Berechtigungen in der UI.
+- Firestore-Zugriffe und Komponenten auf die neue Tenant-Struktur umstellen (Schritt 3).
 
 ---
 

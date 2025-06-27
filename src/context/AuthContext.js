@@ -4,8 +4,10 @@ import {
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth';
-import { auth } from '../firebase'; // Import Firebase auth instance
+import { auth, db, doc, getDoc } from '../firebase'; // Import db, doc, getDoc
 import { toast } from 'sonner'; // Import toast for error notifications
+// Import UserTenantRole JSDoc typedef
+import '../context/UserTenantRole';
 
 // Kontext für die Authentifizierung
 const AuthContext = createContext();
@@ -18,6 +20,9 @@ export function AuthProvider({ children }) {
   const [password, setPassword] = useState('');
   // const [loginError, setLoginError] = useState(''); // Removed, will use toast
   const [loadingAuth, setLoadingAuth] = useState(true); // To track auth state loading
+  const [userTenantRole, setUserTenantRole] = useState(null); // { tenantId, personId, role }
+  const [loadingUserTenantRole, setLoadingUserTenantRole] = useState(true);
+  const [userTenantRoleError, setUserTenantRoleError] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -27,6 +32,32 @@ export function AuthProvider({ children }) {
     });
     return unsubscribe; // Cleanup subscription on unmount
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setUserTenantRole(null);
+      setLoadingUserTenantRole(false);
+      return;
+    }
+    setLoadingUserTenantRole(true);
+    setUserTenantRoleError(null);
+    // Firestore: /users/{userId}/privateInfo/user_tenant_role
+    const ref = doc(db, 'users', currentUser.uid, 'privateInfo', 'user_tenant_role');
+    getDoc(ref)
+      .then((snap) => {
+        if (snap.exists()) {
+          setUserTenantRole(snap.data());
+        } else {
+          setUserTenantRole(null);
+        }
+        setLoadingUserTenantRole(false);
+      })
+      .catch((err) => {
+        setUserTenantRoleError(err);
+        setUserTenantRole(null);
+        setLoadingUserTenantRole(false);
+      });
+  }, [currentUser]);
 
   // Login-Funktionalität
   const login = async () => {
@@ -75,7 +106,10 @@ export function AuthProvider({ children }) {
     // setLoginError, // Removed
     login,
     logout,
-    loadingAuth // Expose loading state
+    loadingAuth, // Expose loading state
+    userTenantRole, // { tenantId, personId, role }
+    loadingUserTenantRole,
+    userTenantRoleError
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
