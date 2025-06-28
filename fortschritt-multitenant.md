@@ -9,7 +9,7 @@ Stand: 27.06.2025
 | 1       | Analyse & Vorbereitung | ✅ Abgeschlossen | 27.06.2025 |
 | 2       | Erweiterung AuthContext | ✅ Abgeschlossen | - |
 | 3       | Refactoring Firestore-Zugriffe | ✅ Abgeschlossen | - |
-| 4       | Rollenbasierte UI | 🟡 In Bearbeitung | - |
+| 4       | Rollenbasierte UI | 🟡 In Bearbeitung | 27.06.2025 |
 | 5       | Onboarding/Einladung | 🟡 In Bearbeitung | - |
 | 6       | Migration bestehender Daten | 🟡 In Bearbeitung | - |
 | 7       | Firestore-Regeln anpassen | 🟡 In Bearbeitung | - |
@@ -128,6 +128,26 @@ Stand: 27.06.2025
 
 - Überprüfung und ggf. Nachziehen aller Komponenten auf diese Logik.
 - Dokumentation der Rollenlogik im Konzept und im Code.
+
+---
+
+## Schritt 4: Rollenbasierte UI (Update 27.06.2025)
+
+**Umsetzung:**
+
+- Die rollenbasierte Logik ist jetzt in allen relevanten Komponenten umgesetzt:
+  - Settings-Komponenten (`SettingsPage`, `YearConfigurationSection`, `PersonManagementSection`, `YearlyPersonDataSection`)
+  - Kalender- und Dashboard-Komponenten (`MonthlyView`, `CalendarView`)
+- Nur Nutzer mit der Rolle `admin` können mutierende Aktionen (Hinzufügen, Bearbeiten, Löschen) für alle Einträge durchführen.
+- Mitglieder (`member`) können nur eigene Einträge bearbeiten, nicht aber globale Einstellungen oder andere Personen.
+- In Übersichts- und reinen Navigationskomponenten (`YearlyOverview`, `MonthlyDetail`) ist keine zusätzliche Rollenlogik nötig.
+- Die Rolle wird über den AuthContext global bereitgestellt und in den Komponenten geprüft.
+- UI-Feedback (Disabled-States, Hinweise) ist überall implementiert.
+
+**Status:**
+
+- Die rollenbasierte UI ist vollständig in allen Kernbereichen umgesetzt.
+- Nächste Schritte: Validierung, Tests und ggf. Feinschliff in Spezial- oder Hilfskomponenten.
 
 ---
 

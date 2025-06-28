@@ -16,6 +16,7 @@ import KebabMenu from '../common/KebabMenu';
 import { triggerHorizontalScrollHint } from '../../services/scrollUtils';
 import ToggleSwitch from '../common/ToggleSwitch';
 import { isScrollHintEnabled, setScrollHintEnabled } from '../../services/scrollEffectToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const MonthlyView = () => {
   const navigate = useNavigate();
@@ -43,6 +44,9 @@ const MonthlyView = () => {
     setAusgewaehltePersonId,
     setAnsichtModus
   } = useCalendar();
+  const { userTenantRole } = useAuth();
+  const userRole = userTenantRole?.role;
+  const currentPersonId = userTenantRole?.personId;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollHintEnabled, setScrollHintEnabledState] = useState(isScrollHintEnabled());
@@ -104,10 +108,15 @@ const MonthlyView = () => {
   }, [scrollHintEnabled]);
 
   // Helper function for handling clicks on day cells
-  // This function determines the *next* status based on the *currently displayed* status
+  // Diese Funktion prüft jetzt die Rolle und Person
   const handleDayCellClick = (personId, tagObject) => {
     const personIdStr = String(personId);
     if (!tagObject.istWochenende) {
+      // Rollen- und Berechtigungslogik:
+      // Admins dürfen alle Einträge bearbeiten, Mitglieder nur ihre eigenen
+      if (userRole !== 'admin' && personIdStr !== currentPersonId) {
+        return; // Keine Berechtigung
+      }
       const currentStatus = getTagStatus(personIdStr, tagObject.tag, currentMonth, currentYear);
 
       // Check if there's an explicit person-specific entry for this day

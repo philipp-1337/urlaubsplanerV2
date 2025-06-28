@@ -24,11 +24,18 @@ const YearlyPersonDataSection = ({
   onImportHolidays,
   onSetHolidaysImportedStatus, // Neuer Prop
   getMonatsName,
+  userRole,
 }) => {
+  const isAdmin = userRole === 'admin';
 
   return (
     <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
       <h2 className="mb-4 text-2xl font-semibold text-gray-700">Jahresspezifische Daten verwalten</h2>
+      {!isAdmin && (
+        <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
+          Sie haben keine Berechtigung, jahresspezifische Daten zu ändern. Nur Administratoren können Änderungen vornehmen.
+        </div>
+      )}
 
       {/* Tabs für Jahresauswahl */}
       <div className="flex mb-6 border-b border-gray-200 overflow-x-auto overflow-y-hidden"> {/* Added overflow-x-auto */}
@@ -122,7 +129,7 @@ const YearlyPersonDataSection = ({
                             e.target.checked ? 'part-time' : 'full-time'
                           );
                         }}
-                        disabled={isSavingYearly}
+                        disabled={isSavingYearly || !isAdmin}
                       />
                     </div>
                   </div>
@@ -142,7 +149,7 @@ const YearlyPersonDataSection = ({
                         value={yearlyPersonData[person.id]?.resturlaub ?? ''}
                         onChange={(e) => onYearlyDataChange(person.id, 'resturlaub', e.target.value)}
                         className="w-full px-2 py-1 border rounded-md md:w-auto"
-                        disabled={isSavingYearly}
+                        disabled={isSavingYearly || !isAdmin}
                       />
                     </div>
 
@@ -164,7 +171,7 @@ const YearlyPersonDataSection = ({
                             className="w-full px-2 py-1 border rounded-md md:w-auto"
                             max="100"
                             min="0"
-                            disabled={isSavingYearly}
+                            disabled={isSavingYearly || !isAdmin}
                           />
                         </div>
                         <div className="flex flex-col"> {/* Tage pro Woche Input */}
@@ -183,7 +190,7 @@ const YearlyPersonDataSection = ({
                             max="5"
                             min="1"
                             placeholder="1-5"
-                            disabled={isSavingYearly}
+                            disabled={isSavingYearly || !isAdmin}
                           />
                         </div>
                       </>
@@ -194,22 +201,23 @@ const YearlyPersonDataSection = ({
                 <div className="flex items-center flex-shrink-0 mt-3 md:mt-0 md:ml-4">
                   <button
                     onClick={() => onSaveYearlyData(person.id)}
-                    disabled={isSavingYearly || !hasYearlyDataChanged}
+                    disabled={isSavingYearly || !hasYearlyDataChanged || !isAdmin}
                     className={`w-full p-2 text-sm text-white rounded md:w-auto flex items-center justify-center
-                                ${isSavingYearly ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (hasYearlyDataChanged ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
+                                ${!isAdmin || isSavingYearly ? 'bg-gray-400 cursor-not-allowed' : (hasYearlyDataChanged ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed')}`}
                     aria-label={isSavingYearly ? "Jährliche Daten speichern..." : (hasYearlyDataChanged ? "Jährliche Daten speichern" : "Keine Änderungen an jährlichen Daten")}
+                    title={!isAdmin ? "Nur Administratoren können speichern." : undefined}
                   >
                     {isSavingYearly ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   </button>
                   <button
                     onClick={() => onResetYearlyData(person.id)}
-                    disabled={isSavingYearly || !hasYearlyDataChanged}
+                    disabled={isSavingYearly || !hasYearlyDataChanged || !isAdmin}
                     className={`p-2 text-sm rounded flex items-center justify-center ml-2
-                                ${isSavingYearly || !hasYearlyDataChanged
+                                ${!isAdmin || isSavingYearly || !hasYearlyDataChanged
                                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                   : 'bg-primary text-white hover:bg-primary'}`}
                     aria-label="Änderungen zurücksetzen"
-                    title="Änderungen zurücksetzen"
+                    title={!isAdmin ? "Nur Administratoren können zurücksetzen." : "Änderungen zurücksetzen"}
                   >
                     <RotateCcw size={16} />
                   </button>

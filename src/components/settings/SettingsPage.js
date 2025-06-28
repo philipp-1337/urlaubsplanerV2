@@ -18,6 +18,7 @@ const SettingsPage = () => {
     globalTagDaten // globalTagDaten für Prüfung, ob schon gesetzt
   } = useCalendar(); // Renamed to avoid conflict, consolidated useCalendar call
   const { currentUser, userTenantRole, loadingUserTenantRole } = useAuth(); // NEU: tenantId aus Context
+  const userRole = userTenantRole?.role;
   const {
     addPerson, updatePersonName, deletePersonFirebase, savePersonOrder,
     saveResturlaub, saveEmploymentData,
@@ -585,17 +586,19 @@ const SettingsPage = () => {
             isLoadingYearConfigs={isLoadingYearConfigs}
             onAddYearConfig={handleAddYearConfigProp}
             onDeleteYearConfig={handleDeleteYearConfigProp}
-            onUpdateYearConfiguration={handleUpdateYearConfigProp} // Pass the new handler
+            onUpdateYearConfiguration={handleUpdateYearConfigProp}
+            userRole={userRole}
           />
         );
       case 'personManagement':
         return (
           <PersonManagementSection
-            personen={personen} // Pass the current list of persons from useCalendar
-            onAddPerson={handleAddPersonProp} // Pass the local handler
-            onUpdatePersonName={updatePersonName} // Pass the Firestore hook function
-            onDeletePerson={handleDeletePerson} // Pass the local handler
-            onSavePersonOrder={savePersonOrder} // Pass the Firestore hook function
+            personen={personen}
+            onAddPerson={handleAddPersonProp}
+            onUpdatePersonName={updatePersonName}
+            onDeletePerson={handleDeletePerson}
+            onSavePersonOrder={savePersonOrder}
+            userRole={userRole}
           />
         );
       case 'yearlyPersonData':
@@ -613,19 +616,18 @@ const SettingsPage = () => {
             yearlyDataSavingStates={yearlyDataSavingStates}
             isLoadingYearlyPersonData={isLoadingYearlyPersonData}
             getInitialDataForPerson={getInitialDataForPerson}
-            isLoadingYearConfigs={isLoadingYearConfigs} // Pass loading state for year configs
-            // Pass props needed by GlobalDaySettingsSection
+            isLoadingYearConfigs={isLoadingYearConfigs}
             globalTagDaten={globalTagDaten}
-            onApplyPrefill={handleApplyPrefillProp} // Pass the handler
-            onImportHolidays={handleImportGermanHolidaysProp} // Pass the handler
-            onSetHolidaysImportedStatus={handleSetHolidaysImportedStatusProp} // Neuer Handler
-            getMonatsName={getMonatsName} // Pass getMonatsName
+            onApplyPrefill={handleApplyPrefillProp}
+            onImportHolidays={handleImportGermanHolidaysProp}
+            onSetHolidaysImportedStatus={handleSetHolidaysImportedStatusProp}
+            getMonatsName={getMonatsName}
+            userRole={userRole}
           />
         );
       case 'userData':
         return (
           <UserDataManagementSection />
-          // currentUser wird via useAuth() direkt in der Komponente geholt
         );
       case 'developer':
         return <DeveloperSettingsSection />;

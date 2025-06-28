@@ -7,7 +7,8 @@ const YearConfigurationSection = ({
   isLoadingYearConfigs,
   onAddYearConfig,
   onDeleteYearConfig,
-  onUpdateYearConfiguration, // This prop will now be used
+  onUpdateYearConfiguration,
+  userRole,
 }) => {
   // Wrap initialNewYearData with useMemo to prevent re-creation on every render
   const initialNewYearData = useMemo(() => ({
@@ -87,10 +88,16 @@ const YearConfigurationSection = ({
   };
 
   const yearInputDisabled = !!editingConfigId; // Disable year input when editing
+  const isAdmin = userRole === 'admin';
 
   return (
     <section className="p-6 mb-8 bg-white rounded-lg shadow-md">
       <h2 className="mb-4 text-2xl font-semibold text-gray-700">Jahreskonfiguration verwalten</h2>
+      {!isAdmin && (
+        <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
+          Sie haben keine Berechtigung, Jahreskonfigurationen zu ändern. Nur Administratoren können Änderungen vornehmen.
+        </div>
+      )}
       <div className="mb-4 space-y-3 md:space-y-0 md:flex md:space-x-2 md:items-end">
         <div>
           <label htmlFor="newYearConfigYear" className="block text-sm font-medium text-gray-700">Jahr</label>
@@ -101,7 +108,7 @@ const YearConfigurationSection = ({
             value={newYearData.year}
             onChange={(e) => handleInputChange('year', e.target.value)}
             className={`w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-primary ${yearInputDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            disabled={yearInputDisabled || isSaving} // Disable if saving
+            disabled={yearInputDisabled || isSaving || !isAdmin}
           />
         </div>
         <div>
@@ -113,25 +120,25 @@ const YearConfigurationSection = ({
             value={newYearData.urlaubsanspruch}
             onChange={(e) => handleInputChange('urlaubsanspruch', e.target.value)}
             className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-primary"
-            disabled={isSaving} // Disable if saving
+            disabled={isSaving || !isAdmin}
           />
         </div>
-        <div className="flex items-end space-x-2"> {/* Container for submit and cancel buttons */}
+        <div className="flex items-end space-x-2">
           <button
             onClick={handleSubmit}
-            disabled={isSaving || (editingConfigId === null && yearConfigs.some(yc => yc.year === newYearData.year))} // Disable add if year exists
+            disabled={!isAdmin || isSaving || (editingConfigId === null && yearConfigs.some(yc => yc.year === newYearData.year))}
             className={`w-full px-3 py-2 text-white rounded-md md:w-auto flex items-center justify-center
-                        ${isSaving ? 'bg-yellow-500 cursor-wait' : (editingConfigId ? 'bg-green-500 hover:bg-green-600' : 'bg-primary hover:bg-accent hover:text-primary')}
+                        ${!isAdmin ? 'bg-gray-400 cursor-not-allowed' : (isSaving ? 'bg-yellow-500 cursor-wait' : (editingConfigId ? 'bg-green-500 hover:bg-green-600' : 'bg-primary hover:bg-accent hover:text-primary'))}
                         ${(editingConfigId === null && yearConfigs.some(yc => yc.year === newYearData.year)) ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed' : ''}`}
             aria-label={editingConfigId ? "Änderungen speichern" : "Jahr hinzufügen"}
-            title={(editingConfigId === null && yearConfigs.some(yc => yc.year === newYearData.year)) ? "Dieses Jahr ist bereits konfiguriert." : (editingConfigId ? "Änderungen speichern" : "Jahr hinzufügen")}
+            title={!isAdmin ? "Nur Administratoren können Jahre hinzufügen oder bearbeiten." : (editingConfigId === null && yearConfigs.some(yc => yc.year === newYearData.year)) ? "Dieses Jahr ist bereits konfiguriert." : (editingConfigId ? "Änderungen speichern" : "Jahr hinzufügen")}
           >
             {isSaving ? <Loader2 size={20} className="animate-spin" /> : (editingConfigId ? <Save size={20} /> : <Plus size={20} />)}
           </button>
           {editingConfigId && (
             <button
               onClick={handleCancelEdit}
-              disabled={isSaving}
+              disabled={isSaving || !isAdmin}
               className="w-full px-3 py-2 text-gray-700 bg-gray-200 rounded-md md:w-auto hover:bg-gray-300 flex items-center justify-center"
               aria-label="Bearbeitung abbrechen"
             >
@@ -151,19 +158,21 @@ const YearConfigurationSection = ({
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleEdit(yc)}
-                  disabled={isDeleting || isSaving || !!editingConfigId} // Disable if another is being edited or general save op
+                  disabled={!isAdmin || isDeleting || isSaving || !!editingConfigId}
                   className={`p-2 text-white rounded flex items-center justify-center
-                                ${isDeleting || isSaving || (editingConfigId && !isCurrentlyEditing) ? 'bg-gray-400 cursor-not-allowed' : (isCurrentlyEditing ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600')}`}
+                                ${!isAdmin || isDeleting || isSaving || (editingConfigId && !isCurrentlyEditing) ? 'bg-gray-400 cursor-not-allowed' : (isCurrentlyEditing ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600')}`}
                   aria-label={isCurrentlyEditing ? "Wird bearbeitet..." : "Jahreskonfiguration bearbeiten"}
+                  title={!isAdmin ? "Nur Administratoren können bearbeiten." : undefined}
                 >
                   {isCurrentlyEditing ? <Loader2 size={16} className="animate-spin" /> : <Edit size={16} />}
                 </button>
                 <button
                   onClick={() => handleDelete(yc.id)}
-                  disabled={isDeleting || isSaving || isCurrentlyEditing} // Disable if this one is being edited or general save op
+                  disabled={!isAdmin || isDeleting || isSaving || isCurrentlyEditing}
                   className={`p-2 ml-2 text-white rounded flex items-center justify-center
-                                ${isDeleting ? 'bg-yellow-500 hover:bg-yellow-600 cursor-not-allowed' : (isSaving || isCurrentlyEditing ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600')}`}
+                                ${!isAdmin || isDeleting ? 'bg-gray-400 cursor-not-allowed' : (isSaving || isCurrentlyEditing ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600')}`}
                   aria-label={isDeleting ? "Jahreskonfiguration wird gelöscht..." : "Jahreskonfiguration löschen"}
+                  title={!isAdmin ? "Nur Administratoren können löschen." : undefined}
                 >
                   {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 </button>

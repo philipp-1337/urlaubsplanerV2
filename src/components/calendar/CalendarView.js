@@ -1,4 +1,5 @@
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useCalendar } from '../../hooks/useCalendar';
 import { getMonatsName, getWochentagName } from '../../services/dateUtils';
 import DayCell from './DayCell';
@@ -14,6 +15,10 @@ import InfoOverlayButton from '../common/InfoOverlayButton';
 import KebabMenu from '../common/KebabMenu';
 
 const CalendarView = ({ navigateToView }) => {
+  const { userTenantRole } = useAuth();
+  const userRole = userTenantRole?.role;
+  const currentPersonId = userTenantRole?.personId;
+  
   const navigate = useNavigate();
   const {
     loginError,
@@ -78,6 +83,11 @@ const CalendarView = ({ navigateToView }) => {
   
   const handleDayCellClick = (tagObject) => {
     if (!tagObject.istWochenende) {
+      // Rollen- und Berechtigungslogik:
+      // Admins dürfen alle Einträge bearbeiten, Mitglieder nur ihre eigenen
+      if (userRole !== 'admin' && ausgewaehltePerson?.id !== currentPersonId) {
+        return; // Keine Berechtigung
+      }
       const personIdStr = String(ausgewaehltePersonId);
       const currentStatus = getTagStatus(personIdStr, tagObject.tag, currentMonth, currentYear);
 
