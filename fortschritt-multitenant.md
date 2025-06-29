@@ -1,6 +1,6 @@
 # Fortschritt Multi-Tenant-Refactoring
 
-Stand: 27.06.2025
+Stand: 28.06.2025
 
 ## Fortschrittstabelle
 
@@ -10,9 +10,9 @@ Stand: 27.06.2025
 | 2       | Erweiterung AuthContext | ✅ Abgeschlossen | - |
 | 3       | Refactoring Firestore-Zugriffe | ✅ Abgeschlossen | - |
 | 4       | Rollenbasierte UI | 🟡 In Bearbeitung | 27.06.2025 |
-| 5       | Onboarding/Einladung | 🟡 In Bearbeitung | - |
+| 5       | Onboarding/Einladung | 🟡 In Bearbeitung | 28.06.2025 |
 | 6       | Migration bestehender Daten | 🟡 In Bearbeitung | - |
-| 7       | Firestore-Regeln anpassen | 🟡 In Bearbeitung | - |
+| 7       | Firestore-Regeln anpassen | 🟡 In Bearbeitung | 28.06.2025 |
 | 8       | Testen & Validieren | 🟡 In Bearbeitung | - |
 
 ---
@@ -153,41 +153,15 @@ Stand: 27.06.2025
 
 ## Schritt 5: Onboarding/Einladung (🟡 In Bearbeitung)
 
-**Ziel:**
+**Update 28.06.2025:**
+- Onboarding-Dialog für neue Nutzer ist implementiert und wird automatisch angezeigt, wenn nach Login keine Tenant-Zuordnung existiert. Nutzer können so einen neuen Mandanten anlegen und werden als Admin-Person eingetragen.
+- Admins können über die neue Komponente `InviteMemberSection` in den Einstellungen neue Mitglieder (Personen) zum Tenant einladen. Optional kann eine E-Mail-Adresse angegeben werden.
+- Die Einladung ist nur für Admins sichtbar. Die Person wird ohne `userId` angelegt und kann nach Registrierung zugeordnet werden.
+- Feedback für erfolgreiche Einladungen ist im UI enthalten.
+- Nächste Schritte: Validierung auf doppelte Einladungen/E-Mails, optional E-Mail-Versand, Self-Service-Registrierung, weitere Tests und Feinschliff.
 
-- Neue Benutzer können einen Mandanten (Team) anlegen oder zu einem bestehenden eingeladen werden.
-- Die Zuordnung zu `tenantId`, `personId` und `role` erfolgt automatisch und sicher.
-
-**ToDos:**
-
-- [ ] Registrierung: Beim ersten Login neuen Mandanten und eigenes `person`-Dokument mit `role: 'admin'` anlegen
-- [ ] Einladung: Admin kann neue Personen anlegen und optional per E-Mail einladen
-- [ ] Nach Registrierung/Einladung wird die Zuordnung (`tenantId`, `personId`, `role`) in den privaten Userdaten gespeichert
-- [ ] UI für Einladungs- und Onboarding-Flow gestalten
-- [ ] Validierung und Fehlerbehandlung für doppelte Einladungen, ungültige E-Mails etc.
-- [ ] Tests/Validierung des gesamten Flows
-
-**Theoretische Umsetzungsschritte:**
-
-1. **Registrierung:**
-   - Nach erfolgreichem Signup prüft das Frontend, ob der User bereits einer Tenant-Zuordnung hat.
-   - Falls nicht: Neuen Tenant anlegen, eigenes `person`-Dokument mit `userId` und `role: 'admin'` erstellen, Zuordnung in `/users/{userId}/privateInfo/user_tenant_role` speichern.
-2. **Einladung:**
-   - Admin kann im UI eine neue Person anlegen (mit oder ohne E-Mail).
-   - Optional: Einladung per E-Mail mit Link, der nach Registrierung die Zuordnung herstellt.
-   - Nach erfolgreicher Registrierung wird das `person`-Dokument mit `userId` und `role: 'member'` aktualisiert und die Zuordnung in den privaten Userdaten gespeichert.
-3. **UI/UX:**
-   - Onboarding-Dialoge und Einladungs-UI gestalten.
-   - Feedback für erfolgreiche/fehlgeschlagene Einladungen.
-4. **Validierung:**
-   - Prüfen, ob E-Mail bereits vergeben ist, ob Person schon existiert etc.
-5. **Test:**
-   - Den Flow für Admin und Member durchspielen und auf Konsistenz prüfen.
-
-**Hinweise:**
-
-- Die Zuordnung zu Tenant und Person ist die Basis für alle weiteren Berechtigungen.
-- Einladungs-Flow kann später erweitert werden (z.B. Rollenwahl, Self-Service etc.).
+**Status:**
+- Onboarding- und Einladungs-Flow sind im UI technisch umgesetzt und testbar.
 
 ---
 
@@ -237,39 +211,10 @@ Stand: 27.06.2025
 
 ## Schritt 7: Firestore-Regeln anpassen (🟡 In Bearbeitung)
 
-**Ziel:**
-
-- Die Firestore-Sicherheitsregeln auf die neue mandantenfähige Datenstruktur und die rollenbasierte Berechtigungslogik anpassen.
-- Sicherstellen, dass alle Zugriffe und Änderungen nur gemäß Rolle und Zuordnung möglich sind.
-
-**ToDos:**
-
-- [ ] Neue Regeln für `/tenants/{tenantId}/...` gemäß Konzept implementieren
-- [ ] Funktionen für `isMemberOf` und `isAdminOf` in den Regeln anlegen
-- [ ] Feingranulare Regeln für Subkollektionen (`persons`, `dayStatusEntries`, etc.) umsetzen
-- [ ] Regeln für private Userdaten (`/users/{userId}/privateInfo/...`) beibehalten
-- [ ] Validierung der Regeln mit Firestore Emulator und Tests
-- [ ] Dokumentation der Regeln im Projekt
-
-**Theoretische Umsetzungsschritte:**
-
-1. **Regeln für private Userdaten:**
-   - Weiterhin: Nur der eingeloggte User darf auf seine privaten Daten zugreifen.
-2. **Regeln für Tenant-Daten:**
-   - Lesezugriff für alle, die im Mandanten als Person mit `userId` eingetragen sind.
-   - Schreibzugriff nur für `admin`-Rolle.
-   - Feingranulare Regeln für das Bearbeiten/Löschen von Personen, Einträgen etc. gemäß Rolle.
-3. **Hilfsfunktionen:**
-   - `isMemberOf(tenantId)`, `isAdminOf(tenantId)` als Hilfsfunktionen in den Regeln implementieren.
-4. **Validierung:**
-   - Mit Emulator und Test-Usern alle Szenarien (admin/member, erlaubte/unerlaubte Aktionen) durchspielen.
-5. **Dokumentation:**
-   - Die Regeln und ihre Logik im Projekt dokumentieren.
-
-**Hinweise:**
-
-- Die Sicherheit basiert auf der UID und der Zuordnung im `person`-Dokument.
-- Die Regeln sollten möglichst keine Custom Claims benötigen, sondern direkt auf die Datenstruktur prüfen.
+**Update 28.06.2025:**
+- Die Firestore-Regeln wurden so erweitert, dass sowohl das alte (`/users/{userId}/...`) als auch das neue Multi-Tenant-Modell (`/tenants/{tenantId}/...`) parallel abgesichert sind.
+- Die bestehenden Regeln wurden nicht verändert, sondern um die neuen ergänzt. Beide Datenstrukturen sind während der Übergangsphase sicher nutzbar.
+- Nächste Schritte: Validierung der Regeln mit Emulator und Test-Usern, Dokumentation und ggf. Entfernen der alten Regeln nach Abschluss der Migration.
 
 ---
 

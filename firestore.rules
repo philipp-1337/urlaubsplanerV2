@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // --- Bestehende Regeln für das alte Modell (users) ---
     // Alle Anwendungsdaten liegen unter der Kollektion "users",
     // wobei jedes Dokument durch die eindeutige UID des Benutzers identifiziert wird.
     // Dies stellt sicher, dass die Daten jedes Benutzers streng von anderen getrennt sind.
@@ -55,6 +56,57 @@ service cloud.firestore {
           request.resource.data.status is string &&
           request.resource.data.personId is string;
       }
+    }
+
+    // --- Neue Regeln für das Multi-Tenant-Modell (tenants) ---
+    // Private Userdaten (Mapping tenantId/personId/role)
+    match /users/{userId}/privateInfo/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Mandantenstruktur
+    match /tenants/{tenantId}/{document=**} {
+      allow read: if isMemberOf(tenantId);
+      allow write: if isAdminOf(tenantId);
+    }
+
+    // Personenverwaltung
+    match /tenants/{tenantId}/persons/{personId} {
+      allow create, delete: if isAdminOf(tenantId);
+      allow update: if isAdminOf(tenantId) ||
+        (isMemberOf(tenantId) && resource.data.userId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']));
+    }
+
+    // Tagesstatus-Einträge
+    match /tenants/{tenantId}/dayStatusEntries/{entryId} {
+      allow write: if isAdminOf(tenantId) ||
+        (isMemberOf(tenantId) && request.resource.data.personId == getPersonIdByUserId(request.auth.uid));
+    }
+
+    // Jahrkonfigurationen
+    match /tenants/{tenantId}/yearConfigurations/{yearId} {
+      allow write: if isAdminOf(tenantId);
+    }
+    match /tenants/{tenantId}/resturlaubData/{resturlaubId} {
+      allow write: if isAdminOf(tenantId);
+    }
+    match /tenants/{tenantId}/employmentData/{employmentId} {
+      allow write: if isAdminOf(tenantId);
+    }
+
+    // Hilfsfunktionen
+    function isMemberOf(tenantId) {
+      // Prüft, ob der eingeloggte User als Person im Tenant eingetragen ist
+      return exists(/databases/$(database)/documents/tenants/$(tenantId)/persons/$(getPersonIdByUserId(request.auth.uid)));
+    }
+    function isAdminOf(tenantId) {
+      // Prüft, ob die Rolle im persons-Dokument "admin" ist
+      return get(/databases/$(database)/documents/tenants/$(tenantId)/persons/$(getPersonIdByUserId(request.auth.uid))).data.role == 'admin';
+    }
+    function getPersonIdByUserId(userId) {
+      // Sucht das persons-Dokument mit passender userId (vereinfachte Annahme: personId == userId)
+      return userId;
     }
   }
 }

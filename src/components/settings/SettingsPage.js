@@ -8,6 +8,7 @@ import PersonManagementSection from './PersonManagementSection'; // Import Perso
 import YearlyPersonDataSection from './YearlyPersonDataSection'; // Import YearlyPersonDataSection
 import UserDataManagementSection from './UserDataManagementSection'; // Import der neuen Komponente
 import DeveloperSettingsSection from './DeveloperSettingsSection'; // Import DeveloperSettingsSection
+import InviteMemberSection from './InviteMemberSection';
 import { toast } from 'sonner'; // Importiere toast
 
 const SettingsPage = () => {
@@ -647,6 +648,8 @@ const SettingsPage = () => {
         )} */}
       </div>
 
+      {/* Einladung für Admins sichtbar */}
+      {userRole === 'admin' && <InviteMemberSection />}
       {/* Tab Navigation */}
       <div className="flex mb-6 border-b border-gray-200 overflow-x-auto overflow-y-hidden">
         {tabs.map(tab => (

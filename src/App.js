@@ -19,9 +19,10 @@ import ActionHandlerPage from './components/auth/ActionHandlerPage'; // Import d
 import PrivacyPolicyPage from './components/legal/PrivacyPolicyPage'; // Import PrivacyPolicyPage
 import ImprintPage from './components/legal/ImprintPage'; // Import ImprintPage
 import ScrollToTop from './components/common/ScrollToTop'; // Importiere die ScrollToTop Komponente
+import OnboardingDialog from './components/auth/OnboardingDialog';
 
 function AppContent() {
-  const { isLoggedIn, loadingAuth } = useAuth();
+  const { isLoggedIn, loadingAuth, userTenantRole, loadingUserTenantRole } = useAuth();
 
   // Service Worker Update Logik wird jetzt in src/index.js über serviceWorkerRegistration gehandhabt
 
@@ -31,7 +32,9 @@ function AppContent() {
 
   return (
     <>
-      {isLoggedIn && <Header />} {/* Header is rendered conditionally here */}
+      {isLoggedIn && <Header />}
+      {/* OnboardingDialog wird angezeigt, wenn User eingeloggt ist, aber noch keinem Tenant zugeordnet */}
+      {isLoggedIn && !loadingUserTenantRole && !userTenantRole && <OnboardingDialog />}
       <main className="content-area flex flex-col flex-grow bg-gray-100">
         <Routes>
           {/* Public routes accessible always */}
