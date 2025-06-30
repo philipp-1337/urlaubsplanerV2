@@ -97,6 +97,7 @@ Stand: 30.06.2025
 ## Schritt 5: Onboarding/Einladung (🟡 In Bearbeitung)
 
 **Update 28.06.2025:**
+
 - Onboarding-Dialog für neue Nutzer ist implementiert und wird automatisch angezeigt, wenn nach Login keine Tenant-Zuordnung existiert. Nutzer können so einen neuen Mandanten anlegen und werden als Admin-Person eingetragen.
 - Admins können über die neue Komponente `InviteMemberSection` in den Einstellungen neue Mitglieder (Personen) zum Tenant einladen. Optional kann eine E-Mail-Adresse angegeben werden.
 - Die Einladung ist nur für Admins sichtbar. Die Person wird ohne `userId` angelegt und kann nach Registrierung zugeordnet werden.
@@ -104,6 +105,7 @@ Stand: 30.06.2025
 - Nächste Schritte: Validierung auf doppelte Einladungen/E-Mails, optional E-Mail-Versand, Self-Service-Registrierung, weitere Tests und Feinschliff.
 
 **Status:**
+
 - Onboarding- und Einladungs-Flow sind im UI technisch umgesetzt und testbar.
 
 ---
@@ -155,6 +157,7 @@ Stand: 30.06.2025
 ## Schritt 7: Firestore-Regeln anpassen (🟡 In Bearbeitung)
 
 **Update 28.06.2025:**
+
 - Die Firestore-Regeln wurden so erweitert, dass sowohl das alte (`/users/{userId}/...`) als auch das neue Multi-Tenant-Modell (`/tenants/{tenantId}/...`) parallel abgesichert sind.
 - Die bestehenden Regeln wurden nicht verändert, sondern um die neuen ergänzt. Beide Datenstrukturen sind während der Übergangsphase sicher nutzbar.
 - Nächste Schritte: Validierung der Regeln mit Emulator und Test-Usern, Dokumentation und ggf. Entfernen der alten Regeln nach Abschluss der Migration.

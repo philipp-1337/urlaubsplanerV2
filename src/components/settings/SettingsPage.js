@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCalendar } from '../../hooks/useCalendar';
 import { useFirestore } from '../../hooks/useFirestore';
 import { db, doc, getDoc } from '../../firebase';
@@ -10,6 +10,8 @@ import UserDataManagementSection from './UserDataManagementSection'; // Import d
 import DeveloperSettingsSection from './DeveloperSettingsSection'; // Import DeveloperSettingsSection
 import InviteMemberSection from './InviteMemberSection';
 import { toast } from 'sonner'; // Importiere toast
+import DataMigrationSection from './DataMigrationSection'; // Import DataMigrationSection
+import ManualOnboardingSection from './ManualOnboardingSection'; // Import ManualOnboardingSection
 
 const SettingsPage = () => {
   const {
@@ -18,8 +20,13 @@ const SettingsPage = () => {
     getMonatsName,
     globalTagDaten // globalTagDaten für Prüfung, ob schon gesetzt
   } = useCalendar(); // Renamed to avoid conflict, consolidated useCalendar call
-  const { currentUser, userTenantRole, loadingUserTenantRole } = useAuth(); // NEU: tenantId aus Context
+  const { userTenantRole, loadingUserTenantRole } = useAuth(); // NEU: tenantId aus Context
   const userRole = userTenantRole?.role;
+  // Hilfsfunktion für Tenant-Pfade (muss vor der ersten Verwendung stehen)
+  const getTenantPath = useCallback((...segments) => {
+    if (!userTenantRole || !userTenantRole.tenantId) throw new Error('Kein tenantId verfügbar!');
+    return ['tenants', userTenantRole.tenantId, ...segments];
+  }, [userTenantRole]);
   const {
     addPerson, updatePersonName, deletePersonFirebase, savePersonOrder,
     saveResturlaub, saveEmploymentData,
@@ -73,7 +80,7 @@ const SettingsPage = () => {
       setIsLoadingYearConfigs(false);
     };
     loadYearConfigs();
-  }, [fetchYearConfigurations, globalCurrentYear, userTenantRole, loadingUserTenantRole, selectedConfigYear]);
+  }, [fetchYearConfigurations, globalCurrentYear, userTenantRole, loadingUserTenantRole, selectedConfigYear, getTenantPath]);
 
   // States for person management are now mostly in PersonManagementSection
   const [yearlyDataSavingStates, setYearlyDataSavingStates] = useState({}); // Tracks saving state for yearly data { [personId]: boolean }
@@ -83,12 +90,6 @@ const SettingsPage = () => {
   const [initialYearlyPersonData, setInitialYearlyPersonData] = useState({}); // Stores the initial yearly data for comparison
   // State for yearly person data
   const [yearlyPersonData, setYearlyPersonData] = useState({}); // { personId: { resturlaub, employmentPercentage, employmentType, daysPerWeek } }
-
-  // Hilfsfunktion für Tenant-Pfade
-  const getTenantPath = (...segments) => {
-    if (!userTenantRole || !userTenantRole.tenantId) throw new Error('Kein tenantId verfügbar!');
-    return ['tenants', userTenantRole.tenantId, ...segments];
-  };
 
   // Effect to load person-specific data (Resturlaub, Employment) for the selectedConfigYear
   useEffect(() => {
@@ -131,7 +132,7 @@ const SettingsPage = () => {
       setInitialYearlyPersonData(data);
       setIsLoadingYearlyPersonData(false);
     });
-  }, [personen, selectedConfigYear, userTenantRole, loadingUserTenantRole]);
+  }, [personen, selectedConfigYear, userTenantRole, loadingUserTenantRole, getTenantPath]);
 
   const handleEditYearlyDataChange = (personId, field, value) => {
     setYearlyPersonData(prev => {
@@ -671,7 +672,11 @@ const SettingsPage = () => {
       <div>
         {renderActiveTabContent()}
       </div>
-      
+
+      {/* Datenmigration nur für Admins sichtbar */}
+      {!loadingUserTenantRole && userRole === 'admin' && <DataMigrationSection />}
+      {/* Onboarding/Self-Service nur anzeigen, wenn kein Mapping existiert */}
+      <ManualOnboardingSection />
     </div>
   );
 };

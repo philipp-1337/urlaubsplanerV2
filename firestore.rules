@@ -70,9 +70,21 @@ service cloud.firestore {
       allow write: if isAdminOf(tenantId);
     }
 
+    // TODO: Diese Regeln sind für die Entwicklung gelockert und müssen für die Produktion verschärft werden.
+    // Ein authentifizierter Benutzer kann einen neuen Mandanten erstellen.
+    // In der Produktion sollte dies eingeschränkt werden (z.B. nur wenn der Benutzer noch keinem Mandanten angehört).
+    match /tenants/{tenantId} {
+      allow create: if request.auth != null;
+    }
+
     // Personenverwaltung
     match /tenants/{tenantId}/persons/{personId} {
-      allow create, delete: if isAdminOf(tenantId);
+      // TODO: Diese Regel ist für die Entwicklung gelockert.
+      // Erlaubt jedem authentifizierten Benutzer, ein Person-Dokument für sich selbst zu erstellen (Onboarding)
+      // oder jedem Admin, neue Personen zu erstellen.
+      // Die Prüfung, ob es die *erste* Person ist, wurde vereinfacht und die fehlerhafte Syntax korrigiert.
+      allow create: if (request.auth.uid == personId && request.resource.data.userId == request.auth.uid) || isAdminOf(tenantId);
+      allow delete: if isAdminOf(tenantId);
       allow update: if isAdminOf(tenantId) ||
         (isMemberOf(tenantId) && resource.data.userId == request.auth.uid &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']));

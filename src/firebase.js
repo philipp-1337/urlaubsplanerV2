@@ -11,7 +11,8 @@ import {
   query,
   where,
   addDoc, // Import addDoc from firebase/firestore
-  writeBatch // Import writeBatch from firebase/firestore
+  writeBatch, // Import writeBatch from firebase/firestore
+  updateDoc // Import updateDoc from firebase/firestore
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -42,5 +43,6 @@ export {
   addDoc, // Export addDoc
   query,
   where,
-  writeBatch // Export writeBatch
+  writeBatch, // Export writeBatch
+  updateDoc // Export updateDoc
 };

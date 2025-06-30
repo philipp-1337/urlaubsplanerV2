@@ -94,6 +94,31 @@ export function AuthProvider({ children }) {
     // setLoginError(''); // Removed
   };
 
+  // Funktion zum manuellen Refresh der UserTenantRole
+  const refreshUserTenantRole = async () => {
+    if (!currentUser) {
+      setUserTenantRole(null);
+      setLoadingUserTenantRole(false);
+      return;
+    }
+    setLoadingUserTenantRole(true);
+    setUserTenantRoleError(null);
+    const ref = doc(db, 'users', currentUser.uid, 'privateInfo', 'user_tenant_role');
+    try {
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        setUserTenantRole(snap.data());
+      } else {
+        setUserTenantRole(null);
+      }
+    } catch (err) {
+      setUserTenantRoleError(err);
+      setUserTenantRole(null);
+    } finally {
+      setLoadingUserTenantRole(false);
+    }
+  };
+
   // Bereitgestellte Werte und Funktionen
   const value = {
     isLoggedIn,
@@ -109,7 +134,8 @@ export function AuthProvider({ children }) {
     loadingAuth, // Expose loading state
     userTenantRole, // { tenantId, personId, role }
     loadingUserTenantRole,
-    userTenantRoleError
+    userTenantRoleError,
+    refreshUserTenantRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

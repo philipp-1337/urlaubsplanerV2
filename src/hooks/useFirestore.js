@@ -46,10 +46,10 @@ export const useFirestore = () => {
   }, []);
 
   // Hilfsfunktion für Tenant-Pfade
-  const getTenantPath = (...segments) => {
+  const getTenantPath = useCallback((...segments) => {
     if (!userTenantRole || !userTenantRole.tenantId) throw new Error('Kein tenantId verfügbar!');
     return ['tenants', userTenantRole.tenantId, ...segments];
-  };
+  }, [userTenantRole]);
 
   // Fetch data from Firestore
   useEffect(() => {
@@ -141,7 +141,7 @@ export const useFirestore = () => {
       }
     };
     fetchData();
-  }, [isLoggedIn, currentYear, currentUser, userTenantRole, loadingUserTenantRole, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError, personSortFn]);
+  }, [isLoggedIn, currentYear, currentUser, userTenantRole, loadingUserTenantRole, setPersonen, setTagDaten, setGlobalTagDaten, setResturlaub, setEmploymentData, setYearConfigurations, setLoginError, personSortFn, getTenantPath]);
 
   // Function to update tag status in Firestore
   const setTagStatus = async (personId, tag, status, monat = currentMonth, jahr = currentYear) => {

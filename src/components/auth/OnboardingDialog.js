@@ -1,7 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import AuthContext from '../../context/AuthContext';
 import { getFirestore, collection, addDoc, doc, setDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 
 /**
  * Zeigt einen Dialog an, wenn der eingeloggte User noch keinem Tenant zugeordnet ist.
@@ -13,7 +12,6 @@ export default function OnboardingDialog() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const db = getFirestore();
-  const auth = getAuth();
 
   if (loadingUserTenantRole || userTenantRole) return null;
   if (!currentUser) return null;
