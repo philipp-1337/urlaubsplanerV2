@@ -1,6 +1,6 @@
 # Fortschritt Multi-Tenant-Refactoring
 
-Stand: 28.06.2025
+Stand: 30.06.2025
 
 ## Fortschrittstabelle
 
@@ -9,7 +9,7 @@ Stand: 28.06.2025
 | 1       | Analyse & Vorbereitung | ✅ Abgeschlossen | 27.06.2025 |
 | 2       | Erweiterung AuthContext | ✅ Abgeschlossen | - |
 | 3       | Refactoring Firestore-Zugriffe | ✅ Abgeschlossen | - |
-| 4       | Rollenbasierte UI | 🟡 In Bearbeitung | 27.06.2025 |
+| 4       | Rollenbasierte UI | ✅ Abgeschlossen | 30.06.2025 |
 | 5       | Onboarding/Einladung | 🟡 In Bearbeitung | 28.06.2025 |
 | 6       | Migration bestehender Daten | 🟡 In Bearbeitung | - |
 | 7       | Firestore-Regeln anpassen | 🟡 In Bearbeitung | 28.06.2025 |
@@ -74,79 +74,22 @@ Stand: 28.06.2025
 
 ---
 
-## Schritt 4: Rollenbasierte UI (🟡 In Bearbeitung)
+## Schritt 4: Rollenbasierte UI (✅ Abgeschlossen)
 
-**Ziel:**
+**Umsetzung (Stand 30.06.2025):**
 
-- Die UI soll sich dynamisch an die Rolle des Benutzers (`admin` oder `member`) anpassen.
-- Nur berechtigte Benutzer sehen und nutzen Verwaltungsfunktionen.
-
-**ToDos:**
-
-- [ ] Komponenten wie `SettingsPage`, `PersonManagementSection`, etc. auf Rollenlogik umstellen
-- [ ] Sichtbarkeit von Buttons/Sektionen abhängig von `role` aus dem AuthContext machen
-- [ ] Schreibrechte in Kalenderansichten (`MonthlyView`, `CalendarView`) rollenbasiert prüfen
-- [ ] Eigene Profilbearbeitung für Mitglieder ermöglichen, aber keine kritischen Felder
-- [ ] UI-Feedback für fehlende Berechtigungen einbauen
-- [ ] Tests/Validierung der Rollenlogik in der UI
-
-**Theoretische Umsetzungsschritte:**
-
-1. **Rollenlogik in Komponenten:**
-   - In allen relevanten Komponenten die Rolle (`role`) aus dem AuthContext beziehen.
-   - Mit einfachen Checks (`role === 'admin'`) steuern, ob Verwaltungsfunktionen angezeigt werden.
-2. **Berechtigungsprüfung für Aktionen:**
-   - Bei allen mutierenden Aktionen (z.B. Person anlegen/löschen, Konfiguration ändern) vor Ausführung die Rolle prüfen.
-   - Für Mitglieder: Nur eigene Daten/Einträge dürfen bearbeitet werden.
-3. **UI-Feedback:**
-   - Für nicht erlaubte Aktionen Hinweise/Disabled-States anzeigen.
-   - Optional: Tooltips oder Overlays für Erklärungen.
-4. **Tests:**
-   - Manuell und ggf. automatisiert prüfen, dass die UI für beide Rollen korrekt funktioniert.
-
-**Hinweise:**
-
-- Die rollenbasierte UI ist essenziell für die Sicherheit und Nutzerführung.
-- Die Logik kann später für weitere Rollen/Feingranularität erweitert werden.
-
----
-
-## Schritt 4: Rollenbasierte UI – Konkretisierung der Umsetzung (27.06.2025)
-
-**Umsetzungsschritte:**
-
-- In allen relevanten Komponenten wird die Rolle (`role`) aus dem AuthContext bezogen.
-- Verwaltungsfunktionen (z.B. Personen anlegen/löschen, Jahreskonfiguration ändern) werden nur angezeigt und aktiviert, wenn `role === 'admin'`.
-- Mutierende Aktionen (z.B. Speichern/Löschen) prüfen vor Ausführung die Rolle und verhindern unberechtigte Änderungen.
-- Für Mitglieder (`role === 'member'`): Nur eigene Daten/Einträge dürfen bearbeitet werden, keine globalen Einstellungen oder andere Personen.
-- UI-Feedback: Buttons und Aktionen werden bei fehlender Berechtigung deaktiviert oder mit Hinweistext/Tooltip versehen.
-- Die Sichtbarkeit und Aktivierbarkeit aller kritischen UI-Elemente ist rollenbasiert gesteuert.
-- Die Logik ist zentral im AuthContext und in den Komponenten implementiert, keine doppelten Checks im Code.
-- UI-Tests und Validierung für beide Rollen (admin/member) sind vorgesehen.
-
-**Nächster Schritt:**
-
-- Überprüfung und ggf. Nachziehen aller Komponenten auf diese Logik.
-- Dokumentation der Rollenlogik im Konzept und im Code.
-
----
-
-## Schritt 4: Rollenbasierte UI (Update 27.06.2025)
-
-**Umsetzung:**
-
-- Die rollenbasierte Logik ist jetzt in allen relevanten Komponenten umgesetzt:
-  - Settings-Komponenten (`SettingsPage`, `YearConfigurationSection`, `PersonManagementSection`, `YearlyPersonDataSection`)
-  - Kalender- und Dashboard-Komponenten (`MonthlyView`, `CalendarView`)
-- Nur Nutzer mit der Rolle `admin` können mutierende Aktionen (Hinzufügen, Bearbeiten, Löschen) für alle Einträge durchführen.
-- Mitglieder (`member`) können nur eigene Einträge bearbeiten, nicht aber globale Einstellungen oder andere Personen.
-- In Übersichts- und reinen Navigationskomponenten (`YearlyOverview`, `MonthlyDetail`) ist keine zusätzliche Rollenlogik nötig.
-- Die Rolle wird über den AuthContext global bereitgestellt und in den Komponenten geprüft.
-- UI-Feedback (Disabled-States, Hinweise) ist überall implementiert.
+- Alle relevanten Komponenten (SettingsPage, YearConfigurationSection, PersonManagementSection, YearlyPersonDataSection, GlobalDaySettingsSection, InviteMemberSection, MonthlyView, CalendarView, DayCell) wurden systematisch auf rollenbasierte Logik geprüft und angepasst.
+- Nur Nutzer mit der Rolle `admin` können mutierende Aktionen (Hinzufügen, Bearbeiten, Löschen, globale Einstellungen) für alle Einträge durchführen.
+- Mitglieder (`member`) können ausschließlich eigene Einträge bearbeiten, keine globalen Einstellungen oder andere Personen.
+- In allen Komponenten werden Buttons und Eingabefelder für nicht-berechtigte Nutzer deaktiviert oder gar nicht angezeigt. Überall gibt es sinnvolles UI-Feedback (Disabled-State, Hinweis, Tooltip).
+- Die Rollenlogik ist zentral im AuthContext und in den Komponenten implementiert, keine doppelten Checks im Code.
+- Die Logik ist sowohl in den Settings- als auch in den Kalender-/Dashboard-Komponenten konsistent umgesetzt.
+- Übersichts- und reine Navigationskomponenten benötigen keine zusätzliche Rollenlogik.
+- Die Umsetzung wurde manuell geprüft und entspricht dem Konzept.
 
 **Status:**
 
-- Die rollenbasierte UI ist vollständig in allen Kernbereichen umgesetzt.
+- Die rollenbasierte UI ist in allen Kernbereichen vollständig umgesetzt und geprüft.
 - Nächste Schritte: Validierung, Tests und ggf. Feinschliff in Spezial- oder Hilfskomponenten.
 
 ---

@@ -12,6 +12,7 @@ const GlobalDaySettingsSection = ({
   onImportHolidays, // Function from SettingsPage
   onSetHolidaysImportedStatus, // Neuer Prop von SettingsPage
   getMonatsName, // Helper function
+  userRole, // NEU: Rollen-Prop
 }) => {
   const [prefillDate, setPrefillDate] = useState({ day: '', month: '' });
   const [isPrefilling, setIsPrefilling] = useState(false);
@@ -143,6 +144,7 @@ const GlobalDaySettingsSection = ({
 
   const isYearConfigured = yearConfigs.some(yc => yc.year === selectedConfigYear); // Keep this check
   const canManageGlobalDays = isYearConfigured && selectedConfigYear && personen.length > 0;
+  const isAdmin = userRole === 'admin';
 
   return (
     // Die Section wird jetzt von YearlyPersonDataSection bereitgestellt, hier nur der Inhalt
@@ -150,6 +152,11 @@ const GlobalDaySettingsSection = ({
       <h3 className="mb-6 text-xl font-semibold text-gray-700">
         Globale Tage vorbefüllen {(selectedConfigYear && isYearConfigured) ? `(für Jahr ${selectedConfigYear})` : ''}
       </h3>
+      {!isAdmin && (
+        <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
+          Sie haben keine Berechtigung, globale Tage zu verwalten. Nur Administratoren können Änderungen vornehmen.
+        </div>
+      )}
       {canManageGlobalDays ? (
         <>
           {/* Abschnitt: Feiertage importieren */}
@@ -163,7 +170,7 @@ const GlobalDaySettingsSection = ({
                   value={selectedStateCode}
                   onChange={(e) => setSelectedStateCode(e.target.value)}
                   className="w-full px-3 pr-8 py-2 mt-1 bg-white border border-gray-300 rounded-md md:w-auto focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
-                  disabled={isImportingHolidays || isPrefilling}
+                  disabled={isImportingHolidays || isPrefilling || !isAdmin}
                 >
                   {germanStates.map(state => (
                     <option key={state.code} value={state.code}>{state.name}</option>
@@ -175,9 +182,9 @@ const GlobalDaySettingsSection = ({
               </div>
               <button
                 onClick={handleImportGermanHolidaysClick} // Ruft die lokale Funktion ohne Argument auf
-                disabled={isImportingHolidays || isPrefilling || !selectedConfigYear || personen.length === 0}
+                disabled={isImportingHolidays || isPrefilling || !selectedConfigYear || personen.length === 0 || !isAdmin}
                 className="w-full px-4 py-2 mt-2 text-white bg-primary rounded-md md:w-auto md:mt-0 hover:bg-accent hover:text-primary disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
-                title={!selectedConfigYear ? "Bitte zuerst ein Jahr auswählen" : (personen.length === 0 ? "Bitte zuerst Personen anlegen" : "Feiertage importieren")}
+                title={!isAdmin ? "Nur Administratoren können Feiertage importieren." : (!selectedConfigYear ? "Bitte zuerst ein Jahr auswählen" : (personen.length === 0 ? "Bitte zuerst Personen anlegen" : "Feiertage importieren"))}
               > 
                 {isImportingHolidays ? (
                   <Loader2 size={20} className="animate-spin mr-2" />
@@ -187,10 +194,7 @@ const GlobalDaySettingsSection = ({
                 {holidaysAlreadyImported ? 'Erneut importieren' : 'Importieren'}
               </button>
             </div>
-            {/* Meldungen anzeigen entfernt, Toast übernimmt Feedback */}
-            {/* {!importMessage && !importError && holidaysAlreadyImported && !isImportingHolidays && <p className="mt-2 text-xs text-green-600">Die Feiertage für {selectedConfigYear} wurden bereits importiert.</p>} */}
           </div>
-
           {/* Abschnitt: Benutzerdefinierte Tage / Teamtage setzen */}
           <div>
             <h4 className="mb-3 text-lg font-medium text-gray-700">Benutzerdefinierte Tage</h4>
@@ -210,7 +214,7 @@ const GlobalDaySettingsSection = ({
                 className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-primary"
                 min="1"
                 max="31"
-                disabled={isPrefilling || isImportingHolidays}
+                disabled={isPrefilling || isImportingHolidays || !isAdmin}
               />
             </div>
             <div>
@@ -224,20 +228,22 @@ const GlobalDaySettingsSection = ({
                 className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md md:w-20 focus:outline-none focus:ring-2 focus:ring-primary"
                 min="1"
                 max="12"
-                disabled={isPrefilling || isImportingHolidays}
+                disabled={isPrefilling || isImportingHolidays || !isAdmin}
               />
             </div>
             <button
               onClick={() => handleApplyPrefillClick('interne teamtage')}
-              disabled={isPrefilling || isImportingHolidays || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
+              disabled={isPrefilling || isImportingHolidays || !prefillDate.day || !prefillDate.month || !selectedConfigYear || !isAdmin}
               className="w-full px-4 py-2 text-white bg-bold-lavender rounded-md md:w-auto hover:bg-pastel-lavender hover:text-bold-lavender disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
+              title={!isAdmin ? "Nur Administratoren können Teamtage setzen." : undefined}
             >
               {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Als Teamtag
             </button>
             <button
               onClick={() => handleApplyPrefillClick('feiertag')}
-              disabled={isPrefilling || isImportingHolidays || !prefillDate.day || !prefillDate.month || !selectedConfigYear}
+              disabled={isPrefilling || isImportingHolidays || !prefillDate.day || !prefillDate.month || !selectedConfigYear || !isAdmin}
               className="w-full px-4 py-2 text-white bg-gray-dark rounded-md md:w-auto hover:bg-gray-medium hover:text-gray-dark disabled:bg-gray-400 disabled:hover:text-white flex items-center justify-center"
+              title={!isAdmin ? "Nur Administratoren können Feiertage setzen." : undefined}
             >
               {isPrefilling ? <Loader2 size={20} className="animate-spin mr-2" /> : null} Als Feiertag
             </button>

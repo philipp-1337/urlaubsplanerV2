@@ -247,7 +247,7 @@ const YearlyPersonDataSection = ({
           onImportHolidays={onImportHolidays}
           onSetHolidaysImportedStatus={onSetHolidaysImportedStatus} // Weiterleiten
           getMonatsName={getMonatsName}
-          // isPrefilling and isImportingHolidays state are managed internally by GlobalDaySettingsSection
+          userRole={userRole} // NEU: Rollen-Prop weiterreichen
         />
       )}
     </section>
