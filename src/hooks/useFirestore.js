@@ -256,8 +256,9 @@ export const useFirestore = () => {
   const memoizedAddPerson = useCallback(addPerson, [currentUser, setLoginError, setPersonen, personen, personSortFn]);
 
   const updatePersonName = async (personId, newName) => {
-    const personRef = doc(db, 'users', currentUser.uid, 'persons', personId);
+    // Schreibe ins neue Multi-Tenant-Modell
     try {
+      const personRef = doc(db, ...getTenantPath('persons', personId));
       await setDoc(personRef, { name: newName }, { merge: true });
       setPersonen(prev => prev.map(p => p.id === personId ? { ...p, name: newName } : p).sort(personSortFn));
       return { success: true };
