@@ -11,9 +11,8 @@ Stand: 30.06.2025
 | 3       | Refactoring Firestore-Zugriffe | ✅ Abgeschlossen | - |
 | 4       | Rollenbasierte UI | ✅ Abgeschlossen | 30.06.2025 |
 | 5       | Onboarding/Einladung | 🟡 In Bearbeitung | 28.06.2025 |
-| 6       | Migration bestehender Daten | 🟡 In Bearbeitung | - |
-| 7       | Firestore-Regeln anpassen | 🟡 In Bearbeitung | 28.06.2025 |
-| 8       | Testen & Validieren | 🟡 In Bearbeitung | - |
+| 6       | Firestore-Regeln anpassen | 🟡 In Bearbeitung | 28.06.2025 |
+| 7       | Testen & Validieren | 🟡 In Bearbeitung | - |
 
 ---
 
@@ -110,50 +109,6 @@ Stand: 30.06.2025
 
 ---
 
-## Schritt 6: Migration bestehender Daten (🟡 In Bearbeitung)
-
-**Ziel:**
-
-- Bestehende Benutzerdaten aus der alten Struktur `/users/{userId}/...` in die neue mandantenfähige Struktur `/tenants/{tenantId}/...` überführen.
-- Nach der Migration arbeitet der User ausschließlich mit den neuen Tenant-Daten.
-
-**ToDos:**
-
-- [ ] Migrations-Button oder automatischen Prozess im Frontend bereitstellen
-- [ ] Neuen Tenant anlegen und `tenantId` generieren
-- [ ] Alle relevanten Daten (`persons`, `resturlaubData`, `employmentData`, `yearConfigurations`, `dayStatusEntries`) in die neue Struktur kopieren
-- [ ] Für den aktuellen User das eigene `person`-Dokument mit `userId` und `role: 'admin'` versehen
-- [ ] Private Userdaten aktualisieren: `/users/{userId}/privateInfo/user_tenant_role` setzen
-- [ ] Optional: Alte Daten nach erfolgreicher Migration löschen
-- [ ] Validierung und Fehlerbehandlung für den Migrationsprozess
-- [ ] Tests/Validierung der Datenkonsistenz nach Migration
-
-**Theoretische Umsetzungsschritte:**
-
-1. **Migration starten:**
-   - Im UI einen Button oder automatischen Trigger für die Migration bereitstellen.
-2. **Neuen Tenant anlegen:**
-   - Ein neues Dokument in `/tenants/{tenantId}` wird erstellt (UUID oder vergleichbar).
-3. **Daten übernehmen:**
-   - Alle Einträge aus `/users/{userId}/persons` nach `/tenants/{tenantId}/persons` kopieren.
-   - Für die Person, die dem aktuellen User entspricht, `userId` setzen und Rolle auf `admin`.
-   - Weitere Daten (`resturlaubData`, `employmentData`, `yearConfigurations`, `dayStatusEntries`) in die entsprechenden Subkollektionen unter `/tenants/{tenantId}/` kopieren.
-4. **Private Userdaten aktualisieren:**
-   - Im Dokument `/users/{userId}/privateInfo/user_tenant_role` die neue Zuordnung speichern.
-5. **Abschluss:**
-   - Nach erfolgreicher Migration arbeitet der User nur noch mit den neuen Tenant-Daten.
-   - Optional: Die alten Daten können gelöscht werden.
-6. **Validierung:**
-   - Nach der Migration prüfen, ob alle Daten korrekt übernommen wurden und die App wie erwartet funktioniert.
-
-**Hinweise:**
-
-- Die Migration sollte atomar und möglichst fehlerresistent ablaufen.
-- Die Migration kann beliebig oft getestet werden, solange die neuen Daten nicht produktiv genutzt werden.
-- Nach der Migration muss die Anwendung ausschließlich mit der neuen Struktur arbeiten.
-
----
-
 ## Schritt 7: Firestore-Regeln anpassen (🟡 In Bearbeitung)
 
 **Update 28.06.2025:**
@@ -192,9 +147,7 @@ Stand: 30.06.2025
 3. **UI- und Berechtigungstests:**
    - Sichtbarkeit und Interaktionsmöglichkeiten in der UI für beide Rollen testen.
    - Fehlerfälle und Berechtigungsverletzungen simulieren.
-4. **Migration validieren:**
-   - Nach Migration prüfen, ob alle Daten korrekt übernommen wurden und keine Altpfade mehr genutzt werden.
-5. **Feedback- und Bugfix-Phase:**
+4. **Feedback- und Bugfix-Phase:**
    - Nach ersten Live-Tests Rückmeldungen sammeln und ggf. nachbessern.
 
 **Hinweise:**

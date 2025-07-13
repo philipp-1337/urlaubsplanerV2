@@ -173,37 +173,5 @@ service cloud.firestore {
 
 ---
 
-## 5. Migration bestehender Daten
-
-Die Migration der bestehenden Benutzerdaten in die neue mandantenfähige Struktur erfolgt clientseitig durch einen eingeloggten Benutzer (meist der bisherige Einzelbenutzer/Admin). Es wird ein Migrations-Button oder ein automatischer Migrationsprozess im Frontend bereitgestellt.
-
-**Ablauf:**
-
-1. **Migration starten:**
-   - Der eingeloggte Benutzer (bisheriger Einzelbenutzer) startet die Migration im Frontend.
-
-2. **Neuen Mandanten anlegen:**
-   - Es wird ein neues Dokument in `/tenants/{tenantId}` erstellt. Die `tenantId` kann generiert werden (z.B. UUID).
-
-3. **Personen übernehmen:**
-   - Alle Einträge aus `/users/{userId}/persons` werden nach `/tenants/{tenantId}/persons` kopiert.
-   - Für die Person, die dem aktuellen User entspricht, wird das Feld `userId` gesetzt und die Rolle auf `admin` gesetzt.
-
-4. **Weitere Daten übernehmen:**
-   - Alle Einträge aus `/users/{userId}/resturlaubData`, `/employmentData`, `/yearConfigurations`, `/dayStatusEntries` werden in die entsprechenden Subkollektionen unter `/tenants/{tenantId}/` kopiert.
-
-5. **Private Userdaten aktualisieren:**
-   - Im Dokument `/users/{userId}/privateInfo/user_tenant_role` wird `{ tenantId, personId, role: 'admin' }` gespeichert.
-
-6. **Abschluss:**
-   - Nach erfolgreicher Migration arbeitet der User nur noch mit den neuen Tenant-Daten. Die alten Daten können optional gelöscht werden.
-
-**Hinweise:**
-
-- Die Migration kann beliebig oft getestet werden, solange die neuen Daten nicht produktiv genutzt werden.
-- Die Migration sollte atomar ablaufen, um Inkonsistenzen zu vermeiden.
-- Nach der Migration muss die Anwendung ausschließlich mit der neuen Struktur arbeiten.
-
----
 <!-- markdownlint-disable-next-line MD036 -->
 **Ende des Konzepts**
