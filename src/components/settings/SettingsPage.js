@@ -10,8 +10,6 @@ import UserDataManagementSection from './UserDataManagementSection'; // Import d
 import DeveloperSettingsSection from './DeveloperSettingsSection'; // Import DeveloperSettingsSection
 import InviteMemberSection from './InviteMemberSection';
 import { toast } from 'sonner'; // Importiere toast
-import DataMigrationSection from './DataMigrationSection'; // Import DataMigrationSection
-import ManualOnboardingSection from './ManualOnboardingSection'; // Import ManualOnboardingSection
 
 const SettingsPage = () => {
   const {
@@ -672,11 +670,6 @@ const SettingsPage = () => {
       <div>
         {renderActiveTabContent()}
       </div>
-
-      {/* Datenmigration nur für Admins sichtbar */}
-      {!loadingUserTenantRole && userRole === 'admin' && <DataMigrationSection />}
-      {/* Onboarding/Self-Service nur anzeigen, wenn kein Mapping existiert */}
-      <ManualOnboardingSection />
     </div>
   );
 };
