@@ -18,12 +18,12 @@ import { getAuth } from "firebase/auth";
 
 // IMPORTANT: Replace with your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDvgQF66omtiPE7dyw0xrFbWivWjubHsqg",
-  authDomain: "projekt-paddelboot.firebaseapp.com",
-  projectId: "projekt-paddelboot",
-  storageBucket: "projekt-paddelboot.firebasestorage.app",
-  messagingSenderId: "327036232467",
-  appId: "1:327036232467:web:285335291f3379b4d0b0e6"
+  apiKey: "AIzaSyDDrDGw4w49MFlmiY6qtxHMaVDUaKSWhH4",
+  authDomain: "rosa-kanu.firebaseapp.com",
+  projectId: "rosa-kanu",
+  storageBucket: "rosa-kanu.firebasestorage.app",
+  messagingSenderId: "447800886787",
+  appId: "1:447800886787:web:130b88b260f1b70ebbb036"
 };
 
 // Initialize Firebase

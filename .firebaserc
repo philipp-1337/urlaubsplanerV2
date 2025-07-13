@@ -1,12 +1,12 @@
 {
   "projects": {
-    "default": "projekt-paddelboot"
+    "default": "rosa-kanu"
   },
   "targets": {
-    "projekt-paddelboot": {
+    "rosa-kanu": {
       "hosting": {
         "production": [
-          "projekt-paddelboot"
+          "rosa-kanu"
         ]
       }
     }
